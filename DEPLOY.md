@@ -58,15 +58,15 @@ docker run -it --rm \
   certbot/certbot certonly --webroot \
   --webroot-path=/var/www/certbot \
   --email ТВОЙ_EMAIL --agree-tos --no-eff-email \
-  -d ТВОЙ_API_ДОМЕН
+  -d api.genetictree.ru
 
 # Возвращаем SSL конфиг и перезапускаем
 cp nginx.conf.bak nginx.conf
-sed -i 's/api.yourdomain.com/ТВОЙ_API_ДОМЕН/g' nginx.conf
+sed -i 's/api.yourdomain.com/api.genetictree.ru/g' nginx.conf
 docker-compose down && docker-compose up -d
 ```
 
-**Проверка:** https://api.yourdomain.com/docs
+**Проверка:** https://api.genetictree.ru/docs
 
 ---
 
@@ -81,12 +81,12 @@ nano .env
 ```
 
 **Заполнить в .env:**
-- `NEXT_PUBLIC_API_URL` - https://api.yourdomain.com/api
+- `NEXT_PUBLIC_API_URL` - https://api.yourdomain.com (без /api в конце)
 - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` - имя бота
 
 ```bash
 # Заменяем домен в nginx
-sed -i 's/yourdomain.com/ТВОЙ_ДОМЕН/g' nginx.conf
+sed -i 's/yourdomain.com/genetictree.ru/g' nginx.conf
 
 # Получаем SSL
 mkdir -p certbot/conf certbot/www
@@ -101,12 +101,12 @@ docker run -it --rm \
   -v $(pwd)/certbot/www:/var/www/certbot \
   certbot/certbot certonly --webroot \
   --webroot-path=/var/www/certbot \
-  --email ТВОЙ_EMAIL --agree-tos --no-eff-email \
-  -d ТВОЙ_ДОМЕН
+  --email mziv1@mail.ru --agree-tos --no-eff-email \
+  -d genetictree.ru
 
 # Возвращаем SSL конфиг и перезапускаем
 cp nginx.conf.bak nginx.conf
-sed -i 's/yourdomain.com/ТВОЙ_ДОМЕН/g' nginx.conf
+sed -i 's/yourdomain.com/genetictree.ru/g' nginx.conf
 docker-compose down && docker-compose up -d
 ```
 
