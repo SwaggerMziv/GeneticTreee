@@ -11,6 +11,19 @@ ENV/
 # Project specific
 CLAUDE.md
 
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.bot.example
+
+# SSL Certificates
+certbot/
+
+# Docker volumes
+postgres_data/
+bot_data/
+
 # IDE
 .vscode/
 .idea/
@@ -21,3 +34,7 @@ CLAUDE.md
 # OS
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+logs/
