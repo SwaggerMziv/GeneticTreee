@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --font-playfair: 'Playfair Display', Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-inter);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #141414;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #404040;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom selection color */
+::selection {
+  background-color: #ff6b35;
+  color: white;
+}
+
+/* Ant Design dark theme overrides */
+.ant-form-item-label > label {
+  color: #f5f5f5 !important;
+}
+
+.ant-input,
+.ant-input-password {
+  background-color: #1a1a1a !important;
+  border-color: #404040 !important;
+  color: #f5f5f5 !important;
+}
+
+.ant-input:hover,
+.ant-input-password:hover {
+  border-color: #ff6b35 !important;
+}
+
+.ant-input:focus,
+.ant-input-password:focus,
+.ant-input-focused,
+.ant-input-password-focused {
+  border-color: #ff6b35 !important;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.1) !important;
+}
+
+.ant-btn-primary {
+  background-color: #ff6b35 !important;
+  border-color: #ff6b35 !important;
+}
+
+.ant-btn-primary:hover {
+  background-color: #ff8c5e !important;
+  border-color: #ff8c5e !important;
+}
+
+.ant-tabs-tab {
+  color: #999 !important;
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: #ff6b35 !important;
+}
+
+.ant-tabs-ink-bar {
+  background: #ff6b35 !important;
+}
+
+.ant-message-notice-content {
+  background-color: #1a1a1a !important;
+  border: 1px solid #404040 !important;
+  color: #f5f5f5 !important;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}
+
+.animate-on-scroll {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.animate-delay-100 {
+  animation-delay: 0.1s;
+}
+
+.animate-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.animate-delay-300 {
+  animation-delay: 0.3s;
+}
+
+.animate-delay-400 {
+  animation-delay: 0.4s;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glass effect */
+.glass-effect {
+  background: rgba(26, 26, 26, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(64, 64, 64, 0.3);
+}

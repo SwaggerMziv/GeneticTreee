@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+
+# Environment variables (use .env.example as template)
+.env
+
+# User data
+data/*.json
+!data/.gitkeep

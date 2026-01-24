@@ -1,0 +1,15 @@
+{
+  "users": {
+    "995671892": {
+      "relative_id": 6,
+      "name": "как дела? норм",
+      "enabled_broadcast": true,
+      "last_interaction": "2026-01-23T03:02:17.128801",
+      "added_at": "2026-01-23T02:51:27.938213",
+      "broadcast_count": 0,
+      "last_question_index": -1
+    }
+  },
+  "broadcast_history": [],
+  "last_broadcast": null
+}
