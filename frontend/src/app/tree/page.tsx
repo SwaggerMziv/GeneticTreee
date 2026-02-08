@@ -709,10 +709,10 @@ export default function TreePage() {
   const handleDeleteRelative = async (relativeId: number) => {
     if (!user) return
     modal.confirm({
-      title: <span className="text-white text-lg">Удалить родственника?</span>,
+      title: <span className="text-foreground text-lg">Удалить родственника?</span>,
       icon: <Trash2 className="w-6 h-6 text-red-500 mr-2" />,
       content: (
-        <div className="text-gray-300 mt-2">
+        <div className="text-muted-foreground mt-2">
           Вы уверены, что хотите удалить этого родственника? Это действие нельзя отменить, и все связи будут разорваны.
         </div>
       ),
@@ -726,8 +726,8 @@ export default function TreePage() {
         className: 'bg-red-500 hover:bg-red-600 border-none shadow-lg shadow-red-500/20',
         size: 'large'
       },
-      cancelButtonProps: { 
-        className: 'text-gray-300 hover:text-white border-white/10 hover:border-white/20 hover:bg-white/5',
+      cancelButtonProps: {
+        className: 'text-muted-foreground hover:text-foreground border-white/10 hover:border-white/20 hover:bg-white/5',
         size: 'large'
       },
       onOk: async () => {
@@ -1044,7 +1044,7 @@ export default function TreePage() {
       <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-charcoal-900/90 backdrop-blur-sm border-b border-charcoal-700">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Поиск родственников..."
             value={searchTerm}
@@ -1066,7 +1066,7 @@ export default function TreePage() {
           </Tooltip>
           <Tooltip title="Сбросить к 100%">
             <button
-              className="text-xs text-gray-400 hover:text-white w-12 text-center transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground w-12 text-center transition-colors"
               onClick={() => setScale(1)}
             >
               {Math.round(scale * 100)}%
@@ -1088,7 +1088,7 @@ export default function TreePage() {
         {/* Sidebar Toggle Button */}
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className={`absolute top-4 z-20 p-2 rounded-r-xl bg-charcoal-900 border border-charcoal-700 text-gray-400 hover:text-white transition-all duration-300 ${
+          className={`absolute top-4 z-20 p-2 rounded-r-xl bg-charcoal-900 border border-charcoal-700 text-muted-foreground hover:text-foreground transition-all duration-300 ${
             isSidebarOpen ? 'left-56' : 'left-0 rounded-l-none border-l-0'
           }`}
         >
@@ -1140,7 +1140,7 @@ export default function TreePage() {
             <Button
               block
               size="small"
-              className={`text-xs ${!showConnections ? 'bg-orange/20 text-orange border-orange/30' : 'bg-charcoal-800 border-charcoal-700 text-gray-300'}`}
+              className={`text-xs ${!showConnections ? 'bg-orange/20 text-orange border-orange/30' : 'bg-charcoal-800 border-charcoal-700 text-muted-foreground'}`}
               onClick={() => setShowConnections(!showConnections)}
             >
               {showConnections ? 'Скрыть связи' : 'Показать связи'}
@@ -1149,7 +1149,7 @@ export default function TreePage() {
 
           {/* Gender filter */}
           <div className="mb-4">
-            <label className="text-xs text-gray-400 mb-2 block">Пол</label>
+            <label className="text-xs text-muted-foreground mb-2 block">Пол</label>
             <Select
               value={filterGender}
               onChange={setFilterGender}
@@ -1166,7 +1166,7 @@ export default function TreePage() {
 
           {/* Generation filter */}
           <div className="mb-4">
-            <label className="text-xs text-gray-400 mb-2 block">Поколение</label>
+            <label className="text-xs text-muted-foreground mb-2 block">Поколение</label>
             <Select
               value={filterGeneration}
               onChange={setFilterGeneration}
@@ -1185,7 +1185,7 @@ export default function TreePage() {
 
           {/* Alive filter */}
           <div className="mb-4">
-            <label className="text-xs text-gray-400 mb-2 block">Статус</label>
+            <label className="text-xs text-muted-foreground mb-2 block">Статус</label>
             <Select
               value={filterAlive}
               onChange={setFilterAlive}
@@ -1201,7 +1201,7 @@ export default function TreePage() {
 
           {/* Stories filter */}
           <div className="mb-4">
-            <label className="text-xs text-gray-400 mb-2 block">Истории</label>
+            <label className="text-xs text-muted-foreground mb-2 block">Истории</label>
             <Select
               value={filterHasStories}
               onChange={setFilterHasStories}
@@ -1217,18 +1217,18 @@ export default function TreePage() {
 
           {/* Stats */}
           <div className="mt-6 pt-4 border-t border-charcoal-700">
-            <h4 className="text-xs text-gray-400 mb-3">Статистика</h4>
+            <h4 className="text-xs text-muted-foreground mb-3">Статистика</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-400">Родственников</span>
+                <span className="text-muted-foreground">Родственников</span>
                 <span className="font-medium">{relatives.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Связей</span>
+                <span className="text-muted-foreground">Связей</span>
                 <span className="font-medium">{relationships.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Поколений</span>
+                <span className="text-muted-foreground">Поколений</span>
                 <span className="font-medium">{uniqueGenerations.length}</span>
               </div>
             </div>
@@ -1237,7 +1237,7 @@ export default function TreePage() {
           {/* Generation legend */}
           {uniqueGenerations.length > 0 && (
             <div className="mt-4 pt-4 border-t border-charcoal-700">
-              <h4 className="text-xs text-gray-400 mb-3 flex items-center gap-2">
+              <h4 className="text-xs text-muted-foreground mb-3 flex items-center gap-2">
                 <Layers className="w-3 h-3" />
                 Поколения
               </h4>
@@ -1249,7 +1249,7 @@ export default function TreePage() {
                     className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
                       filterGeneration === g
                         ? 'bg-orange/20 text-orange'
-                        : 'hover:bg-charcoal-700 text-gray-300'
+                        : 'hover:bg-charcoal-700 text-muted-foreground'
                     }`}
                   >
                     <span className="font-semibold text-orange">
@@ -1294,7 +1294,7 @@ export default function TreePage() {
             <div className="absolute inset-0 flex items-center justify-center">
               <Empty
                 description={
-                  <span className="text-gray-400">
+                  <span className="text-muted-foreground">
                     У вас пока нет родственников в древе
                   </span>
                 }
@@ -1602,7 +1602,7 @@ export default function TreePage() {
           {/* Hint about dragging */}
           {nodePositions.length > 0 && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 control-panel">
-              <div className="px-3 py-1.5 rounded-full bg-charcoal-800/80 border border-charcoal-700 text-xs text-gray-400 flex items-center gap-2">
+              <div className="px-3 py-1.5 rounded-full bg-charcoal-800/80 border border-charcoal-700 text-xs text-muted-foreground flex items-center gap-2">
                 <Move className="w-3 h-3" />
                 <span>Перетащите карточки для изменения позиции</span>
               </div>
@@ -1653,7 +1653,7 @@ export default function TreePage() {
                   }
                 </h2>
                 {selectedRelative.middle_name && (
-                  <p className="text-gray-400">{selectedRelative.middle_name}</p>
+                  <p className="text-muted-foreground">{selectedRelative.middle_name}</p>
                 )}
               </div>
 
@@ -1661,18 +1661,18 @@ export default function TreePage() {
               <div className="space-y-3 text-sm mb-6">
                 {selectedRelative.gender && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Пол</span>
+                    <span className="text-muted-foreground">Пол</span>
                     <span>{GENDER_LABELS[selectedRelative.gender]}</span>
                   </div>
                 )}
                 {selectedRelative.birth_date && (
                   <>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Дата рождения</span>
+                      <span className="text-muted-foreground">Дата рождения</span>
                       <span>{new Date(selectedRelative.birth_date).toLocaleDateString('ru-RU')}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-400">Возраст</span>
+                      <span className="text-muted-foreground">Возраст</span>
                       <span>
                         {calculateAge(selectedRelative.birth_date, selectedRelative.death_date)} лет
                         {selectedRelative.death_date && ' (на момент смерти)'}
@@ -1682,13 +1682,13 @@ export default function TreePage() {
                 )}
                 {selectedRelative.death_date && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Дата смерти</span>
+                    <span className="text-muted-foreground">Дата смерти</span>
                     <span>{new Date(selectedRelative.death_date).toLocaleDateString('ru-RU')}</span>
                   </div>
                 )}
                 {selectedRelative.generation !== null && selectedRelative.generation !== undefined && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Поколение</span>
+                    <span className="text-muted-foreground">Поколение</span>
                     <span className="px-2 py-0.5 rounded-full bg-orange/20 text-orange text-xs">
                       {selectedRelative.generation}
                     </span>
@@ -1696,7 +1696,7 @@ export default function TreePage() {
                 )}
                 {selectedRelative.contact_info && (
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Контакт</span>
+                    <span className="text-muted-foreground">Контакт</span>
                     <span className="truncate max-w-[150px]">{selectedRelative.contact_info}</span>
                   </div>
                 )}
@@ -1705,7 +1705,7 @@ export default function TreePage() {
               {/* Stories / Context */}
               <div className="mb-6">
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-sm font-medium text-gray-400 flex items-center gap-2">
+                  <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <BookOpen className="w-4 h-4" />
                     Истории
                   </h4>
@@ -1736,9 +1736,9 @@ export default function TreePage() {
                           }}
                         >
                           <BookOpen className="w-3 h-3 text-orange flex-shrink-0" />
-                          <p className="text-xs font-medium text-white truncate flex-1">{key}</p>
+                          <p className="text-xs font-medium text-foreground truncate flex-1">{key}</p>
                           {photoCount > 0 && (
-                            <span className="flex items-center gap-0.5 text-xs text-gray-400 flex-shrink-0">
+                            <span className="flex items-center gap-0.5 text-xs text-muted-foreground flex-shrink-0">
                               <ImageIcon className="w-3 h-3" />
                               {photoCount}
                             </span>
@@ -1754,7 +1754,7 @@ export default function TreePage() {
 
               {/* Relationships */}
               <div className="mb-6">
-                <h4 className="text-sm font-medium text-gray-400 mb-2">Связи</h4>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Связи</h4>
                 <div className="space-y-1">
                   {relationships
                     .filter(
@@ -1777,7 +1777,7 @@ export default function TreePage() {
                           <span className="text-orange flex-shrink-0">
                             {RELATIONSHIP_LABELS[rel.relationship_type] || rel.relationship_type}
                           </span>
-                          <span className="text-gray-400">→</span>
+                          <span className="text-muted-foreground">→</span>
                           <span className="flex-1 truncate">{other.first_name || other.last_name ? `${other.first_name || ''} ${other.last_name || ''}`.trim() : 'Без имени'}</span>
                           <Button
                             type="text"
@@ -1866,8 +1866,8 @@ export default function TreePage() {
             <Upload {...uploadProps}>
               {fileList.length === 0 && (
                 <div className="flex flex-col items-center justify-center p-4">
-                  <ImageIcon className="w-6 h-6 text-gray-400 mb-2" />
-                  <span className="text-xs text-gray-400">Загрузить фото</span>
+                  <ImageIcon className="w-6 h-6 text-muted-foreground mb-2" />
+                  <span className="text-xs text-muted-foreground">Загрузить фото</span>
                 </div>
               )}
             </Upload>
@@ -1924,7 +1924,7 @@ export default function TreePage() {
             <Input placeholder="Телефон или email" />
           </Form.Item>
 
-          <div className="text-xs text-gray-400 mb-4 p-3 rounded-lg bg-charcoal-800 border border-charcoal-700">
+          <div className="text-xs text-muted-foreground mb-4 p-3 rounded-lg bg-charcoal-800 border border-charcoal-700">
             💡 Можно создать «пустого» родственника (слот) без данных и заполнить информацию позже
           </div>
 
@@ -1955,8 +1955,8 @@ export default function TreePage() {
             <Upload {...uploadProps}>
               {fileList.length === 0 && (
                 <div className="flex flex-col items-center justify-center p-4">
-                  <ImageIcon className="w-6 h-6 text-gray-400 mb-2" />
-                  <span className="text-xs text-gray-400">Загрузить фото</span>
+                  <ImageIcon className="w-6 h-6 text-muted-foreground mb-2" />
+                  <span className="text-xs text-muted-foreground">Загрузить фото</span>
                 </div>
               )}
             </Upload>
@@ -2110,18 +2110,18 @@ export default function TreePage() {
               <Button
                 type="link"
                 onClick={() => setViewingStory(null)}
-                className="p-0 h-auto mb-3 text-gray-400"
+                className="p-0 h-auto mb-3 text-muted-foreground"
               >
                 ← Назад к списку
               </Button>
               <div className="p-4 rounded-lg bg-charcoal-800">
                 <h3 className="text-lg font-medium text-orange mb-3">{viewingStory.key}</h3>
-                <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed mb-4">{viewingStory.value}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed mb-4">{viewingStory.value}</p>
 
                 {/* Photo gallery */}
                 {viewingStory.media && viewingStory.media.filter((m) => m.type === 'image').length > 0 && (
                   <div className="mb-4">
-                    <h4 className="text-xs text-gray-400 mb-2">Фотографии</h4>
+                    <h4 className="text-xs text-muted-foreground mb-2">Фотографии</h4>
                     <div className="grid grid-cols-3 gap-2">
                       {viewingStory.media
                         .filter((m) => m.type === 'image')
@@ -2186,7 +2186,7 @@ export default function TreePage() {
               {/* Existing stories - only titles */}
               {stories.length > 0 && (
                 <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-400 mb-3">Существующие истории</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-3">Существующие истории</h4>
                   <div className="space-y-2 max-h-60 overflow-y-auto">
                     {stories.map((story) => {
                       const photoCount = story.media?.filter((m) => m.type === 'image').length || 0
@@ -2198,9 +2198,9 @@ export default function TreePage() {
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <BookOpen className="w-4 h-4 text-orange flex-shrink-0" />
-                            <span className="text-sm font-medium text-white truncate">{story.key}</span>
+                            <span className="text-sm font-medium text-foreground truncate">{story.key}</span>
                             {photoCount > 0 && (
-                              <span className="flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
+                              <span className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
                                 <ImageIcon className="w-3 h-3" />
                                 {photoCount}
                               </span>
@@ -2226,10 +2226,10 @@ export default function TreePage() {
 
               {/* Add new story */}
               <div className={stories.length > 0 ? "border-t border-charcoal-700 pt-4" : ""}>
-                <h4 className="text-sm font-medium text-gray-400 mb-3">Добавить новую историю</h4>
+                <h4 className="text-sm font-medium text-muted-foreground mb-3">Добавить новую историю</h4>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Название истории</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Название истории</label>
                     <Input
                       placeholder="Например: Детство, Военные годы, Профессия..."
                       value={newStoryKey}
@@ -2238,7 +2238,7 @@ export default function TreePage() {
                     />
                   </div>
                   <div className="relative">
-                    <label className="text-xs text-gray-400 mb-1 block">Текст истории</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Текст истории</label>
                     <Input.TextArea
                       placeholder="Расскажите историю..."
                       value={newStoryValue}

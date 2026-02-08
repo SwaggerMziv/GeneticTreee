@@ -243,9 +243,9 @@ const ActionCard = ({
   const getActionConfig = () => {
     if (reverted) {
       return {
-        icon: <RotateCcw className="w-4 h-4 text-gray-500" />,
+        icon: <RotateCcw className="w-4 h-4 text-muted-foreground" />,
         title: 'Отменено',
-        color: 'border-gray-700 bg-gray-800/30 opacity-60',
+        color: 'border-border bg-muted/30 opacity-60',
         details: 'Действие было отменено'
       }
     }
@@ -358,13 +358,13 @@ const ActionCard = ({
           <div className="font-semibold text-xs uppercase tracking-wider opacity-70 mb-0.5">
             {config.title}
           </div>
-          <div className="text-sm font-medium text-gray-200 truncate">{config.details}</div>
+          <div className="text-sm font-medium text-foreground truncate">{config.details}</div>
         </div>
         <div className="flex items-center gap-2">
           {isSuccess && !pending && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
           {!isSuccess && !pending && <XCircle className="w-4 h-4 text-red-500" />}
-          {pending && <Hourglass className="w-4 h-4 text-gray-400 animate-pulse" />}
-          <button className="text-gray-500 hover:text-white transition-colors">
+          {pending && <Hourglass className="w-4 h-4 text-muted-foreground animate-pulse" />}
+          <button className="text-muted-foreground hover:text-foreground transition-colors">
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         </div>
@@ -376,7 +376,7 @@ const ActionCard = ({
           <div className="bg-charcoal-950/50 rounded-lg p-3 text-xs overflow-x-auto">
             {/* Отображение для add_story */}
             {action.action_type === 'add_story' && (
-              <div className="whitespace-pre-wrap font-sans text-gray-300">
+              <div className="whitespace-pre-wrap font-sans text-muted-foreground">
                 {action.data?.value}
               </div>
             )}
@@ -385,7 +385,7 @@ const ActionCard = ({
             {['get_relative', 'get_all_relatives', 'get_relationships', 'search_relatives'].includes(action.action_type) && action.result?.data && (
               <div className="space-y-2">
                 {action.action_type === 'get_relative' ? (
-                  <div className="text-gray-300 space-y-1">
+                  <div className="text-muted-foreground space-y-1">
                     <div><strong>Имя:</strong> {action.result.data.first_name} {action.result.data.middle_name || ''} {action.result.data.last_name}</div>
                     <div><strong>Пол:</strong> {action.result.data.gender || 'не указан'}</div>
                     {action.result.data.birth_date && <div><strong>Дата рождения:</strong> {action.result.data.birth_date}</div>}
@@ -399,7 +399,7 @@ const ActionCard = ({
                   <div className="max-h-48 overflow-y-auto">
                     {Array.isArray(action.result.data) ? (
                       action.result.data.map((item: any, idx: number) => (
-                        <div key={idx} className="text-gray-300 border-b border-charcoal-700/50 py-1 last:border-0">
+                        <div key={idx} className="text-muted-foreground border-b border-charcoal-700/50 py-1 last:border-0">
                           {item.first_name && item.last_name ? (
                             <span>{item.first_name} {item.last_name} (ID: {item.id})</span>
                           ) : item.relationship_type ? (
@@ -410,7 +410,7 @@ const ActionCard = ({
                         </div>
                       ))
                     ) : (
-                      <pre className="font-mono text-gray-400">{JSON.stringify(action.result.data, null, 2)}</pre>
+                      <pre className="font-mono text-muted-foreground">{JSON.stringify(action.result.data, null, 2)}</pre>
                     )}
                   </div>
                 )}
@@ -419,7 +419,7 @@ const ActionCard = ({
 
             {/* Дефолтное отображение JSON */}
             {!['add_story', 'get_relative', 'get_all_relatives', 'get_relationships', 'search_relatives'].includes(action.action_type) && (
-              <pre className="font-mono text-gray-400">{JSON.stringify(action.data, null, 2)}</pre>
+              <pre className="font-mono text-muted-foreground">{JSON.stringify(action.data, null, 2)}</pre>
             )}
           </div>
 
@@ -479,7 +479,7 @@ const ActionCard = ({
             </>
           )}
           {pending && (
-            <div className="mt-2 text-[11px] text-gray-400 flex items-center gap-1">
+            <div className="mt-2 text-[11px] text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
               <span>Действие ожидает вашего решения</span>
             </div>
@@ -529,14 +529,14 @@ const MarkdownRenderer = ({ content }: { content: string }) => {
         // Заголовки
         if (line.startsWith('### ')) {
           return (
-            <h3 key={i} className="text-lg font-bold text-white mt-3">
+            <h3 key={i} className="text-lg font-bold text-foreground mt-3">
               {formatText(line.slice(4))}
             </h3>
           )
         }
         if (line.startsWith('## ')) {
           return (
-            <h2 key={i} className="text-xl font-bold text-white mt-4">
+            <h2 key={i} className="text-xl font-bold text-foreground mt-4">
               {formatText(line.slice(3))}
             </h2>
           )
@@ -965,13 +965,13 @@ export default function AIAssistantPage() {
                     <Sparkles className="w-3 h-3" />
                     ИИ-помощник
                   </div>
-                  <h3 className="text-2xl font-bold text-white drop-shadow-lg">ИИ-помощник для вашего древа</h3>
-                  <p className="text-sm text-gray-100/90 max-w-2xl">
+                  <h3 className="text-2xl font-bold text-foreground drop-shadow-lg">ИИ-помощник для вашего древа</h3>
+                  <p className="text-sm text-foreground/90 max-w-2xl">
                     Быстро выполняйте действия: добавляйте родственников, связи, истории и советы. Можно начать с себя или создать любую семью. Все изменения можно принять или отменить.
                   </p>
                   <div className="flex flex-wrap justify-center gap-2 max-w-3xl">
                     {['Добавить родителя', 'Создать связь', 'Написать историю', 'Подсказка по поиску', 'Проверить дубликаты', 'Уточнить пол и поколение'].map((chip) => (
-                      <span key={chip} className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs text-gray-100 backdrop-blur-sm">
+                      <span key={chip} className="px-3 py-1 rounded-full bg-white/10 border border-white/15 text-xs text-foreground backdrop-blur-sm">
                         {chip}
                       </span>
                     ))}
@@ -986,7 +986,7 @@ export default function AIAssistantPage() {
                     </Button>
                     <Button
                       onClick={handleAskAdvice}
-                      className="pointer-events-auto bg-white/10 border-white/10 text-gray-100 hover:border-orange backdrop-blur-md"
+                      className="pointer-events-auto bg-white/10 border-white/10 text-foreground hover:border-orange backdrop-blur-md"
                     >
                       Спросить совет
                     </Button>
@@ -1042,14 +1042,14 @@ export default function AIAssistantPage() {
                     <div
                       className={`p-3.5 rounded-2xl shadow-xl backdrop-blur-sm transition-all hover:shadow-2xl ${
                         msg.type === 'user'
-                          ? 'bg-orange/12 border border-orange/20 text-white rounded-tr-md'
+                          ? 'bg-orange/12 border border-orange/20 text-foreground rounded-tr-md'
                           : msg.type === 'warning'
                           ? 'bg-yellow-900/20 text-yellow-100 border border-yellow-700/50 rounded-tl-md'
                           : msg.type === 'error'
                           ? 'bg-red-900/25 text-red-100 border border-red-700/50 rounded-tl-md'
                           : msg.type === 'thinking'
                           ? 'bg-purple-900/20 text-purple-100 border border-purple-700/50 rounded-tl-md italic'
-                          : 'bg-blue-900/15 text-gray-100 border border-blue-800/40 rounded-tl-md'
+                          : 'bg-blue-500/10 dark:bg-blue-900/15 text-foreground border border-blue-500/20 dark:border-blue-800/40 rounded-tl-md'
                       }`}
                     >
                       {/* Content */}
@@ -1152,7 +1152,7 @@ export default function AIAssistantPage() {
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 shadow-lg shadow-blue-500/30 flex items-center justify-center flex-shrink-0">
                   <Bot className="w-5 h-5 text-white" />
                 </div>
-                <div className="p-4 rounded-2xl rounded-tl-md bg-charcoal-800/50 border border-charcoal-700/50 text-gray-100 shadow-xl">
+                <div className="p-4 rounded-2xl rounded-tl-md bg-charcoal-800/50 border border-charcoal-700/50 text-foreground shadow-xl">
                   <div className="prose prose-invert prose-sm max-w-none">
                     <MarkdownRenderer content={streamingContent} />
                     <span className="inline-block w-2 h-4 bg-orange ml-1 animate-pulse" />
@@ -1178,7 +1178,7 @@ export default function AIAssistantPage() {
           {/* Loading indicator */}
           {isProcessing && !streamingContent && !streamingThinking && (
             <div className="flex justify-start">
-              <div className="flex items-center gap-3 text-gray-400 ml-14 bg-charcoal-900/50 px-4 py-2.5 rounded-full border border-charcoal-700/50 shadow-lg backdrop-blur-sm">
+              <div className="flex items-center gap-3 text-muted-foreground ml-14 bg-charcoal-900/50 px-4 py-2.5 rounded-full border border-charcoal-700/50 shadow-lg backdrop-blur-sm">
                 <RefreshCw className="w-4 h-4 animate-spin text-orange" />
                 <span className="text-sm font-medium">ИИ думает...</span>
               </div>
@@ -1205,7 +1205,7 @@ export default function AIAssistantPage() {
               }}
               placeholder="Напишите команду или задайте вопрос..."
               autoSize={{ minRows: 1, maxRows: 6 }}
-              className="flex-1 bg-transparent border-none focus:shadow-none text-white resize-none py-2.5 px-3 placeholder:text-gray-500"
+              className="flex-1 bg-transparent border-none focus:shadow-none text-foreground resize-none py-2.5 px-3 placeholder:text-muted-foreground"
               maxLength={5000}
             />
             <button
@@ -1224,29 +1224,29 @@ export default function AIAssistantPage() {
               )}
             </button>
           </div>
-          <div className="px-3 pb-1 pt-2 flex items-center justify-between text-xs text-gray-300 gap-3">
+          <div className="px-3 pb-1 pt-2 flex items-center justify-between text-xs text-muted-foreground gap-3">
             <div className="flex items-center gap-4 flex-wrap">
               <Tooltip title="Автоматически применять действия ИИ без запроса подтверждения" placement="top">
                 <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/8 border border-white/15 min-h-[44px]">
-                  <span className="text-gray-100 text-[13px]">Автопринятие</span>
+                  <span className="text-foreground text-[13px]">Автопринятие</span>
                   <Switch size="default" checked={autoAccept} onChange={(v) => setAutoAccept(v)} />
                 </div>
               </Tooltip>
               <Tooltip title="Выбор модели: base=gpt-4o-mini, smart=gpt-4o" placement="top">
                 <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/8 border border-white/15 min-h-[44px]">
-                  <span className="text-gray-100 text-[13px]">Режим</span>
+                  <span className="text-foreground text-[13px]">Режим</span>
                   <Switch
                     size="default"
                     checked={mode === 'smart'}
                     onChange={(v) => setMode(v ? 'smart' : 'base')}
                   />
-                  <span className="text-gray-100 text-[13px] min-w-[130px]">
+                  <span className="text-foreground text-[13px] min-w-[130px]">
                     {mode === 'smart' ? 'Smart (gpt-4o)' : 'Base (gpt-4o-mini)'}
                   </span>
                 </div>
               </Tooltip>
             </div>
-            <span className="text-gray-200">{prompt.length} / 5000</span>
+            <span className="text-foreground">{prompt.length} / 5000</span>
           </div>
         </div>
       </main>
