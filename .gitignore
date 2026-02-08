@@ -38,3 +38,17 @@ Thumbs.db
 # Logs
 *.log
 logs/
+node_modules
+
+# Next.js build
+.next/
+
+# MCP config (local)
+.mcp.json
+
+# Root package files (not a root npm project)
+/package.json
+/package-lock.json
+
+# Claude settings
+.claude/settings.local.json

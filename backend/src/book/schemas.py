@@ -11,11 +11,20 @@ class BookStyle(str, Enum):
     CLASSIC = "classic"
     MODERN = "modern"
     VINTAGE = "vintage"
+    CUSTOM = "custom"
+
+
+class BookTheme(str, Enum):
+    """Цветовая тема книги"""
+    LIGHT = "light"
+    DARK = "dark"
 
 
 class BookGenerateRequestSchema(BaseModel):
     """Запрос на генерацию книги"""
     style: BookStyle = Field(default=BookStyle.CLASSIC, description="Стиль оформления книги")
+    theme: BookTheme = Field(default=BookTheme.LIGHT, description="Цветовая тема книги (light/dark)")
+    custom_style_description: Optional[str] = Field(None, max_length=500, description="Описание пользовательского стиля (для стиля custom)")
     include_photos: bool = Field(default=True, description="Включить фотографии")
     include_stories: bool = Field(default=True, description="Включить семейные истории")
     include_timeline: bool = Field(default=True, description="Включить хронологию")

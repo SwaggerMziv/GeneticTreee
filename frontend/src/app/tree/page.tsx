@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Button,
   Spin,
@@ -37,9 +38,11 @@ import {
   Minus,
   BookOpen,
   Send,
+  Maximize2,
+  Move,
 } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
-import { familyApi, relationshipApi } from '@/lib/api/family'
+import { familyApi, relationshipApi, storiesApi } from '@/lib/api/family'
 import {
   User as UserType,
   ApiError,
@@ -47,11 +50,12 @@ import {
   FamilyRelationship,
   FamilyRelativeCreate,
   FamilyRelationshipCreate,
+  StoryMedia,
 } from '@/types'
 import { isAuthenticated, clearAuthTokens, getErrorMessage, getProxiedImageUrl } from '@/lib/utils'
 import dayjs from 'dayjs'
 import RelativeCard from '@/components/tree/RelativeCard'
-import { RELATIONSHIP_LABELS } from '@/components/tree/ConnectionLine'
+import { RELATIONSHIP_LABELS, RELATIONSHIP_OPTIONS } from '@/components/tree/ConnectionLine'
 import InvitationModal from '@/components/family/InvitationModal'
 import { hierarchy, tree as d3Tree } from 'd3-hierarchy'
 
@@ -62,9 +66,9 @@ const GENDER_LABELS: Record<string, string> = {
   other: 'Другой',
 }
 
-// Card dimensions for positioning
-const CARD_WIDTH = 208
-const CARD_HEIGHT = 280
+// Card dimensions for positioning (must match RelativeCard sizes)
+const CARD_WIDTH = 208  // w-52 = 13rem = 208px
+const CARD_HEIGHT = 280 // Fixed height for medium cards
 const HORIZONTAL_GAP = 60  // Reduced spacing
 const VERTICAL_GAP = 100    // Reduced vertical spacing
 const EDGE_PAD = 6
@@ -89,8 +93,10 @@ const RELATIONSHIP_COLORS: Record<string, string> = {
   half_brother: '#c4b5fd',
   half_sister: '#ddd6fe',
   // Spouse (red/pink tones)
+  spouse: '#ef4444',
   husband: '#ef4444',
-  wife: '#f87171',
+  wife: '#ef4444',
+  ex_spouse: '#f87171',
   partner: '#fb923c',
   // Grandparents (amber tones)
   grandfather: '#f59e0b',
@@ -132,7 +138,7 @@ const PARENT_TYPES = new Set([
   'guardian',
 ])
 
-const SPOUSE_TYPES = new Set(['husband', 'wife', 'partner', 'spouse'])
+const SPOUSE_TYPES = new Set(['spouse', 'husband', 'wife', 'ex_spouse', 'partner'])
 const SIBLING_TYPES = new Set(['brother', 'sister', 'half_brother', 'half_sister', 'sibling'])
 const MIN_NODE_GAP = 48
 
@@ -208,11 +214,12 @@ export default function TreePage() {
   const [selectedRelative, setSelectedRelative] = useState<FamilyRelative | null>(null)
   const [fileList, setFileList] = useState<UploadFile[]>([])
 
-  // Stories state (key-value pairs)
-  const [stories, setStories] = useState<Array<{ key: string; value: string }>>([])
+  // Stories state (key-value pairs with media)
+  const [stories, setStories] = useState<Array<{ key: string; value: string; media?: StoryMedia[] }>>([])
   const [newStoryKey, setNewStoryKey] = useState('')
   const [newStoryValue, setNewStoryValue] = useState('')
-  const [viewingStory, setViewingStory] = useState<{ key: string; value: string } | null>(null)
+  const [viewingStory, setViewingStory] = useState<{ key: string; value: string; media?: StoryMedia[] } | null>(null)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
   // Filter state
   const [filterGender, setFilterGender] = useState<string | null>(null)
@@ -325,6 +332,7 @@ export default function TreePage() {
     }
 
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
   // Calculate node positions using d3-tree (hierarchical layout) with generation-aware Y
@@ -349,7 +357,7 @@ export default function TreePage() {
         if (hasStories) return false
       }
       if (searchTerm) {
-        const fullName = `${r.first_name} ${r.last_name} ${r.middle_name || ''}`.toLowerCase()
+        const fullName = `${r.first_name || ''} ${r.last_name || ''} ${r.middle_name || ''}`.toLowerCase()
         if (!fullName.includes(searchTerm.toLowerCase())) return false
       }
       return true
@@ -373,7 +381,7 @@ export default function TreePage() {
       childrenMap.get(rel.from_relative_id)!.push(rel.to_relative_id)
     })
 
-    // Determine roots (nodes without parents)
+    // Determine roots (nodes without parents in the hierarchy)
     const hasParent = new Set<number>()
     relationships.forEach((rel) => {
       if (!PARENT_TYPES.has(rel.relationship_type)) return
@@ -382,6 +390,9 @@ export default function TreePage() {
       }
     })
 
+    // Track which nodes are included in the tree hierarchy
+    const includedInHierarchy = new Set<number>()
+
     const roots = filteredRelatives.filter((r) => !hasParent.has(r.id))
     const rootNodes = roots.length > 0 ? roots : [filteredRelatives[0]]
 
@@ -389,6 +400,7 @@ export default function TreePage() {
     const buildNode = (id: number, visited: Set<number>): any => {
       if (visited.has(id)) return null
       visited.add(id)
+      includedInHierarchy.add(id)
       const rel = relMap.get(id)
       if (!rel) return null
       const childrenIds = childrenMap.get(id) || []
@@ -434,6 +446,12 @@ export default function TreePage() {
         }
       }
     })
+    // Also check filtered relatives for min generation
+    filteredRelatives.forEach((r) => {
+      if (r.generation !== null && r.generation !== undefined) {
+        minGen = Math.min(minGen, r.generation)
+      }
+    })
     if (!isFinite(minGen)) minGen = 0
 
     const shiftX = -(minX || 0) + 120
@@ -441,6 +459,9 @@ export default function TreePage() {
     const startY = 60
 
     const positions: NodePosition[] = []
+    const addedIds = new Set<number>()
+
+    // Add nodes from d3 hierarchy
     root.descendants().forEach((d: any) => {
       if (!d.data.relative || d.data.relative.id === -1) return
       const gen = d.data.relative.generation ?? d.depth
@@ -451,6 +472,24 @@ export default function TreePage() {
         x: manual ? manual.x : d.x + shiftX,
         y: manual ? manual.y : y,
       })
+      addedIds.add(d.data.relative.id)
+    })
+
+    // FIX: Add nodes that were NOT included in the hierarchy (orphan nodes)
+    // These are relatives without parent-child relationships but still need to be displayed
+    let orphanX = shiftX + (positions.length > 0 ? Math.max(...positions.map(p => p.x)) + CARD_WIDTH + HORIZONTAL_GAP * 2 : 120)
+    filteredRelatives.forEach((r) => {
+      if (addedIds.has(r.id)) return
+      const gen = r.generation ?? 0
+      const y = startY + (gen - minGen) * layerGap
+      const manual = manualPositions[r.id]
+      positions.push({
+        relative: r,
+        x: manual ? manual.x : orphanX,
+        y: manual ? manual.y : y,
+      })
+      addedIds.add(r.id)
+      orphanX += CARD_WIDTH + HORIZONTAL_GAP
     })
 
     const spaced = applyCollisionSpacing(positions)
@@ -506,11 +545,11 @@ export default function TreePage() {
     const mouseX = e.clientX - rect.left
     const mouseY = e.clientY - rect.top
 
-    // Calculate zoom factor
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1
+    // Calculate zoom factor (smoother zooming)
+    const zoomFactor = e.deltaY > 0 ? 0.92 : 1.08
 
     setScale((prevScale) => {
-      const newScale = Math.min(Math.max(prevScale * zoomFactor, 0.2), 3)
+      const newScale = Math.min(Math.max(prevScale * zoomFactor, 0.15), 3)
 
       // Adjust offset to zoom towards mouse position
       setOffset((prevOffset) => ({
@@ -518,6 +557,7 @@ export default function TreePage() {
         y: mouseY - (mouseY - prevOffset.y) * (newScale / prevScale),
       }))
 
+      hasUserPanned.current = true
       return newScale
     })
   }, [])
@@ -738,12 +778,20 @@ export default function TreePage() {
   // Open stories modal and load existing stories
   const openStoriesModal = () => {
     if (!selectedRelative) return
-    // Convert context object to stories array
+    // Convert context object to stories array (support both old and new formats)
     const contextObj = selectedRelative.context || {}
-    const storiesArray = Object.entries(contextObj).map(([key, value]) => ({
-      key,
-      value: String(value),
-    }))
+    const storiesArray = Object.entries(contextObj).map(([key, value]) => {
+      if (typeof value === 'object' && value !== null && 'text' in value) {
+        // New format with media
+        return {
+          key,
+          value: (value as { text?: string }).text || '',
+          media: (value as { media?: StoryMedia[] }).media || [],
+        }
+      }
+      // Old format - just text
+      return { key, value: String(value), media: [] }
+    })
     setStories(storiesArray)
     setNewStoryKey('')
     setNewStoryValue('')
@@ -800,6 +848,82 @@ export default function TreePage() {
     }
   }
 
+  // Upload photo to a story
+  const handleUploadStoryPhoto = async (file: File, storyKey: string) => {
+    if (!user || !selectedRelative) return
+
+    setUploadingPhoto(true)
+    try {
+      const response = await storiesApi.uploadMedia(user.id, selectedRelative.id, storyKey, file)
+      // Update local state
+      setStories((prev) =>
+        prev.map((s) =>
+          s.key === storyKey
+            ? { ...s, media: [...(s.media || []), response.media] }
+            : s
+        )
+      )
+      // Update viewing story if it's the same
+      if (viewingStory && viewingStory.key === storyKey) {
+        setViewingStory((prev) =>
+          prev ? { ...prev, media: [...(prev.media || []), response.media] } : prev
+        )
+      }
+      // Update selected relative context
+      const updatedContext = { ...(selectedRelative.context || {}) }
+      const storyData = updatedContext[storyKey]
+      if (typeof storyData === 'object' && storyData !== null) {
+        (storyData as { media?: StoryMedia[] }).media = [
+          ...((storyData as { media?: StoryMedia[] }).media || []),
+          response.media,
+        ]
+      }
+      setSelectedRelative({ ...selectedRelative, context: updatedContext })
+      message.success('Фото загружено')
+    } catch (error) {
+      const apiError = error as ApiError
+      message.error(getErrorMessage(apiError))
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  // Delete photo from a story
+  const handleDeleteStoryPhoto = async (storyKey: string, mediaUrl: string) => {
+    if (!user || !selectedRelative) return
+
+    try {
+      await storiesApi.deleteMedia(user.id, selectedRelative.id, storyKey, mediaUrl)
+      // Update local state
+      setStories((prev) =>
+        prev.map((s) =>
+          s.key === storyKey
+            ? { ...s, media: (s.media || []).filter((m) => m.url !== mediaUrl) }
+            : s
+        )
+      )
+      // Update viewing story if it's the same
+      if (viewingStory && viewingStory.key === storyKey) {
+        setViewingStory((prev) =>
+          prev ? { ...prev, media: (prev.media || []).filter((m) => m.url !== mediaUrl) } : prev
+        )
+      }
+      // Update selected relative context
+      const updatedContext = { ...(selectedRelative.context || {}) }
+      const storyData = updatedContext[storyKey]
+      if (typeof storyData === 'object' && storyData !== null) {
+        (storyData as { media?: StoryMedia[] }).media = (
+          (storyData as { media?: StoryMedia[] }).media || []
+        ).filter((m) => m.url !== mediaUrl)
+      }
+      setSelectedRelative({ ...selectedRelative, context: updatedContext })
+      message.success('Фото удалено')
+    } catch (error) {
+      const apiError = error as ApiError
+      message.error(getErrorMessage(apiError))
+    }
+  }
+
   const uploadProps: UploadProps = {
     listType: 'picture-card',
     fileList,
@@ -850,6 +974,62 @@ export default function TreePage() {
 
   const hasActiveFilters = filterGender || filterGeneration !== null || filterAlive !== null || filterHasStories !== null || searchTerm
 
+  // Fit all nodes in view
+  const fitToView = useCallback(() => {
+    if (!containerRef.current || nodePositions.length === 0) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const padding = 80
+
+    const minX = Math.min(...nodePositions.map((n) => n.x))
+    const maxX = Math.max(...nodePositions.map((n) => n.x + CARD_WIDTH))
+    const minY = Math.min(...nodePositions.map((n) => n.y))
+    const maxY = Math.max(...nodePositions.map((n) => n.y + CARD_HEIGHT))
+
+    const contentW = maxX - minX + padding * 2
+    const contentH = maxY - minY + padding * 2
+
+    const scaleX = rect.width / contentW
+    const scaleY = rect.height / contentH
+    const newScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.2), 1.5)
+
+    const canvasMinX = minX - canvasMetrics.originX - padding
+    const canvasMinY = minY - canvasMetrics.originY - padding
+
+    const ox = (rect.width - contentW * newScale) / 2 - canvasMinX * newScale
+    const oy = (rect.height - contentH * newScale) / 2 - canvasMinY * newScale
+
+    setScale(newScale)
+    setOffset({ x: ox, y: oy })
+    hasUserPanned.current = true
+  }, [nodePositions, canvasMetrics])
+
+  // Center view on all nodes
+  const centerView = useCallback(() => {
+    if (!containerRef.current || nodePositions.length === 0) return
+    const rect = containerRef.current.getBoundingClientRect()
+
+    const minX = canvasMetrics.contentMinX - canvasMetrics.originX
+    const maxX = canvasMetrics.contentMaxX - canvasMetrics.originX
+    const minY = canvasMetrics.contentMinY - canvasMetrics.originY
+    const maxY = canvasMetrics.contentMaxY - canvasMetrics.originY
+
+    const contentW = maxX - minX
+    const contentH = maxY - minY
+
+    const ox = (rect.width - contentW * scale) / 2 - minX * scale
+    const oy = (rect.height - contentH * scale) / 2 - minY * scale
+
+    setOffset({ x: ox, y: oy })
+    hasUserPanned.current = true
+  }, [nodePositions, canvasMetrics, scale])
+
+  // Reset manual positions
+  const resetPositions = useCallback(() => {
+    setManualPositions({})
+    autoCentered.current = false
+    hasUserPanned.current = false
+  }, [])
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-charcoal-950">
@@ -859,79 +1039,49 @@ export default function TreePage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-charcoal-950 overflow-hidden">
-      {/* Header */}
-      <header className="border-b border-charcoal-700 bg-charcoal-900/80 backdrop-blur-sm z-50 flex-shrink-0">
-        <nav className="max-w-full mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Назад</span>
-            </Link>
-            <div className="h-6 w-px bg-charcoal-700" />
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center">
-                <TreePine className="w-5 h-5 text-white" strokeWidth={2.5} />
-              </div>
-              <span className="font-serif text-lg font-bold">
-                <span className="text-white">Genetic</span>
-                <span className="gradient-text">Tree</span>
-              </span>
-            </div>
-          </div>
+    <div className="h-[calc(100vh-3.5rem)] flex flex-col bg-charcoal-950 overflow-hidden">
+      {/* Floating Toolbar */}
+      <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-charcoal-900/90 backdrop-blur-sm border-b border-charcoal-700">
+        {/* Search */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            placeholder="Поиск родственников..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 w-full bg-charcoal-800 border-charcoal-700 h-10"
+            size="middle"
+          />
+        </div>
 
-          {/* Toolbar */}
-          <div className="flex items-center gap-2">
-            {/* Search */}
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
-                placeholder="Поиск..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 w-40 bg-charcoal-800 border-charcoal-700 h-8"
-                size="small"
-              />
-            </div>
-
-            {/* Zoom controls */}
-            <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-charcoal-800 border border-charcoal-700">
-              <Button
-                type="text"
-                size="small"
-                icon={<ZoomOut className="w-4 h-4" />}
-                onClick={() => setScale((s) => Math.max(s * 0.9, 0.3))}
-              />
-              <span className="text-xs text-gray-400 w-10 text-center">
-                {Math.round(scale * 100)}%
-              </span>
-              <Button
-                type="text"
-                size="small"
-                icon={<ZoomIn className="w-4 h-4" />}
-                onClick={() => setScale((s) => Math.min(s * 1.1, 2))}
-              />
-            </div>
-
-
-            {/* User menu */}
-            <div className="hidden sm:flex items-center gap-2 px-2 py-1 rounded-lg bg-charcoal-800 border border-charcoal-700">
-              <User className="w-4 h-4 text-gray-400" />
-              <span className="text-xs">{user?.username}</span>
-            </div>
+        {/* Zoom controls */}
+        <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-charcoal-800 border border-charcoal-700">
+          <Tooltip title="Уменьшить">
             <Button
-              icon={<LogOut className="w-4 h-4" />}
-              onClick={handleLogout}
               type="text"
               size="small"
-              className="text-gray-400 hover:text-white"
+              icon={<ZoomOut className="w-4 h-4" />}
+              onClick={() => setScale((s) => Math.max(s * 0.85, 0.15))}
             />
-          </div>
-        </nav>
-      </header>
+          </Tooltip>
+          <Tooltip title="Сбросить к 100%">
+            <button
+              className="text-xs text-gray-400 hover:text-white w-12 text-center transition-colors"
+              onClick={() => setScale(1)}
+            >
+              {Math.round(scale * 100)}%
+            </button>
+          </Tooltip>
+          <Tooltip title="Увеличить">
+            <Button
+              type="text"
+              size="small"
+              icon={<ZoomIn className="w-4 h-4" />}
+              onClick={() => setScale((s) => Math.min(s * 1.15, 3))}
+            />
+          </Tooltip>
+        </div>
+      </div>
 
       {/* Main Area */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -1228,7 +1378,8 @@ export default function TreePage() {
                       return `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`
                     }
 
-                    return relationships.map((rel) => {
+                    // Calculate all connection data first
+                    const connectionData = relationships.map((rel) => {
                       const fromPos = getPosition(rel.from_relative_id)
                       const toPos = getPosition(rel.to_relative_id)
                       if (!fromPos || !toPos) return null
@@ -1254,17 +1405,15 @@ export default function TreePage() {
 
                       if (isSpouse) {
                         const fromRight = fromPos.x <= toPos.x
-                        // Connect to exact edges
                         const sx = toCanvasX(fromRight ? fromPos.x + CARD_WIDTH : fromPos.x)
                         const ex = toCanvasX(fromRight ? toPos.x : toPos.x + CARD_WIDTH)
-                        const sy = toCanvasY(fromPos.y + CARD_HEIGHT * 0.25) // Connect slightly higher
+                        const sy = toCanvasY(fromPos.y + CARD_HEIGHT * 0.25)
                         const ey = toCanvasY(toPos.y + CARD_HEIGHT * 0.25)
                         const controlY = Math.min(sy, ey) - 40 - Math.abs(dupOffset) * 0.4
                         startX = sx
                         startY = sy
                         endX = ex
                         endY = ey
-                        // Orthogonal path for clear "on the wire" label
                         pathD = `M ${sx} ${sy} V ${controlY} H ${ex} V ${ey}`
                         labelX = (sx + ex) / 2
                         labelY = controlY
@@ -1298,7 +1447,6 @@ export default function TreePage() {
                       } else {
                         const upper = fromPos.y < toPos.y ? fromPos : toPos
                         const lower = fromPos.y < toPos.y ? toPos : fromPos
-                        // Connect from Bottom to Top (exact edges)
                         const sx = toCanvasX(upper.x + CARD_WIDTH / 2 + dupOffset)
                         const sy = toCanvasY(upper.y + CARD_HEIGHT)
                         const ex = toCanvasX(lower.x + CARD_WIDTH / 2 + dupOffset)
@@ -1313,113 +1461,153 @@ export default function TreePage() {
                       }
 
                       const label = RELATIONSHIP_LABELS[rel.relationship_type] || rel.relationship_type
-                      const labelWidth = Math.max(60, label.length * 7 + 16)
+                      const labelWidth = Math.max(70, label.length * 8 + 20)
 
-                      return (
-                        <g key={rel.id} className="connection-group">
-                          {/* Glow effect */}
-                          <path
-                            d={pathD}
-                            fill="none"
-                            stroke={wireColor}
-                            strokeWidth="8"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            opacity="0.12"
-                          />
-                          {/* Main wire with arrow */}
-                          <path
-                            d={pathD}
-                            fill="none"
-                            stroke={wireColor}
-                            strokeWidth="2.4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            markerEnd={`url(#arrow-${rel.relationship_type})`}
-                          />
-                          {/* Start dot */}
-                          <circle cx={startX} cy={startY} r="4" fill={wireColor} filter="url(#glow)" />
-                          {/* Label background */}
-                          <rect
-                            x={labelX - labelWidth / 2}
-                            y={labelY - 11}
-                            width={labelWidth}
-                            height="22"
-                            rx="11"
-                            fill="#0f0f0f"
-                            stroke={wireColor}
-                            strokeWidth="1.2"
-                            opacity="0.9"
-                          />
-                          {/* Label text */}
-                          <text
-                            x={labelX}
-                            y={labelY + 4}
-                            textAnchor="middle"
-                            fontSize="10"
-                            fill={wireColor}
-                            fontWeight="600"
-                            style={{ fontFamily: 'Inter, sans-serif' }}
-                          >
-                            {label}
-                          </text>
+                      return { rel, startX, startY, endX, endY, pathD, labelX, labelY, label, labelWidth, wireColor }
+                    }).filter((d): d is NonNullable<typeof d> => d !== null)
+
+                    return (
+                      <>
+                        {/* First layer: all lines */}
+                        <g className="connection-lines">
+                          {connectionData.map(({ rel, startX, startY, pathD, wireColor }) => (
+                            <g key={`line-${rel.id}`}>
+                              <path
+                                d={pathD}
+                                fill="none"
+                                stroke={wireColor}
+                                strokeWidth="8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                opacity="0.12"
+                              />
+                              <path
+                                d={pathD}
+                                fill="none"
+                                stroke={wireColor}
+                                strokeWidth="2.4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                markerEnd={`url(#arrow-${rel.relationship_type})`}
+                              />
+                              <circle cx={startX} cy={startY} r="4" fill={wireColor} filter="url(#glow)" />
+                            </g>
+                          ))}
                         </g>
-                      )
-                    })
+                        {/* Second layer: all labels (on top of all lines) */}
+                        <g className="connection-labels">
+                          {connectionData.map(({ rel, labelX, labelY, label, labelWidth, wireColor }) => (
+                            <g key={`label-${rel.id}`}>
+                              <rect
+                                x={labelX - labelWidth / 2}
+                                y={labelY - 12}
+                                width={labelWidth}
+                                height="24"
+                                rx="12"
+                                fill="#0a0a0a"
+                                stroke={wireColor}
+                                strokeWidth="1.5"
+                              />
+                              <text
+                                x={labelX}
+                                y={labelY + 4}
+                                textAnchor="middle"
+                                fontSize="11"
+                                fill={wireColor}
+                                fontWeight="600"
+                                style={{ fontFamily: 'Inter, sans-serif' }}
+                              >
+                                {label}
+                              </text>
+                            </g>
+                          ))}
+                        </g>
+                      </>
+                    )
                   })()}
                 </svg>
               )}
 
               {/* Relative Cards */}
-              {nodePositions.map((node) => (
-                <div
-                  key={node.relative.id}
-                  className="absolute relative-card select-none"
-                  style={{
-                    left: toCanvasX(node.x),
-                    top: toCanvasY(node.y),
-                    width: CARD_WIDTH,
-                    height: CARD_HEIGHT,
-                    zIndex: 10,
-                    touchAction: 'none',
-                  }}
-                  onMouseDown={(e) => {
-                    e.stopPropagation()
-                    e.preventDefault()
-                    beginNodeDrag(e.clientX, e.clientY, node.relative.id)
-                  }}
-                  onTouchStart={(e) => {
-                    const t = e.touches[0]
-                    if (!t) return
-                    e.stopPropagation()
-                    beginNodeDrag(t.clientX, t.clientY, node.relative.id)
-                  }}
-                >
-                  <RelativeCard
-                    relative={node.relative}
-                    isSelected={selectedRelative?.id === node.relative.id}
-                    onClick={() => setSelectedRelative(node.relative)}
-                    size="medium"
-                  />
-                </div>
-              ))}
+              {nodePositions.map((node) => {
+                const isDraggingThis = draggingNodeId === node.relative.id
+                return (
+                  <div
+                    key={node.relative.id}
+                    className={`absolute relative-card select-none transition-shadow ${
+                      isDraggingThis
+                        ? 'cursor-grabbing z-50 shadow-2xl shadow-orange/30'
+                        : 'cursor-grab hover:shadow-lg hover:shadow-orange/10'
+                    }`}
+                    style={{
+                      left: toCanvasX(node.x),
+                      top: toCanvasY(node.y),
+                      width: CARD_WIDTH,
+                      height: CARD_HEIGHT,
+                      zIndex: isDraggingThis ? 50 : 10,
+                      touchAction: 'none',
+                      transform: isDraggingThis ? 'scale(1.02)' : 'scale(1)',
+                      transition: isDraggingThis ? 'none' : 'transform 0.15s ease, box-shadow 0.15s ease',
+                    }}
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      e.preventDefault()
+                      beginNodeDrag(e.clientX, e.clientY, node.relative.id)
+                    }}
+                    onTouchStart={(e) => {
+                      const t = e.touches[0]
+                      if (!t) return
+                      e.stopPropagation()
+                      beginNodeDrag(t.clientX, t.clientY, node.relative.id)
+                    }}
+                  >
+                    <RelativeCard
+                      relative={node.relative}
+                      isSelected={selectedRelative?.id === node.relative.id}
+                      onClick={() => setSelectedRelative(node.relative)}
+                      size="medium"
+                    />
+                  </div>
+                )
+              })}
 
             </div>
           )}
 
-          {/* Reset view button - правый нижний угол */}
-          <div className="absolute bottom-4 right-4 control-panel">
-            <Tooltip title="Сбросить вид">
+          {/* Control buttons - правый нижний угол */}
+          <div className="absolute bottom-4 right-4 control-panel flex flex-col gap-2">
+            <Tooltip title="Показать всё" placement="left">
+              <Button
+                className="bg-charcoal-800 border-charcoal-700"
+                icon={<Maximize2 className="w-4 h-4" />}
+                onClick={fitToView}
+              />
+            </Tooltip>
+            <Tooltip title="Центрировать" placement="left">
+              <Button
+                className="bg-charcoal-800 border-charcoal-700"
+                icon={<Move className="w-4 h-4" />}
+                onClick={centerView}
+              />
+            </Tooltip>
+            <Tooltip title="Сбросить позиции карточек" placement="left">
               <Button
                 className="bg-charcoal-800 border-charcoal-700"
                 icon={<RotateCcw className="w-4 h-4" />}
-                onClick={() => {
-                  setOffset({ x: 0, y: 0 })
-                  setScale(1)
-                }}
+                onClick={resetPositions}
               />
             </Tooltip>
           </div>
+
+          {/* Hint about dragging */}
+          {nodePositions.length > 0 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 control-panel">
+              <div className="px-3 py-1.5 rounded-full bg-charcoal-800/80 border border-charcoal-700 text-xs text-gray-400 flex items-center gap-2">
+                <Move className="w-3 h-3" />
+                <span>Перетащите карточки для изменения позиции</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Selected Relative Panel */}
@@ -1440,16 +1628,17 @@ export default function TreePage() {
               {/* Photo */}
               <div className="w-full aspect-square rounded-xl overflow-hidden bg-charcoal-800 mb-4 relative">
                 {selectedRelative.image_url ? (
-                  <img
+                  <Image
                     src={getProxiedImageUrl(selectedRelative.image_url) || ''}
-                    alt={selectedRelative.first_name}
-                    className="w-full h-full object-cover"
+                    alt={selectedRelative.first_name || 'Родственник'}
+                    fill
+                    className="object-cover"
+                    unoptimized
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-charcoal-700 to-charcoal-800">
                     <span className="text-5xl font-bold text-gray-500">
-                      {selectedRelative.first_name.charAt(0)}
-                      {selectedRelative.last_name?.charAt(0) || ''}
+                      {selectedRelative.first_name?.charAt(0) || selectedRelative.last_name?.charAt(0) || '?'}
                     </span>
                   </div>
                 )}
@@ -1458,7 +1647,10 @@ export default function TreePage() {
               {/* Name */}
               <div className="mb-4">
                 <h2 className="text-xl font-bold">
-                  {selectedRelative.first_name} {selectedRelative.last_name}
+                  {selectedRelative.first_name || selectedRelative.last_name
+                    ? `${selectedRelative.first_name || ''} ${selectedRelative.last_name || ''}`.trim()
+                    : <span className="text-gray-500 italic">Без имени</span>
+                  }
                 </h2>
                 {selectedRelative.middle_name && (
                   <p className="text-gray-400">{selectedRelative.middle_name}</p>
@@ -1528,19 +1720,32 @@ export default function TreePage() {
                 </div>
                 {selectedRelative.context && Object.keys(selectedRelative.context).length > 0 ? (
                   <div className="space-y-1.5">
-                    {Object.entries(selectedRelative.context).map(([key, value]) => (
-                      <div
-                        key={key}
-                        className="p-2 rounded-lg bg-charcoal-800 cursor-pointer hover:bg-charcoal-700 transition-colors flex items-center gap-2"
-                        onClick={() => {
-                          setViewingStory({ key, value: String(value) })
-                          setStoriesModal(true)
-                        }}
-                      >
-                        <BookOpen className="w-3 h-3 text-orange flex-shrink-0" />
-                        <p className="text-xs font-medium text-white truncate">{key}</p>
-                      </div>
-                    ))}
+                    {Object.entries(selectedRelative.context).map(([key, value]) => {
+                      // Извлекаем текст и media из истории (поддержка обоих форматов)
+                      const storyData = typeof value === 'object' && value !== null && 'text' in value
+                        ? { key, value: (value as { text?: string }).text || '', media: (value as { media?: StoryMedia[] }).media || [] }
+                        : { key, value: String(value), media: [] as StoryMedia[] }
+                      const photoCount = storyData.media.filter((m) => m.type === 'image').length
+                      return (
+                        <div
+                          key={key}
+                          className="p-2 rounded-lg bg-charcoal-800 cursor-pointer hover:bg-charcoal-700 transition-colors flex items-center gap-2"
+                          onClick={() => {
+                            setViewingStory(storyData)
+                            setStoriesModal(true)
+                          }}
+                        >
+                          <BookOpen className="w-3 h-3 text-orange flex-shrink-0" />
+                          <p className="text-xs font-medium text-white truncate flex-1">{key}</p>
+                          {photoCount > 0 && (
+                            <span className="flex items-center gap-0.5 text-xs text-gray-400 flex-shrink-0">
+                              <ImageIcon className="w-3 h-3" />
+                              {photoCount}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 ) : (
                   <p className="text-xs text-gray-500">Нет историй</p>
@@ -1573,7 +1778,7 @@ export default function TreePage() {
                             {RELATIONSHIP_LABELS[rel.relationship_type] || rel.relationship_type}
                           </span>
                           <span className="text-gray-400">→</span>
-                          <span className="flex-1 truncate">{other.first_name} {other.last_name}</span>
+                          <span className="flex-1 truncate">{other.first_name || other.last_name ? `${other.first_name || ''} ${other.last_name || ''}`.trim() : 'Без имени'}</span>
                           <Button
                             type="text"
                             size="small"
@@ -1672,16 +1877,14 @@ export default function TreePage() {
             <Form.Item
               name="first_name"
               label="Имя"
-              rules={[{ required: true, message: 'Введите имя' }]}
             >
-              <Input placeholder="Имя" />
+              <Input placeholder="Имя (необязательно)" />
             </Form.Item>
             <Form.Item
               name="last_name"
               label="Фамилия"
-              rules={[{ required: true, message: 'Введите фамилию' }]}
             >
-              <Input placeholder="Фамилия" />
+              <Input placeholder="Фамилия (необязательно)" />
             </Form.Item>
           </div>
 
@@ -1721,6 +1924,10 @@ export default function TreePage() {
             <Input placeholder="Телефон или email" />
           </Form.Item>
 
+          <div className="text-xs text-gray-400 mb-4 p-3 rounded-lg bg-charcoal-800 border border-charcoal-700">
+            💡 Можно создать «пустого» родственника (слот) без данных и заполнить информацию позже
+          </div>
+
           <Form.Item className="mb-0 flex justify-end gap-2">
             <Button onClick={() => setAddRelativeModal(false)}>Отмена</Button>
             <Button type="primary" htmlType="submit">
@@ -1759,16 +1966,14 @@ export default function TreePage() {
             <Form.Item
               name="first_name"
               label="Имя"
-              rules={[{ required: true, message: 'Введите имя' }]}
             >
-              <Input placeholder="Имя" />
+              <Input placeholder="Имя (необязательно)" />
             </Form.Item>
             <Form.Item
               name="last_name"
               label="Фамилия"
-              rules={[{ required: true, message: 'Введите фамилию' }]}
             >
-              <Input placeholder="Фамилия" />
+              <Input placeholder="Фамилия (необязательно)" />
             </Form.Item>
           </div>
 
@@ -1836,8 +2041,8 @@ export default function TreePage() {
           >
             <Select placeholder="Выберите родственника" showSearch optionFilterProp="label">
               {relatives.map((r) => (
-                <Select.Option key={r.id} value={r.id} label={`${r.first_name} ${r.last_name}`}>
-                  {r.first_name} {r.last_name}
+                <Select.Option key={r.id} value={r.id} label={`${r.first_name || ''} ${r.last_name || ''}`.trim() || 'Без имени'}>
+                  {r.first_name || r.last_name ? `${r.first_name || ''} ${r.last_name || ''}`.trim() : 'Без имени'}
                 </Select.Option>
               ))}
             </Select>
@@ -1849,7 +2054,7 @@ export default function TreePage() {
             rules={[{ required: true, message: 'Выберите тип связи' }]}
           >
             <Select placeholder="Выберите тип связи" showSearch optionFilterProp="label">
-              {Object.entries(RELATIONSHIP_LABELS).map(([value, label]) => (
+              {Object.entries(RELATIONSHIP_OPTIONS).map(([value, label]) => (
                 <Select.Option key={value} value={value} label={label}>
                   {label}
                 </Select.Option>
@@ -1864,8 +2069,8 @@ export default function TreePage() {
           >
             <Select placeholder="Выберите родственника" showSearch optionFilterProp="label">
               {relatives.map((r) => (
-                <Select.Option key={r.id} value={r.id} label={`${r.first_name} ${r.last_name}`}>
-                  {r.first_name} {r.last_name}
+                <Select.Option key={r.id} value={r.id} label={`${r.first_name || ''} ${r.last_name || ''}`.trim() || 'Без имени'}>
+                  {r.first_name || r.last_name ? `${r.first_name || ''} ${r.last_name || ''}`.trim() : 'Без имени'}
                 </Select.Option>
               ))}
             </Select>
@@ -1911,7 +2116,69 @@ export default function TreePage() {
               </Button>
               <div className="p-4 rounded-lg bg-charcoal-800">
                 <h3 className="text-lg font-medium text-orange mb-3">{viewingStory.key}</h3>
-                <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{viewingStory.value}</p>
+                <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed mb-4">{viewingStory.value}</p>
+
+                {/* Photo gallery */}
+                {viewingStory.media && viewingStory.media.filter((m) => m.type === 'image').length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-xs text-gray-400 mb-2">Фотографии</h4>
+                    <div className="grid grid-cols-3 gap-2">
+                      {viewingStory.media
+                        .filter((m) => m.type === 'image')
+                        .map((media, idx) => (
+                          <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden">
+                            <Image
+                              src={getProxiedImageUrl(media.url) || ''}
+                              alt=""
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                            <Button
+                              type="text"
+                              danger
+                              size="small"
+                              icon={<Trash2 className="w-3 h-3" />}
+                              onClick={() => handleDeleteStoryPhoto(viewingStory.key, media.url)}
+                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 hover:bg-black/70 min-w-0 p-1"
+                            />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload photo button */}
+                {(!viewingStory.media || viewingStory.media.filter((m) => m.type === 'image').length < 5) && (
+                  <div className="border-t border-charcoal-700 pt-4">
+                    <Upload
+                      accept="image/*"
+                      showUploadList={false}
+                      beforeUpload={(file) => {
+                        const isImage = file.type.startsWith('image/')
+                        if (!isImage) {
+                          message.error('Можно загружать только изображения')
+                          return false
+                        }
+                        const isLt10M = file.size / 1024 / 1024 < 10
+                        if (!isLt10M) {
+                          message.error('Изображение должно быть меньше 10MB')
+                          return false
+                        }
+                        handleUploadStoryPhoto(file, viewingStory.key)
+                        return false
+                      }}
+                    >
+                      <Button
+                        icon={<ImageIcon className="w-4 h-4" />}
+                        loading={uploadingPhoto}
+                        className="w-full"
+                      >
+                        Добавить фото ({viewingStory.media?.filter((m) => m.type === 'image').length || 0}/5)
+                      </Button>
+                    </Upload>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -1921,29 +2188,38 @@ export default function TreePage() {
                 <div className="mb-6">
                   <h4 className="text-sm font-medium text-gray-400 mb-3">Существующие истории</h4>
                   <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {stories.map((story) => (
-                      <div
-                        key={story.key}
-                        className="p-3 rounded-lg bg-charcoal-800 group flex items-center justify-between gap-2 cursor-pointer hover:bg-charcoal-700 transition-colors"
-                        onClick={() => setViewingStory(story)}
-                      >
-                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                          <BookOpen className="w-4 h-4 text-orange flex-shrink-0" />
-                          <span className="text-sm font-medium text-white truncate">{story.key}</span>
+                    {stories.map((story) => {
+                      const photoCount = story.media?.filter((m) => m.type === 'image').length || 0
+                      return (
+                        <div
+                          key={story.key}
+                          className="p-3 rounded-lg bg-charcoal-800 group flex items-center justify-between gap-2 cursor-pointer hover:bg-charcoal-700 transition-colors"
+                          onClick={() => setViewingStory(story)}
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <BookOpen className="w-4 h-4 text-orange flex-shrink-0" />
+                            <span className="text-sm font-medium text-white truncate">{story.key}</span>
+                            {photoCount > 0 && (
+                              <span className="flex items-center gap-1 text-xs text-gray-400 flex-shrink-0">
+                                <ImageIcon className="w-3 h-3" />
+                                {photoCount}
+                              </span>
+                            )}
+                          </div>
+                          <Button
+                            type="text"
+                            danger
+                            size="small"
+                            icon={<Trash2 className="w-4 h-4" />}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRemoveStory(story.key)
+                            }}
+                            className="opacity-60 hover:opacity-100 flex-shrink-0"
+                          />
                         </div>
-                        <Button
-                          type="text"
-                          danger
-                          size="small"
-                          icon={<Trash2 className="w-4 h-4" />}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleRemoveStory(story.key)
-                          }}
-                          className="opacity-60 hover:opacity-100 flex-shrink-0"
-                        />
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -1996,7 +2272,7 @@ export default function TreePage() {
           visible={invitationModal}
           onClose={() => setInvitationModal(false)}
           relativeId={selectedRelative.id}
-          relativeName={`${selectedRelative.first_name} ${selectedRelative.last_name}`}
+          relativeName={selectedRelative.first_name || selectedRelative.last_name ? `${selectedRelative.first_name || ''} ${selectedRelative.last_name || ''}`.trim() : 'Родственник'}
           userId={user.id}
         />
       )}

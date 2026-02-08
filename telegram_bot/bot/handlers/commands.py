@@ -5,7 +5,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
-from bot.keyboards import get_main_menu_keyboard
+from bot.keyboards import get_main_menu_keyboard, get_story_confirmation_keyboard
 from bot.states import InterviewStates
 from services.api import backend_api
 from services.ai import ai_service
@@ -20,25 +20,23 @@ router = Router()
 async def cmd_help(message: Message):
     """Help command."""
     await message.answer(
-        "📚 **Инструкция по использованию бота**\n\n"
-        "**Основные команды:**\n"
-        "• /interview - начать или продолжить интервью\n"
-        "• /stats - посмотреть сколько историй сохранено\n"
-        "• /stop - остановить текущее интервью\n"
-        "• /settings - настройки уведомлений\n\n"
-        "**Как проходит интервью:**\n"
-        "1. Я задаю вам вопросы о вашей жизни\n"
-        "2. Вы отвечаете текстом или голосовым сообщением\n"
-        "3. После каждых нескольких ответов я создаю историю\n"
-        "4. Истории сохраняются в вашем семейном древе\n\n"
-        "**Советы:**\n"
-        "• Отвечайте подробно - чем больше деталей, тем интереснее история\n"
-        "• Называйте имена людей, места, даты\n"
-        "• Делитесь эмоциями - что вы чувствовали\n"
-        "• Голосовые сообщения удобны для длинных историй\n\n"
-        "**Напоминания:**\n"
-        "Я буду присылать вам вопросы раз в 12 часов. "
-        "Отключить их можно в /settings.",
+        "*Как пользоваться ботом*\n\n"
+        "*Команды:*\n"
+        "/interview — начать интервью\n"
+        "/stats — статистика историй\n"
+        "/stop — завершить интервью\n"
+        "/settings — настройки\n\n"
+        "*Процесс создания истории:*\n"
+        "1. Отвечаете на 3+ вопросов\n"
+        "2. Появляется кнопка «Создать историю»\n"
+        "3. Проверяете результат\n"
+        "4. Сохраняете или отклоняете\n\n"
+        "*Советы для хороших историй:*\n"
+        "• Называйте *имена* людей\n"
+        "• Указывайте *места* и *даты*\n"
+        "• Описывайте *детали*: погоду, одежду, обстановку\n"
+        "• Делитесь *эмоциями*\n\n"
+        "Короткие ответы типа «да/нет/не помню» не дадут хорошей истории.",
         reply_markup=get_main_menu_keyboard(),
         parse_mode="Markdown",
     )
@@ -86,43 +84,64 @@ async def cmd_stats(message: Message, state: FSMContext):
 @router.message(Command("stop"))
 @router.message(F.text == "🛑 Завершить")
 async def cmd_stop(message: Message, state: FSMContext):
-    """Stop interview and save remaining messages as story."""
+    """Stop interview - offer to create story if enough content."""
     current_state = await state.get_state()
     data = await state.get_data()
 
-    if current_state != InterviewStates.waiting_answer.state:
+    if current_state not in [InterviewStates.waiting_answer.state, InterviewStates.confirming_story.state]:
         await message.answer(
-            "Интервью не было начато. Нажмите 'Начать интервью' чтобы начать.",
+            "Интервью не начато.\nНажмите «Начать интервью».",
             reply_markup=get_main_menu_keyboard(),
         )
         return
 
     messages = data.get("interview_messages", [])
     relative_id = data.get("relative_id")
+    question_count = data.get("question_count", 0)
 
-    # Try to create story from remaining messages
-    if len(messages) >= 2 and relative_id:
-        await message.answer("⏳ Сохраняю вашу историю...")
+    # If enough messages, offer to create story
+    if len(messages) >= 4 and relative_id and question_count >= 3:
+        await message.answer("Анализирую ваши ответы...")
 
         story_result = await ai_service.create_story(messages)
         if story_result:
-            title, story_text = story_result
-            success = await backend_api.save_story(relative_id, title, story_text)
-            if success:
+            title, content, has_content = story_result
+
+            if has_content:
+                # Store for confirmation
+                await state.update_data(
+                    pending_story_title=title,
+                    pending_story_text=content,
+                )
+                await state.set_state(InterviewStates.confirming_story)
+
+                preview = content[:1500] + "..." if len(content) > 1500 else content
+                preview = preview.replace("_", "\\_").replace("*", "\\*")
+
                 await message.answer(
-                    f"✅ История сохранена!\n\n" f"📖 **{title}**",
+                    f"*{title}*\n\n{preview}\n\n---\nСохранить эту историю?",
+                    parse_mode="Markdown",
+                    reply_markup=get_story_confirmation_keyboard(),
+                )
+                return
+            else:
+                await message.answer(
+                    f"Недостаточно деталей для истории.\n_{content}_",
                     parse_mode="Markdown",
                 )
 
-    await state.update_data(interview_messages=[])
+    # Clear and exit
+    await state.update_data(
+        interview_messages=[],
+        question_count=0,
+        pending_story_title=None,
+        pending_story_text=None,
+    )
     await state.set_state(None)
-
-    # Update interaction time
     user_storage.update_user_interaction(message.from_user.id)
 
     await message.answer(
-        "Интервью завершено. Спасибо за ваши истории!\n\n"
-        "Когда захотите продолжить - нажмите 'Начать интервью'.",
+        "Интервью завершено.\nНажмите «Начать интервью» чтобы продолжить.",
         reply_markup=get_main_menu_keyboard(),
     )
 

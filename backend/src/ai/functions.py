@@ -68,9 +68,9 @@ MUTUALLY_EXCLUSIVE_RELATIONSHIPS = [
     # Father and mother
     ({RelationshipType.FATHER, RelationshipType.STEPFATHER, RelationshipType.ADOPTIVE_FATHER},
      {RelationshipType.MOTHER, RelationshipType.STEPMOTHER, RelationshipType.ADOPTIVE_MOTHER}),
-    # Husband and wife
-    ({RelationshipType.HUSBAND, RelationshipType.EX_HUSBAND},
-     {RelationshipType.WIFE, RelationshipType.EX_WIFE}),
+    # Spouse relationships (husband/wife are deprecated, use spouse)
+    ({RelationshipType.SPOUSE, RelationshipType.EX_SPOUSE, RelationshipType.HUSBAND, RelationshipType.EX_HUSBAND},
+     {RelationshipType.SPOUSE, RelationshipType.EX_SPOUSE, RelationshipType.WIFE, RelationshipType.EX_WIFE}),
     # Son and daughter
     ({RelationshipType.SON, RelationshipType.STEPSON, RelationshipType.ADOPTIVE_SON},
      {RelationshipType.DAUGHTER, RelationshipType.STEPDAUGHTER, RelationshipType.ADOPTIVE_DAUGHTER}),
@@ -293,8 +293,10 @@ def get_inverse_relationship(relationship_type: str, from_gender: str) -> str:
         'daughter': {'male': 'father', 'female': 'mother', 'other': 'parent'},
         'brother': {'male': 'brother', 'female': 'sister', 'other': 'sibling'},
         'sister': {'male': 'brother', 'female': 'sister', 'other': 'sibling'},
-        'husband': {'male': 'husband', 'female': 'wife', 'other': 'partner'},
-        'wife': {'male': 'husband', 'female': 'wife', 'other': 'partner'},
+        'spouse': {'male': 'spouse', 'female': 'spouse', 'other': 'spouse'},
+        'ex_spouse': {'male': 'ex_spouse', 'female': 'ex_spouse', 'other': 'ex_spouse'},
+        'husband': {'male': 'spouse', 'female': 'spouse', 'other': 'spouse'},
+        'wife': {'male': 'spouse', 'female': 'spouse', 'other': 'spouse'},
         'grandfather': {'male': 'grandson', 'female': 'granddaughter', 'other': 'grandchild'},
         'grandmother': {'male': 'grandson', 'female': 'granddaughter', 'other': 'grandchild'},
         'grandson': {'male': 'grandfather', 'female': 'grandmother', 'other': 'grandparent'},

@@ -34,6 +34,9 @@ MAX_FILE_SIZES = {
     StoryMediaType.AUDIO: 50 * 1024 * 1024,   # 50 MB
 }
 
+# Максимальное количество изображений на одну историю
+MAX_IMAGES_PER_STORY = 5
+
 
 class StoryService:
     """Сервис для управления историями родственников"""
@@ -278,9 +281,18 @@ class StoryService:
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
 
-        # Определяем тип медиа
+        # Определяем тип медиа предварительно для проверки лимита
         content_type = file.content_type or "application/octet-stream"
         media_type = self._detect_media_type(content_type)
+
+        # Проверка лимита изображений
+        if media_type == StoryMediaType.IMAGE:
+            current_images = sum(1 for m in story_data.get("media", []) if m.get("type") == "image")
+            if current_images >= MAX_IMAGES_PER_STORY:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Достигнут лимит фотографий ({MAX_IMAGES_PER_STORY}). Удалите существующие для добавления новых."
+                )
 
         # Читаем файл для проверки размера
         file_content = await file.read()

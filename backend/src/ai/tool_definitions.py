@@ -64,21 +64,21 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "create_relative",
-            "description": "Создать нового родственника",
+            "description": "Создать нового родственника. Можно создать пустого родственника (слот) без имени и фамилии - все поля опциональны.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "first_name": {
                         "type": "string",
-                        "description": "Имя"
+                        "description": "Имя (опционально)"
                     },
                     "last_name": {
                         "type": "string",
-                        "description": "Фамилия"
+                        "description": "Фамилия (опционально)"
                     },
                     "middle_name": {
                         "type": "string",
-                        "description": "Отчество (для русских имён)"
+                        "description": "Отчество (для русских имён, опционально)"
                     },
                     "gender": {
                         "type": "string",
@@ -98,7 +98,7 @@ TOOL_DEFINITIONS = [
                         "description": "Поколение: 0=пользователь, 1=родители, 2=бабушки/дедушки, -1=дети"
                     }
                 },
-                "required": ["first_name", "last_name"]
+                "required": []
             }
         }
     },

@@ -78,6 +78,7 @@ class DatabaseConstraintError(DatabaseException):
             original_error=original_error,
             details={"error_type": "constraint_error", "constraint": constraint}
         )
+        self.status_code = status.HTTP_409_CONFLICT
 
 
 class DatabaseIntegrityError(DatabaseException):
@@ -169,17 +170,21 @@ def handle_database_errors(func: Callable[P, T]) -> Callable[P, T]:
             error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
             logger.error(f"Integrity error in {func.__name__}: {error_msg}")
 
-            if "unique constraint" in error_msg.lower():
-                if "username" in error_msg.lower():
+            error_lower = error_msg.lower()
+            is_unique = "unique constraint" in error_lower or "уникальности" in error_lower or "unique violation" in error_lower
+            is_fk = "foreign key" in error_lower or "внешнего ключа" in error_lower
+
+            if is_unique:
+                if "username" in error_lower:
                     raise DatabaseConstraintError("unique_username", e)
-                elif "email" in error_msg.lower():
+                elif "email" in error_lower:
                     raise DatabaseConstraintError("unique_email", e)
-                elif "telegram_id" in error_msg.lower():
+                elif "telegram_id" in error_lower:
                     raise DatabaseConstraintError("unique_telegram_id", e)
                 else:
                     raise DatabaseConstraintError("unique_constraint", e)
 
-            elif "foreign key" in error_msg.lower():
+            elif is_fk:
                 raise DatabaseConstraintError("foreign_key_violation", e)
 
             else:

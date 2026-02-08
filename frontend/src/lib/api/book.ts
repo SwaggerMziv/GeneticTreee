@@ -2,10 +2,13 @@ import { getAccessToken } from '@/lib/utils'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-export type BookStyle = 'classic' | 'modern' | 'vintage'
+export type BookStyle = 'classic' | 'modern' | 'vintage' | 'custom'
+export type BookTheme = 'light' | 'dark'
 
 export interface BookGenerateRequest {
   style?: BookStyle
+  theme?: BookTheme
+  custom_style_description?: string
   include_photos?: boolean
   include_stories?: boolean
   include_timeline?: boolean
@@ -43,12 +46,17 @@ export async function* streamGenerateBook(
 ): AsyncGenerator<BookStreamChunk> {
   const token = getAccessToken()
 
-  const payload = {
+  const payload: Record<string, unknown> = {
     style: options.style || 'classic',
+    theme: options.theme || 'light',
     include_photos: options.include_photos ?? true,
     include_stories: options.include_stories ?? true,
     include_timeline: options.include_timeline ?? true,
     language: options.language || 'ru',
+  }
+
+  if (options.custom_style_description) {
+    payload.custom_style_description = options.custom_style_description
   }
 
   const response = await fetch(`${API_URL}/api/v1/book/generate/stream`, {

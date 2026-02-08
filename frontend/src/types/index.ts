@@ -55,6 +55,9 @@ export interface MeResponse {
 export interface ApiError {
   detail: string
   status?: number
+  error_type?: string
+  constraint?: string
+  field?: string
 }
 
 // Form types
@@ -94,7 +97,7 @@ export type RelationshipType =
   | 'grandson' | 'granddaughter' | 'great_grandson' | 'great_granddaughter'
   | 'brother' | 'sister' | 'half_brother' | 'half_sister'
   | 'stepbrother' | 'stepsister'
-  | 'husband' | 'wife' | 'ex_husband' | 'ex_wife' | 'partner'
+  | 'spouse' | 'husband' | 'wife' | 'ex_spouse' | 'ex_husband' | 'ex_wife' | 'partner'
   | 'uncle' | 'aunt' | 'great_uncle' | 'great_aunt'
   | 'nephew' | 'niece' | 'grand_nephew' | 'grand_niece'
   | 'cousin' | 'second_cousin'
@@ -108,8 +111,8 @@ export interface FamilyRelative {
   id: number
   user_id: number
   image_url?: string | null
-  first_name: string
-  last_name: string
+  first_name?: string | null
+  last_name?: string | null
   middle_name?: string | null
   birth_date?: string | null
   death_date?: string | null
@@ -128,8 +131,8 @@ export interface FamilyRelative {
 }
 
 export interface FamilyRelativeCreate {
-  first_name: string
-  last_name: string
+  first_name?: string | null
+  last_name?: string | null
   middle_name?: string | null
   birth_date?: string | null
   death_date?: string | null

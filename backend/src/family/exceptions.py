@@ -131,3 +131,15 @@ class RelativeAlreadyActivatedError(FamilyRelationException):
             }
         )
 
+
+class TelegramUserAlreadyLinkedError(FamilyRelationException):
+    def __init__(self, telegram_user_id: int):
+        super().__init__(
+            message=f"Telegram user {telegram_user_id} is already linked to another relative",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details={
+                "error_type": "telegram_user_already_linked",
+                "telegram_user_id": telegram_user_id
+            }
+        )
+

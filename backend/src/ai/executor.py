@@ -75,7 +75,8 @@ class TreeActionExecutor:
             context=data.get('context', {})
         )
         relative = await self.family_service.create_relative(self.user_id, schema)
-        return {'success': True, 'id': relative.id, 'name': f"{relative.first_name} {relative.last_name}"}
+        name = f"{relative.first_name or ''} {relative.last_name or ''}".strip() or "(без имени)"
+        return {'success': True, 'id': relative.id, 'name': name}
 
     async def _update_relative(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Обновить данные родственника"""

@@ -1,10 +1,9 @@
 'use client'
 
 import { Check } from 'lucide-react'
-import { Button } from 'antd'
+import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import FadeContent from '@/components/ui/FadeContent'
-import { motion } from 'framer-motion'
 
 interface PricingPlan {
   name: string
@@ -65,86 +64,77 @@ const pricingPlans: PricingPlan[] = [
   },
 ]
 
-const PricingCard = ({ plan, index }: { plan: PricingPlan; index: number }) => {
-  return (
-    <FadeContent duration={800} delay={index * 150} threshold={0.2}>
-      <motion.div
-        whileHover={{ y: -8 }}
-        className={`relative rounded-3xl p-8 h-full flex flex-col ${
-          plan.highlighted
-            ? 'bg-gradient-to-b from-orange/20 to-charcoal-800 border-2 border-orange'
-            : 'bg-charcoal-800 border border-charcoal-700'
-        }`}
-      >
-        {plan.highlighted && (
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-            <span className="px-4 py-1 rounded-full bg-orange text-white text-sm font-semibold">
-              Популярный
-            </span>
-          </div>
-        )}
-
-        <div className="mb-6">
-          <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-          <p className="text-gray-400 text-sm">{plan.description}</p>
-        </div>
-
-        <div className="mb-6">
-          <span className="text-4xl font-bold">{plan.price}</span>
-          <span className="text-gray-400 ml-2">/ {plan.period}</span>
-        </div>
-
-        <ul className="space-y-3 mb-8 flex-1">
-          {plan.features.map((feature) => (
-            <li key={feature} className="flex items-start gap-3">
-              <Check className="w-5 h-5 text-orange flex-shrink-0 mt-0.5" />
-              <span className="text-gray-300 text-sm">{feature}</span>
-            </li>
-          ))}
-        </ul>
-
-        <Link href="/auth">
-          <Button
-            type={plan.highlighted ? 'primary' : 'default'}
-            size="large"
-            block
-            className={plan.highlighted ? 'shadow-glow-orange h-12' : 'h-12'}
-          >
-            {plan.buttonText}
-          </Button>
-        </Link>
-      </motion.div>
-    </FadeContent>
-  )
-}
-
 export default function Pricing() {
   return (
-    <section className="relative py-24 lg:py-32 bg-charcoal-900 overflow-hidden">
-      {/* Background decorations */}
+    <section className="relative py-24 lg:py-32 bg-background overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-orange/5 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-orange-dark/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
-        {/* Section Header */}
         <FadeContent duration={800} threshold={0.2}>
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="font-serif text-5xl lg:text-6xl font-bold mb-6">
               Выберите{' '}
               <span className="gradient-text">подходящий план</span>
             </h2>
-            <p className="text-xl text-gray-400 leading-relaxed">
+            <p className="text-xl text-muted-foreground leading-relaxed">
               Начните бесплатно и обновитесь, когда будете готовы получить больше возможностей
             </p>
           </div>
         </FadeContent>
 
-        {/* Pricing Cards */}
         <div className="grid md:grid-cols-3 gap-8">
           {pricingPlans.map((plan, index) => (
-            <PricingCard key={plan.name} plan={plan} index={index} />
+            <FadeContent key={plan.name} duration={800} delay={index * 150} threshold={0.2}>
+              <div
+                className={`relative rounded-3xl p-8 h-full flex flex-col transition-transform duration-300 hover:-translate-y-2 ${
+                  plan.highlighted
+                    ? 'bg-gradient-to-b from-orange/20 to-card border-2 border-orange shadow-lg shadow-orange/10'
+                    : 'bg-card border border-border'
+                }`}
+              >
+                {plan.highlighted && (
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                    <span className="px-4 py-1 rounded-full bg-orange text-white text-sm font-semibold">
+                      Популярный
+                    </span>
+                  </div>
+                )}
+
+                <div className="mb-6">
+                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                  <p className="text-muted-foreground text-sm">{plan.description}</p>
+                </div>
+
+                <div className="mb-6">
+                  <span className="text-4xl font-bold">{plan.price}</span>
+                  <span className="text-muted-foreground ml-2">/ {plan.period}</span>
+                </div>
+
+                <ul className="space-y-3 mb-8 flex-1">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3">
+                      <Check className="w-5 h-5 text-orange flex-shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground text-sm">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link href="/auth" className="w-full">
+                  {plan.highlighted ? (
+                    <Button className="h-12 w-full bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange">
+                      {plan.buttonText}
+                    </Button>
+                  ) : (
+                    <Button variant="outline" className="h-12 w-full">
+                      {plan.buttonText}
+                    </Button>
+                  )}
+                </Link>
+              </div>
+            </FadeContent>
           ))}
         </div>
       </div>

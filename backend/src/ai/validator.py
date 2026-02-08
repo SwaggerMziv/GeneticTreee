@@ -99,6 +99,11 @@ class ActionValidator:
 
     def _check_gender_relationship(self, gender: str, relationship_type: str) -> str:
         """Проверить соответствие пола и типа связи"""
+        # spouse, ex_spouse, partner - гендерно-нейтральные типы
+        gender_neutral = ['spouse', 'ex_spouse', 'partner']
+        if relationship_type in gender_neutral:
+            return ""
+
         male_only = ['father', 'brother', 'grandfather', 'uncle', 'husband', 'son', 'grandson', 'nephew']
         female_only = ['mother', 'sister', 'grandmother', 'aunt', 'wife', 'daughter', 'granddaughter', 'niece']
 

@@ -7,8 +7,12 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ARG NEXT_PUBLIC_API_URL
+
+ARG NEXT_PUBLIC_API_URL=https://api.genetictree.ru/api
+ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=genetic_tree_bot
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=$NEXT_PUBLIC_TELEGRAM_BOT_USERNAME
+
 RUN npm run build
 
 FROM node:20-alpine AS runner

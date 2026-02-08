@@ -55,9 +55,9 @@ class StoryMediaUploadResponseSchema(BaseModel):
 # Родственник
 class FamilyRelationCreateSchema(BaseModel):
     image_url: str | None = Field(None, max_length=255)
-    first_name: str = Field(..., min_length=2, max_length=64)
-    last_name: str = Field(..., min_length=2, max_length=64)
-    middle_name: str | None = Field(None, min_length=2, max_length=64)
+    first_name: str | None = Field(None, max_length=64)
+    last_name: str | None = Field(None, max_length=64)
+    middle_name: str | None = Field(None, max_length=64)
     birth_date: datetime | None = None
     death_date: datetime | None = None
     gender: GenderType = Field(default=GenderType.OTHER)
@@ -74,8 +74,8 @@ class FamilyRelationReadSchema(BaseModel):
     id: int
     user_id: int
     image_url: str | None
-    first_name: str
-    last_name: str
+    first_name: str | None
+    last_name: str | None
     middle_name: str | None
     birth_date: datetime | None
     death_date: datetime | None
@@ -94,9 +94,9 @@ class FamilyRelationReadSchema(BaseModel):
 
 class FamilyRelationUpdateSchema(BaseModel):
     image_url: str | None = Field(None, max_length=255)
-    first_name: str | None = Field(None, min_length=2, max_length=64)
-    last_name: str | None = Field(None, min_length=2, max_length=64)
-    middle_name: str | None = Field(None, min_length=2, max_length=64)
+    first_name: str | None = Field(None, max_length=64)
+    last_name: str | None = Field(None, max_length=64)
+    middle_name: str | None = Field(None, max_length=64)
     birth_date: datetime | None = None
     death_date: datetime | None = None
     gender: GenderType = Field(default=GenderType.OTHER)
@@ -117,8 +117,8 @@ class FamilyRelationOutputSchema(BaseModel):
     id: int
     user_id: int
     image_url: str | None
-    first_name: str
-    last_name: str
+    first_name: str | None
+    last_name: str | None
     middle_name: str | None
     birth_date: datetime | None
     death_date: datetime | None
@@ -229,3 +229,24 @@ class BotStoryCreateSchema(BaseModel):
 class StoriesCountResponseSchema(BaseModel):
     """Ответ с количеством историй"""
     count: int
+
+
+# ============ Bot Relative Creation Schemas ============
+
+class BotRelativeCreateSchema(BaseModel):
+    """Создание родственника из Telegram бота"""
+    interviewer_relative_id: int = Field(..., description="ID интервьюируемого родственника")
+    first_name: str = Field(..., min_length=1, max_length=64)
+    last_name: Optional[str] = Field(None, max_length=64)
+    birth_year: Optional[int] = Field(None, ge=1800, le=2100)
+    gender: GenderType = Field(default=GenderType.OTHER)
+    relationship_type: RelationshipType = Field(..., description="Тип связи с интервьюируемым")
+    additional_info: Optional[str] = Field(None, max_length=5000, description="Дополнительная информация")
+
+
+class BotRelativeCreateResponseSchema(BaseModel):
+    """Ответ при создании родственника из бота"""
+    relative_id: int
+    first_name: str
+    relationship_type: RelationshipType
+    message: str = "Родственник успешно создан"

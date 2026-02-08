@@ -25,9 +25,9 @@ const FamilyMemberCard = ({ person, size = 'md' }: FamilyMemberCardProps) => {
     <GlareHover
       width={isSmall ? '140px' : '160px'}
       height={isSmall ? '90px' : '100px'}
-      background="rgb(23, 23, 23)"
+      background="hsl(var(--card))"
       borderRadius="16px"
-      borderColor="rgb(38, 38, 38)"
+      borderColor="hsl(var(--border))"
       glareColor="#ff6b35"
       glareOpacity={0.3}
       transitionDuration={500}
@@ -63,23 +63,23 @@ const ConnectionLine = ({
   length?: number
 }) => {
   if (type === 'horizontal') {
-    return <div className={`h-0.5 w-${length} bg-gradient-to-r from-charcoal-600 via-orange/50 to-charcoal-600`} />
+    return <div className={`h-0.5 w-${length} bg-gradient-to-r from-border via-orange/50 to-border`} />
   }
 
   if (type === 'branch') {
     return (
       <div className="flex flex-col items-center">
-        <div className={`w-0.5 h-8 bg-gradient-to-b from-orange/50 to-charcoal-600`} />
+        <div className={`w-0.5 h-8 bg-gradient-to-b from-orange/50 to-border`} />
         <div className="flex items-center">
-          <div className="w-24 h-0.5 bg-charcoal-600" />
-          <div className="w-0.5 h-4 bg-charcoal-600" />
-          <div className="w-24 h-0.5 bg-charcoal-600" />
+          <div className="w-24 h-0.5 bg-border" />
+          <div className="w-0.5 h-4 bg-border" />
+          <div className="w-24 h-0.5 bg-border" />
         </div>
       </div>
     )
   }
 
-  return <div className={`w-0.5 h-${length} bg-gradient-to-b from-charcoal-600 to-orange/50`} />
+  return <div className={`w-0.5 h-${length} bg-gradient-to-b from-border to-orange/50`} />
 }
 
 export default function FamilyTreeDemo() {
@@ -105,7 +105,7 @@ export default function FamilyTreeDemo() {
   ]
 
   return (
-    <section className="relative py-24 lg:py-32 bg-charcoal-900 overflow-hidden">
+    <section className="relative py-24 lg:py-32 bg-background overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-orange/5 rounded-full blur-3xl" />
@@ -120,7 +120,7 @@ export default function FamilyTreeDemo() {
               Визуализация{' '}
               <span className="gradient-text">вашей истории</span>
             </h2>
-            <p className="text-xl text-gray-400 leading-relaxed">
+            <p className="text-xl text-muted-foreground leading-relaxed">
               Интерактивное семейное древо с типизированными связями между родственниками.
             </p>
           </div>
@@ -150,8 +150,8 @@ export default function FamilyTreeDemo() {
           {/* Connection Lines from Grandparents to Parents */}
           <FadeContent duration={800} delay={400} threshold={0.2}>
             <div className="flex justify-center items-center gap-24 mb-6">
-              <div className="w-0.5 h-10 bg-gradient-to-b from-charcoal-600 to-orange/50" />
-              <div className="w-0.5 h-10 bg-gradient-to-b from-charcoal-600 to-orange/50" />
+              <div className="w-0.5 h-10 bg-gradient-to-b from-border to-orange/50" />
+              <div className="w-0.5 h-10 bg-gradient-to-b from-border to-orange/50" />
             </div>
           </FadeContent>
 
@@ -169,7 +169,7 @@ export default function FamilyTreeDemo() {
           {/* Connection Line to Children */}
           <FadeContent duration={800} delay={800} threshold={0.2}>
             <div className="flex justify-center mb-6">
-              <div className="w-0.5 h-10 bg-gradient-to-b from-orange/50 to-charcoal-600" />
+              <div className="w-0.5 h-10 bg-gradient-to-b from-orange/50 to-border" />
             </div>
           </FadeContent>
 
@@ -180,7 +180,7 @@ export default function FamilyTreeDemo() {
                 <div key={sibling.id} className="flex items-center gap-6">
                   <FamilyMemberCard person={sibling} />
                   {index < siblings.length - 1 && (
-                    <Minus className="w-6 h-6 text-charcoal-600" />
+                    <Minus className="w-6 h-6 text-border" />
                   )}
                 </div>
               ))}
@@ -190,16 +190,16 @@ export default function FamilyTreeDemo() {
           {/* Relationship Labels */}
           <FadeContent duration={800} delay={1200} threshold={0.2}>
             <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto mt-12">
-              <div className="text-center p-4 rounded-xl bg-charcoal-800/50 border border-charcoal-700">
-                <div className="text-sm text-gray-400 mb-1">Тип связи</div>
+              <div className="text-center p-4 rounded-xl bg-muted/50 border border-border">
+                <div className="text-sm text-muted-foreground mb-1">Тип связи</div>
                 <div className="text-orange font-semibold">Родители ↔ Дети</div>
               </div>
-              <div className="text-center p-4 rounded-xl bg-charcoal-800/50 border border-charcoal-700">
-                <div className="text-sm text-gray-400 mb-1">Тип связи</div>
+              <div className="text-center p-4 rounded-xl bg-muted/50 border border-border">
+                <div className="text-sm text-muted-foreground mb-1">Тип связи</div>
                 <div className="text-orange font-semibold">Братья ↔ Сестры</div>
               </div>
-              <div className="text-center p-4 rounded-xl bg-charcoal-800/50 border border-charcoal-700">
-                <div className="text-sm text-gray-400 mb-1">Тип связи</div>
+              <div className="text-center p-4 rounded-xl bg-muted/50 border border-border">
+                <div className="text-sm text-muted-foreground mb-1">Тип связи</div>
                 <div className="text-orange font-semibold">Супруги</div>
               </div>
             </div>
@@ -209,7 +209,7 @@ export default function FamilyTreeDemo() {
         {/* Info Text */}
         <FadeContent duration={800} delay={1400} threshold={0.2}>
           <div className="text-center mt-16">
-            <p className="text-gray-400 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               В реальном приложении вы сможете создавать{' '}
               <span className="text-orange font-semibold">50+ типов родственных связей</span>
               : родители, бабушки/дедушки, дяди/тети, двоюродные братья/сестры, племянники,

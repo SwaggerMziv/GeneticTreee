@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { App } from 'antd'
+import { toast } from 'sonner'
 import { authApi } from '@/lib/api/auth'
 import { TelegramAuthData } from '@/types'
 
@@ -19,7 +19,6 @@ declare global {
 export default function TelegramLoginButton({ botUsername }: TelegramLoginButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
-  const { message } = App.useApp()
 
   useEffect(() => {
     if (!botUsername) return
@@ -27,10 +26,10 @@ export default function TelegramLoginButton({ botUsername }: TelegramLoginButton
     window.onTelegramAuth = async (user: TelegramAuthData) => {
       try {
         await authApi.telegramAuth(user)
-        message.success('Вход выполнен успешно!')
+        toast.success('Вход выполнен успешно!')
         router.push('/dashboard')
       } catch (error: any) {
-        message.error(error.message || 'Ошибка входа через Telegram')
+        toast.error(error.message || 'Ошибка входа через Telegram')
       }
     }
 
@@ -49,11 +48,12 @@ export default function TelegramLoginButton({ botUsername }: TelegramLoginButton
     return () => {
       delete window.onTelegramAuth
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [botUsername, router])
 
   if (!botUsername) {
     return (
-      <div className="text-center text-gray-500 text-sm py-3">
+      <div className="text-center text-muted-foreground text-sm py-3">
         Telegram вход не настроен
       </div>
     )

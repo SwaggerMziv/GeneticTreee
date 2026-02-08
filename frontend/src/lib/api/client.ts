@@ -83,9 +83,13 @@ export async function apiRequest<T>(
     return response.data
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      const data = error.response?.data
       const apiError: ApiError = {
-        detail: error.response?.data?.detail || error.message || 'An error occurred',
+        detail: data?.detail || data?.message || error.message || 'An error occurred',
         status: error.response?.status,
+        error_type: data?.details?.error_type,
+        constraint: data?.details?.constraint,
+        field: data?.details?.field,
       }
       throw apiError
     }

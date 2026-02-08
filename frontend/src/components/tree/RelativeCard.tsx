@@ -3,6 +3,7 @@
 import { FamilyRelative } from '@/types'
 import { Heart, BookOpen } from 'lucide-react'
 import { getProxiedImageUrl } from '@/lib/utils'
+import Image from 'next/image'
 
 // Gender colors for card styling - more elegant palette
 const GENDER_COLORS: Record<string, { bg: string; border: string; accent: string; gradient: string }> = {
@@ -61,10 +62,11 @@ export default function RelativeCard({ relative, isSelected, onClick, size = 'me
   const genderLabel =
     relative.gender === 'male' ? 'мужской' : relative.gender === 'female' ? 'женский' : relative.gender ? 'другой' : ''
 
+  // Fixed sizes in pixels to ensure consistent card dimensions
   const sizeClasses = {
-    small: 'w-44 h-60',
-    medium: 'w-54 h-70',
-    large: 'w-64 h-78',
+    small: 'w-44 min-h-[240px] h-[240px]',
+    medium: 'w-52 min-h-[280px] h-[280px]',
+    large: 'w-64 min-h-[312px] h-[312px]',
   }
 
   const photoSizes = {
@@ -132,16 +134,17 @@ export default function RelativeCard({ relative, isSelected, onClick, size = 'me
         <div className={`absolute -inset-0.5 rounded-lg border-2 ${colors.border}`} />
         <div className={`${photoSizes[size]} rounded-lg overflow-hidden bg-charcoal-700 relative`}>
           {relative.image_url ? (
-            <img
+            <Image
               src={getProxiedImageUrl(relative.image_url) || ''}
-              alt={relative.first_name}
-              className={`w-full h-full object-cover ${isDeceased ? 'grayscale' : ''}`}
+              alt={relative.first_name || 'Родственник'}
+              fill
+              className={`object-cover ${isDeceased ? 'grayscale' : ''}`}
+              unoptimized
             />
           ) : (
             <div className={`w-full h-full ${colors.accent} flex items-center justify-center`}>
               <span className="text-2xl font-serif font-bold text-white drop-shadow-lg">
-                {relative.first_name.charAt(0)}
-                {relative.last_name?.charAt(0) || ''}
+                {relative.first_name?.charAt(0) || relative.last_name?.charAt(0) || '?'}
               </span>
             </div>
           )}
@@ -151,7 +154,10 @@ export default function RelativeCard({ relative, isSelected, onClick, size = 'me
       {/* Name with decorative underline */}
       <div className="mt-3 text-center w-full px-3 z-20">
         <p className="font-serif font-bold text-white text-sm truncate drop-shadow-sm leading-tight">
-          {relative.first_name} {relative.last_name || ''}
+          {relative.first_name || relative.last_name
+            ? `${relative.first_name || ''} ${relative.last_name || ''}`.trim()
+            : <span className="text-gray-400 italic">Без имени</span>
+          }
         </p>
         {middleName && (
           <p className="text-gray-300 text-[11px] truncate leading-tight">

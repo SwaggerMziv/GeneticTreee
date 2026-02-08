@@ -558,6 +558,85 @@ class FamilyRelationRepository(FamilyRelationRepositoryAbstract[FamilyRelationMo
         )
         return list(result.scalars().all())
 
+    @handle_database_errors
+    async def get_related_relatives_with_stories(
+        self,
+        relative_id: int,
+        relationship_repo: "FamilyRelationshipRepository"
+    ) -> List[Dict[str, Any]]:
+        """
+        Получить истории связанных родственников для контекста интервью.
+        Возвращает список с информацией о родственниках и их историях.
+        """
+        # Получаем текущего родственника
+        current_relative = await self.get_by_id_without_user(relative_id)
+        if not current_relative:
+            return []
+
+        user_id = current_relative.user_id
+
+        # Получаем все связи этого родственника
+        relationships = await relationship_repo.get_by_relative_id(relative_id)
+
+        # Собираем ID связанных родственников
+        related_ids = set()
+        relationship_info = {}  # relative_id -> relationship_type
+
+        for rel in relationships:
+            if rel.from_relative_id == relative_id:
+                related_ids.add(rel.to_relative_id)
+                relationship_info[rel.to_relative_id] = rel.relationship_type.value if hasattr(rel.relationship_type, 'value') else str(rel.relationship_type)
+            else:
+                related_ids.add(rel.from_relative_id)
+                relationship_info[rel.from_relative_id] = rel.relationship_type.value if hasattr(rel.relationship_type, 'value') else str(rel.relationship_type)
+
+        if not related_ids:
+            return []
+
+        # Получаем родственников с историями
+        related_relatives = await self.get_relatives_by_ids(list(related_ids), user_id)
+
+        result = []
+        for relative in related_relatives:
+            if not relative.context:
+                continue
+
+            # Извлекаем истории (исключая interview_messages)
+            stories = []
+            for key, value in relative.context.items():
+                if key == 'interview_messages':
+                    continue
+
+                story_text = ""
+                if isinstance(value, str):
+                    story_text = value
+                elif isinstance(value, dict) and 'text' in value:
+                    story_text = value['text']
+
+                if story_text:
+                    # Берём только первые 500 символов для контекста
+                    preview = story_text[:500] + "..." if len(story_text) > 500 else story_text
+                    stories.append({
+                        "title": key,
+                        "preview": preview
+                    })
+
+            if stories:
+                full_name = f"{relative.first_name}"
+                if relative.middle_name:
+                    full_name += f" {relative.middle_name}"
+                if relative.last_name:
+                    full_name += f" {relative.last_name}"
+
+                result.append({
+                    "relative_id": relative.id,
+                    "name": full_name.strip(),
+                    "relationship": relationship_info.get(relative.id, "родственник"),
+                    "stories": stories
+                })
+
+        return result
+
 
 class FamilyRelationshipRepository(FamilyRelationshipRepositoryAbstract[FamilyRelationshipModel]):
     """Репозиторий для работы со связями между родственниками"""
@@ -955,11 +1034,11 @@ class FamilyRelationshipRepository(FamilyRelationshipRepositoryAbstract[FamilyRe
                 or_(
                     and_(
                         self.model.from_relative_id == relative_id,
-                        self.model.relationship_type.in_(['husband', 'wife', 'partner'])
+                        self.model.relationship_type.in_(['spouse', 'husband', 'wife', 'partner', 'ex_spouse'])
                     ),
                     and_(
                         self.model.to_relative_id == relative_id,
-                        self.model.relationship_type.in_(['husband', 'wife', 'partner'])
+                        self.model.relationship_type.in_(['spouse', 'husband', 'wife', 'partner', 'ex_spouse'])
                     )
                 ),
                 self.model.is_active == True

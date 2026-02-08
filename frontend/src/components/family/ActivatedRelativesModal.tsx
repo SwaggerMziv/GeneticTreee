@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Modal, Button, List, Avatar, Tag, Input, Space, Spin, Empty, message, QRCode, Divider, Tabs } from 'antd'
 import {
   UserCheck,
@@ -38,14 +38,7 @@ export default function ActivatedRelativesModal({
   const [invitationLoading, setInvitationLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<string>(activatedCount > 0 ? 'activated' : 'invite')
 
-  useEffect(() => {
-    if (visible) {
-      fetchRelatives()
-      setActiveTab(activatedCount > 0 ? 'activated' : 'invite')
-    }
-  }, [visible, userId, activatedCount])
-
-  const fetchRelatives = async () => {
+  const fetchRelatives = useCallback(async () => {
     setLoading(true)
     try {
       const [activated, notActivated] = await Promise.all([
@@ -60,7 +53,14 @@ export default function ActivatedRelativesModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [userId])
+
+  useEffect(() => {
+    if (visible) {
+      fetchRelatives()
+      setActiveTab(activatedCount > 0 ? 'activated' : 'invite')
+    }
+  }, [visible, activatedCount, fetchRelatives])
 
   const handleGenerateInvitation = async (relative: FamilyRelative) => {
     setSelectedRelative(relative)
@@ -111,21 +111,21 @@ export default function ActivatedRelativesModal({
 
   const filteredActivated = activatedRelatives.filter(
     (r) =>
-      r.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+      (r.first_name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (r.last_name ?? '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const filteredNotActivated = notActivatedRelatives.filter(
     (r) =>
-      r.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+      (r.first_name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (r.last_name ?? '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   const getFullName = (relative: FamilyRelative) =>
     `${relative.last_name} ${relative.first_name}${relative.middle_name ? ` ${relative.middle_name}` : ''}`
 
   const getInitials = (relative: FamilyRelative) =>
-    `${relative.first_name[0]}${relative.last_name[0]}`.toUpperCase()
+    `${relative.first_name?.[0] ?? ''}${relative.last_name?.[0] ?? ''}`.toUpperCase()
 
   const renderRelativeItem = (relative: FamilyRelative, showInviteButton: boolean) => (
     <List.Item

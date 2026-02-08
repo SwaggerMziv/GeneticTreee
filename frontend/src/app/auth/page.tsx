@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Tabs } from 'antd'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { TreePine, ArrowLeft } from 'lucide-react'
 import LoginForm from '@/components/auth/LoginForm'
 import RegisterForm from '@/components/auth/RegisterForm'
@@ -27,7 +27,7 @@ export default function AuthPage() {
       {/* Back to Home */}
       <Link
         href="/"
-        className="absolute top-6 left-6 flex items-center gap-2 text-gray-400 hover:text-orange transition-colors group"
+        className="absolute top-6 left-6 flex items-center gap-2 text-muted-foreground hover:text-orange transition-colors group"
       >
         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
         <span className="text-sm font-medium">На главную</span>
@@ -42,19 +42,19 @@ export default function AuthPage() {
               <TreePine className="w-7 h-7 text-white" strokeWidth={2.5} />
             </div>
             <span className="font-serif text-3xl font-bold">
-              <span className="text-white">Genetic</span><span className="gradient-text">Tree</span>
+              <span className="text-foreground">Genetic</span><span className="gradient-text">Tree</span>
             </span>
           </Link>
         </div>
 
         {/* Card */}
-        <div className="rounded-3xl bg-charcoal-900 border border-charcoal-700 p-8 shadow-dark-xl">
+        <div className="rounded-3xl bg-card border border-border p-8 shadow-dark-xl">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="font-serif text-3xl font-bold mb-2">
               {activeTab === 'login' ? 'Добро пожаловать' : 'Создайте аккаунт'}
             </h1>
-            <p className="text-gray-400 text-base">
+            <p className="text-muted-foreground text-base">
               {activeTab === 'login'
                 ? 'Войдите, чтобы продолжить работу с семейным древом'
                 : 'Начните сохранять историю вашей семьи прямо сейчас'}
@@ -62,33 +62,26 @@ export default function AuthPage() {
           </div>
 
           {/* Tabs */}
-          <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
-            centered
-            size="large"
-            className="mb-6"
-            items={[
-              {
-                key: 'login',
-                label: 'Вход',
-                children: <LoginForm />,
-              },
-              {
-                key: 'register',
-                label: 'Регистрация',
-                children: <RegisterForm onSuccess={handleRegisterSuccess} />,
-              },
-            ]}
-          />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Вход</TabsTrigger>
+              <TabsTrigger value="register">Регистрация</TabsTrigger>
+            </TabsList>
+            <TabsContent value="login">
+              <LoginForm />
+            </TabsContent>
+            <TabsContent value="register">
+              <RegisterForm onSuccess={handleRegisterSuccess} />
+            </TabsContent>
+          </Tabs>
 
           {/* Divider */}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-charcoal-700"></div>
+              <div className="w-full border-t border-border"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-charcoal-900 text-gray-500">
+              <span className="px-4 bg-card text-muted-foreground">
                 или войти через
               </span>
             </div>
@@ -101,7 +94,7 @@ export default function AuthPage() {
         </div>
 
         {/* Footer Text */}
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-muted-foreground mt-6">
           Защищено современными стандартами шифрования и безопасности
         </p>
       </div>

@@ -2,12 +2,8 @@
 
 // ==================== ИМПОРТЫ ====================
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button, Spin, Input, App, Switch, Tooltip } from 'antd'
+import { Button, Input, Switch, Tooltip } from 'antd'
 import {
-  TreePine,
-  ArrowLeft,
   Sparkles,
   Send,
   Bot,
@@ -28,13 +24,9 @@ import {
   Clock, // Added Clock
   Hourglass // Added Hourglass
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { familyApi, relationshipApi } from '@/lib/api/family'
-import { authApi } from '@/lib/api/auth'
-import {
-  User as UserType,
-  ApiError,
-} from '@/types'
-import { isAuthenticated, getErrorMessage } from '@/lib/utils'
+import { useUser } from '@/components/providers/UserProvider'
 import {
   streamUnified,
   AIStreamChunk,
@@ -193,7 +185,6 @@ const ActionCard = ({
   onDecline?: () => Promise<void> | void
   autoAcceptEnabled?: boolean
 }) => {
-  const { message } = App.useApp()
   const [expanded, setExpanded] = useState(false)
   const [reverting, setReverting] = useState(false)
   const [accepting, setAccepting] = useState(false)
@@ -214,9 +205,9 @@ const ActionCard = ({
       if (onRevert) {
         await onRevert()
       }
-      message.success('Действие отменено')
+      toast.success('Действие отменено')
     } catch (e) {
-      message.error('Не удалось отменить действие')
+      toast.error('Не удалось отменить действие')
     } finally {
       setReverting(false)
     }
@@ -227,9 +218,9 @@ const ActionCard = ({
     setAccepting(true)
     try {
       await onAccept()
-      message.success('Действие принято')
+      toast.success('Действие принято')
     } catch (e) {
-      message.error('Не удалось применить действие')
+      toast.error('Не удалось применить действие')
     } finally {
       setAccepting(false)
     }
@@ -240,9 +231,9 @@ const ActionCard = ({
     setDeclining(true)
     try {
       await onDecline()
-      message.info('Действие отклонено')
+      toast.info('Действие отклонено')
     } catch (e) {
-      message.error('Не удалось отклонить действие')
+      toast.error('Не удалось отклонить действие')
     } finally {
       setDeclining(false)
     }
@@ -585,11 +576,7 @@ const MarkdownRenderer = ({ content }: { content: string }) => {
 
 // ==================== ОСНОВНОЙ КОМПОНЕНТ ====================
 export default function AIAssistantPage() {
-  const router = useRouter()
-  const { message } = App.useApp()
-  const [user, setUser] = useState<UserType | null>(null)
-  const [loading, setLoading] = useState(true)
-  const mounted = useRef(false)
+  const { user } = useUser()
 
   // Состояние чата
   const [prompt, setPrompt] = useState('')
@@ -713,13 +700,13 @@ export default function AIAssistantPage() {
       } else if (action_type === 'create_relationship' && result.id) {
         await relationshipApi.deleteRelationship(user.id, result.id)
       } else {
-        message.warning('Отмена этого действия пока не поддерживается')
+        toast.warning('Отмена этого действия пока не поддерживается')
         throw new Error('Not supported')
       }
     } catch (error) {
       throw error
     }
-  }, [user, message])
+  }, [user])
 
   const updateActionInMessages = useCallback((messageId: string, index: number, updated: ActionData) => {
     setMessages((prev) =>
@@ -752,7 +739,7 @@ export default function AIAssistantPage() {
         const updated = await executeAction(action)
         updateActionInMessages(messageId, index, updated)
       } catch (error: any) {
-        message.error(error?.message || 'Не удалось применить действие')
+        toast.error(error?.message || 'Не удалось применить действие')
         updateActionInMessages(messageId, index, {
           ...action,
           result: { ...(action.result || {}), success: false, error: error?.message || 'Ошибка применения' },
@@ -760,7 +747,7 @@ export default function AIAssistantPage() {
         })
       }
     },
-    [executeAction, updateActionInMessages, message]
+    [executeAction, updateActionInMessages]
   )
 
   const handleRevertActionForMessage = useCallback(
@@ -791,9 +778,9 @@ export default function AIAssistantPage() {
           })
         }
       }
-      message.success('Действия применены')
+      toast.success('Действия применены')
     },
-    [executeAction, updateActionInMessages, message]
+    [executeAction, updateActionInMessages]
   )
 
   const handleDeclineAll = useCallback(
@@ -806,9 +793,9 @@ export default function AIAssistantPage() {
           __meta: { ...(action.__meta || {}), state: 'declined' },
         })
       })
-      message.info('Действия отклонены')
+      toast.info('Действия отклонены')
     },
-    [updateActionInMessages, message]
+    [updateActionInMessages]
   )
 
   // Автоскролл
@@ -823,33 +810,6 @@ export default function AIAssistantPage() {
   const handleAskAdvice = () => {
     setPrompt(pickRandom(advicePrompts))
   }
-
-  // Инициализация
-  useEffect(() => {
-    if (mounted.current) return
-    mounted.current = true
-
-    const fetchData = async () => {
-      try {
-        const userData = await authApi.me()
-        setUser(userData)
-        // Приветственное авто-сообщение убрано — информация в hero-блоке
-        setMessages([])
-      } catch (error) {
-        const apiError = error as ApiError
-        console.error('Fetch user error:', error)
-        if (apiError.status === 401) {
-          router.push('/auth')
-        } else {
-          message.error(getErrorMessage(apiError))
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [router, message])
 
   // Автоскролл при изменении сообщений
   useEffect(() => {
@@ -979,48 +939,17 @@ export default function AIAssistantPage() {
         }
       }
     } catch (error) {
-      message.error('Не удалось обработать сообщение')
+      toast.error('Не удалось обработать сообщение')
       console.error(error)
     } finally {
       setIsProcessing(false)
     }
-  }, [prompt, history, isProcessing, message, autoAccept, mode, normalizeAction])
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-charcoal-950">
-        <Spin size="large" />
-      </div>
-    )
-  }
+  }, [prompt, history, isProcessing, autoAccept, mode, normalizeAction])
 
   return (
-    <div className="h-screen bg-gradient-to-br from-charcoal-950 via-charcoal-900 to-charcoal-950 flex flex-col overflow-hidden">
-      {/* Header */}
-      <header className="border-b border-charcoal-700/50 bg-charcoal-900/50 backdrop-blur-xl flex-none h-16 z-50">
-        <nav className="max-w-7xl mx-auto px-6 lg:px-8 h-full flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center transition-all group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-orange/50">
-              <TreePine className="w-5 h-5 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-serif text-xl font-bold">
-              <span className="text-white">Genetic</span>
-              <span className="gradient-text">Tree</span>
-            </span>
-          </Link>
-
-          <Button
-            icon={<ArrowLeft className="w-4 h-4" />}
-            onClick={() => router.push('/dashboard')}
-            className="bg-charcoal-800/50 border-charcoal-700 hover:border-orange transition-all hover:shadow-lg"
-          >
-            Назад
-          </Button>
-        </nav>
-      </header>
-
+    <div className="h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden -m-6 lg:-m-8">
       {/* Main Content */}
-      <main className="flex-1 min-h-0 max-w-6xl mx-auto w-full px-4 py-6 flex flex-col">
+      <main className="flex-1 min-h-0 max-w-6xl mx-auto w-full px-4 py-4 flex flex-col">
         {/* Chat Area */}
         <div
           ref={chatContainerRef}

@@ -2,6 +2,8 @@
 """Генератор PDF для семейной книги с поддержкой кириллицы и красивым дизайном"""
 
 import os
+import re
+import logging
 from io import BytesIO
 from typing import List, Dict, Any, Optional
 from datetime import date
@@ -21,7 +23,12 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.graphics.shapes import Drawing, Line, Circle, Rect
 from reportlab.graphics import renderPDF
 
-from src.book.schemas import BookStyle
+from src.book.schemas import BookStyle, BookTheme
+
+logger = logging.getLogger(__name__)
+
+# Regex for photo markers: [PHOTO:relative_id:story_key:media_index]
+PHOTO_MARKER_RE = re.compile(r'\[PHOTO:(\d+):([^:]+):(\d+)\]')
 
 
 class TreeBranchLine(Flowable):
@@ -113,17 +120,17 @@ class RelativeCard(Flowable):
         self.height = 70
 
     def draw(self):
-        # Фон карточки
+        # Фон карточки — берём из конфига для поддержки тёмной темы
         if self.gender == 'male':
-            bg_color = HexColor("#E3F2FD")  # Светло-голубой
-            border_color = HexColor("#1976D2")
+            bg_color = self.color_scheme.get("card_male_bg", HexColor("#E3F2FD"))
+            border_color = self.color_scheme.get("card_male_border", HexColor("#1976D2"))
             icon = "M"
         elif self.gender == 'female':
-            bg_color = HexColor("#FCE4EC")  # Светло-розовый
-            border_color = HexColor("#C2185B")
+            bg_color = self.color_scheme.get("card_female_bg", HexColor("#FCE4EC"))
+            border_color = self.color_scheme.get("card_female_border", HexColor("#C2185B"))
             icon = "F"
         else:
-            bg_color = HexColor("#F5F5F5")
+            bg_color = self.color_scheme.get("card_other_bg", HexColor("#F5F5F5"))
             border_color = self.color_scheme["secondary"]
             icon = "?"
 
@@ -133,12 +140,40 @@ class RelativeCard(Flowable):
         self.canv.setLineWidth(2)
         self.canv.roundRect(0, 0, self.width, self.height, 10, fill=1, stroke=1)
 
-        # Иконка пола
-        self.canv.setFillColor(border_color)
-        self.canv.circle(25, self.height - 25, 15, fill=1)
-        self.canv.setFillColor(white)
-        self.canv.setFont(self.bold_font, 14)
-        self.canv.drawCentredString(25, self.height - 30, icon)
+        # Пытаемся загрузить и отобразить фото
+        photo_drawn = False
+        if self.photo_url:
+            try:
+                import httpx
+                from reportlab.lib.utils import ImageReader
+
+                response = httpx.get(self.photo_url, timeout=5, follow_redirects=True)
+                if response.status_code == 200:
+                    img = ImageReader(BytesIO(response.content))
+                    # Фото в круглой области слева
+                    self.canv.saveState()
+                    # Создаем круглую маску через clip
+                    path = self.canv.beginPath()
+                    path.circle(25, self.height - 25, 15)
+                    self.canv.clipPath(path, stroke=0)
+                    # Рисуем изображение (немного больше чтобы заполнить круг)
+                    self.canv.drawImage(img, 10, self.height - 40, width=30, height=30, mask='auto')
+                    self.canv.restoreState()
+                    # Рисуем границу круга
+                    self.canv.setStrokeColor(border_color)
+                    self.canv.setLineWidth(2)
+                    self.canv.circle(25, self.height - 25, 15, fill=0, stroke=1)
+                    photo_drawn = True
+            except Exception:
+                pass  # Fallback на иконку если фото недоступно
+
+        if not photo_drawn:
+            # Иконка пола (если фото не загружено)
+            self.canv.setFillColor(border_color)
+            self.canv.circle(25, self.height - 25, 15, fill=1)
+            self.canv.setFillColor(white)
+            self.canv.setFont(self.bold_font, 14)
+            self.canv.drawCentredString(25, self.height - 30, icon)
 
         # Имя
         self.canv.setFillColor(self.color_scheme["text"])
@@ -153,22 +188,141 @@ class RelativeCard(Flowable):
         self.canv.drawString(50, self.height - 45, self.dates)
 
 
+class InlinePhoto(Flowable):
+    """Фотография, встроенная в текст главы — центрированная с тенью и подписью"""
+    def __init__(self, image_data, caption="", max_width=14*cm, border_width=0,
+                 border_color=None, caption_style="italic", base_font="DejaVuSans",
+                 shadow=True, bg_color=None, caption_color=None, page_width=17*cm):
+        Flowable.__init__(self)
+        self.image_data = image_data
+        self.caption = caption
+        self.max_width = max_width
+        self.border_width = border_width
+        self.border_color = border_color or HexColor("#CCCCCC")
+        self.caption_style = caption_style
+        self.base_font = base_font
+        self.shadow = shadow
+        self.bg_color = bg_color
+        self.caption_color = caption_color or HexColor("#666666")
+        self.page_width = page_width
+
+        # Calculate dimensions
+        from reportlab.lib.utils import ImageReader
+        try:
+            img_reader = ImageReader(BytesIO(image_data))
+            iw, ih = img_reader.getSize()
+            aspect = ih / iw
+            self.img_width = min(max_width, iw)
+            self.img_height = self.img_width * aspect
+            # Cap height
+            if self.img_height > 14 * cm:
+                self.img_height = 14 * cm
+                self.img_width = self.img_height / aspect
+            # Total dimensions — use full page width for centering
+            self.width = self.page_width
+            padding = 12
+            caption_height = 22 if caption else 0
+            shadow_pad = 6 if shadow else 0
+            self.height = self.img_height + padding * 2 + caption_height + shadow_pad
+            self.valid = True
+        except Exception:
+            self.width = 0
+            self.height = 0
+            self.valid = False
+
+    def draw(self):
+        if not self.valid:
+            return
+
+        from reportlab.lib.utils import ImageReader
+
+        padding = 12
+        shadow_pad = 6 if self.shadow else 0
+
+        # Center the image frame on the page
+        frame_width = self.img_width + padding * 2
+        frame_height = self.img_height + padding * 2
+        x_frame = (self.width - frame_width) / 2
+        y_caption = 22 if self.caption else 0
+        y_frame = y_caption + shadow_pad
+
+        # Shadow
+        if self.shadow:
+            self.canv.setFillColor(HexColor("#00000020"))
+            self.canv.roundRect(
+                x_frame + 3, y_frame - 3,
+                frame_width, frame_height,
+                6, fill=1, stroke=0
+            )
+
+        # Background frame
+        if self.bg_color:
+            self.canv.setFillColor(self.bg_color)
+        else:
+            self.canv.setFillColor(white)
+        self.canv.setStrokeColor(self.border_color)
+        self.canv.setLineWidth(max(self.border_width, 0.5))
+        self.canv.roundRect(
+            x_frame, y_frame,
+            frame_width, frame_height,
+            6, fill=1, stroke=1
+        )
+
+        # Image
+        img_reader = ImageReader(BytesIO(self.image_data))
+        self.canv.drawImage(
+            img_reader,
+            x_frame + padding,
+            y_frame + padding,
+            width=self.img_width, height=self.img_height,
+            mask='auto'
+        )
+
+        # Caption
+        if self.caption:
+            self.canv.setFillColor(self.caption_color)
+            font_size = 9
+            try:
+                self.canv.setFont(self.base_font, font_size)
+            except Exception:
+                self.canv.setFont("Helvetica", font_size)
+            display_caption = self.caption[:80] + "..." if len(self.caption) > 80 else self.caption
+            self.canv.drawCentredString(self.width / 2, 5, display_caption)
+
+
 class PDFBookGenerator:
     """Генератор PDF книги о семейной истории с поддержкой кириллицы"""
 
-    STYLE_CONFIGS = {
+    # Light theme configs per style
+    STYLE_CONFIGS_LIGHT = {
         BookStyle.CLASSIC: {
             "primary": HexColor("#2C3E50"),
             "secondary": HexColor("#7F8C8D"),
             "accent": HexColor("#8E44AD"),
             "text": HexColor("#2C3E50"),
             "background": HexColor("#FDFEFE"),
+            "page_bg": None,  # None = white (default)
             "header_bg": HexColor("#F8F9FA"),
             "border": HexColor("#BDC3C7"),
+            "photo_frame_bg": white,
+            "photo_shadow": True,
+            "photo_caption_color": HexColor("#666666"),
             "title_font_size": 36,
             "heading_font_size": 20,
             "body_font_size": 11,
             "ornament_style": "classic",
+            "body_first_indent": 25,
+            "body_alignment": TA_JUSTIFY,
+            "photo_border_width": 1,
+            "photo_border_color": HexColor("#BDC3C7"),
+            "photo_max_width": 14 * cm,
+            "chapter_spacing": 0.5 * cm,
+            "card_male_bg": HexColor("#E3F2FD"),
+            "card_male_border": HexColor("#1976D2"),
+            "card_female_bg": HexColor("#FCE4EC"),
+            "card_female_border": HexColor("#C2185B"),
+            "card_other_bg": HexColor("#F5F5F5"),
+            "gen_title_color": white,
         },
         BookStyle.MODERN: {
             "primary": HexColor("#1A1A2E"),
@@ -176,12 +330,28 @@ class PDFBookGenerator:
             "accent": HexColor("#E94560"),
             "text": HexColor("#1A1A2E"),
             "background": HexColor("#FFFFFF"),
+            "page_bg": None,
             "header_bg": HexColor("#F0F0F5"),
             "border": HexColor("#CCCCDD"),
+            "photo_frame_bg": white,
+            "photo_shadow": True,
+            "photo_caption_color": HexColor("#666666"),
             "title_font_size": 40,
             "heading_font_size": 22,
             "body_font_size": 11,
             "ornament_style": "modern",
+            "body_first_indent": 0,
+            "body_alignment": TA_LEFT,
+            "photo_border_width": 0,
+            "photo_border_color": HexColor("#CCCCDD"),
+            "photo_max_width": 14 * cm,
+            "chapter_spacing": 1 * cm,
+            "card_male_bg": HexColor("#E3F2FD"),
+            "card_male_border": HexColor("#1976D2"),
+            "card_female_bg": HexColor("#FCE4EC"),
+            "card_female_border": HexColor("#C2185B"),
+            "card_other_bg": HexColor("#F5F5F5"),
+            "gen_title_color": white,
         },
         BookStyle.VINTAGE: {
             "primary": HexColor("#5D4037"),
@@ -189,25 +359,172 @@ class PDFBookGenerator:
             "accent": HexColor("#A1887F"),
             "text": HexColor("#3E2723"),
             "background": HexColor("#FFF8E1"),
+            "page_bg": HexColor("#FFF8E1"),
             "header_bg": HexColor("#FFECB3"),
             "border": HexColor("#BCAAA4"),
+            "photo_frame_bg": HexColor("#FFF8E1"),
+            "photo_shadow": True,
+            "photo_caption_color": HexColor("#5D4037"),
             "title_font_size": 32,
             "heading_font_size": 18,
             "body_font_size": 11,
             "ornament_style": "vintage",
+            "body_first_indent": 30,
+            "body_alignment": TA_JUSTIFY,
+            "photo_border_width": 2,
+            "photo_border_color": HexColor("#8D6E63"),
+            "photo_max_width": 13 * cm,
+            "chapter_spacing": 0.5 * cm,
+            "card_male_bg": HexColor("#E3F2FD"),
+            "card_male_border": HexColor("#1976D2"),
+            "card_female_bg": HexColor("#FCE4EC"),
+            "card_female_border": HexColor("#C2185B"),
+            "card_other_bg": HexColor("#F5F5F5"),
+            "gen_title_color": white,
+        },
+        BookStyle.CUSTOM: {
+            "primary": HexColor("#2C3E50"),
+            "secondary": HexColor("#7F8C8D"),
+            "accent": HexColor("#8E44AD"),
+            "text": HexColor("#2C3E50"),
+            "background": HexColor("#FDFEFE"),
+            "page_bg": None,
+            "header_bg": HexColor("#F8F9FA"),
+            "border": HexColor("#BDC3C7"),
+            "photo_frame_bg": white,
+            "photo_shadow": True,
+            "photo_caption_color": HexColor("#666666"),
+            "title_font_size": 36,
+            "heading_font_size": 20,
+            "body_font_size": 11,
+            "ornament_style": "classic",
+            "body_first_indent": 25,
+            "body_alignment": TA_JUSTIFY,
+            "photo_border_width": 1,
+            "photo_border_color": HexColor("#BDC3C7"),
+            "photo_max_width": 14 * cm,
+            "chapter_spacing": 0.5 * cm,
+            "card_male_bg": HexColor("#E3F2FD"),
+            "card_male_border": HexColor("#1976D2"),
+            "card_female_bg": HexColor("#FCE4EC"),
+            "card_female_border": HexColor("#C2185B"),
+            "card_other_bg": HexColor("#F5F5F5"),
+            "gen_title_color": white,
         },
     }
 
-    def __init__(self, style: BookStyle = BookStyle.CLASSIC):
+    # Dark theme overrides — merged on top of light config
+    DARK_THEME_OVERRIDES = {
+        BookStyle.CLASSIC: {
+            "primary": HexColor("#E0E0E0"),
+            "secondary": HexColor("#9E9E9E"),
+            "accent": HexColor("#BB86FC"),
+            "text": HexColor("#E0E0E0"),
+            "background": HexColor("#1E1E2E"),
+            "page_bg": HexColor("#1E1E2E"),
+            "header_bg": HexColor("#2A2A3E"),
+            "border": HexColor("#444466"),
+            "photo_frame_bg": HexColor("#2A2A3E"),
+            "photo_shadow": False,
+            "photo_caption_color": HexColor("#9E9E9E"),
+            "photo_border_color": HexColor("#444466"),
+            "card_male_bg": HexColor("#1A2744"),
+            "card_male_border": HexColor("#5C9CE6"),
+            "card_female_bg": HexColor("#3D1A2E"),
+            "card_female_border": HexColor("#E06090"),
+            "card_other_bg": HexColor("#2A2A3E"),
+            "gen_title_color": HexColor("#E0E0E0"),
+        },
+        BookStyle.MODERN: {
+            "primary": HexColor("#E8E8F0"),
+            "secondary": HexColor("#A0A0C0"),
+            "accent": HexColor("#FF6B8A"),
+            "text": HexColor("#E8E8F0"),
+            "background": HexColor("#121220"),
+            "page_bg": HexColor("#121220"),
+            "header_bg": HexColor("#1C1C30"),
+            "border": HexColor("#333355"),
+            "photo_frame_bg": HexColor("#1C1C30"),
+            "photo_shadow": False,
+            "photo_caption_color": HexColor("#A0A0C0"),
+            "photo_border_color": HexColor("#333355"),
+            "card_male_bg": HexColor("#1A2744"),
+            "card_male_border": HexColor("#5C9CE6"),
+            "card_female_bg": HexColor("#3D1A2E"),
+            "card_female_border": HexColor("#E06090"),
+            "card_other_bg": HexColor("#1C1C30"),
+            "gen_title_color": HexColor("#E8E8F0"),
+        },
+        BookStyle.VINTAGE: {
+            "primary": HexColor("#D7CCC8"),
+            "secondary": HexColor("#A1887F"),
+            "accent": HexColor("#BCAAA4"),
+            "text": HexColor("#D7CCC8"),
+            "background": HexColor("#2C2418"),
+            "page_bg": HexColor("#2C2418"),
+            "header_bg": HexColor("#3E3428"),
+            "border": HexColor("#5D4037"),
+            "photo_frame_bg": HexColor("#3E3428"),
+            "photo_shadow": False,
+            "photo_caption_color": HexColor("#A1887F"),
+            "photo_border_color": HexColor("#5D4037"),
+            "card_male_bg": HexColor("#1A2744"),
+            "card_male_border": HexColor("#5C9CE6"),
+            "card_female_bg": HexColor("#3D1A2E"),
+            "card_female_border": HexColor("#E06090"),
+            "card_other_bg": HexColor("#3E3428"),
+            "gen_title_color": HexColor("#D7CCC8"),
+        },
+        BookStyle.CUSTOM: {
+            "primary": HexColor("#E0E0E0"),
+            "secondary": HexColor("#9E9E9E"),
+            "accent": HexColor("#BB86FC"),
+            "text": HexColor("#E0E0E0"),
+            "background": HexColor("#1E1E2E"),
+            "page_bg": HexColor("#1E1E2E"),
+            "header_bg": HexColor("#2A2A3E"),
+            "border": HexColor("#444466"),
+            "photo_frame_bg": HexColor("#2A2A3E"),
+            "photo_shadow": False,
+            "photo_caption_color": HexColor("#9E9E9E"),
+            "photo_border_color": HexColor("#444466"),
+            "card_male_bg": HexColor("#1A2744"),
+            "card_male_border": HexColor("#5C9CE6"),
+            "card_female_bg": HexColor("#3D1A2E"),
+            "card_female_border": HexColor("#E06090"),
+            "card_other_bg": HexColor("#2A2A3E"),
+            "gen_title_color": HexColor("#E0E0E0"),
+        },
+    }
+
+    def __init__(self, style: BookStyle = BookStyle.CLASSIC, theme: BookTheme = BookTheme.LIGHT):
         self.style = style
-        self.config = self.STYLE_CONFIGS[style]
+        self.theme = theme
+        # Build config: start with light, overlay dark if needed
+        self.config = dict(self.STYLE_CONFIGS_LIGHT[style])
+        if theme == BookTheme.DARK:
+            self.config.update(self.DARK_THEME_OVERRIDES.get(style, {}))
         self._register_fonts()
         self.styles = self._create_styles()
+        self.story_photos: Optional[Dict[str, str]] = None
+
+    def _prepare_text(self, text: str) -> str:
+        """Подготовка текста для корректного отображения в PDF"""
+        if not text:
+            return ""
+        # Убеждаемся, что текст в UTF-8
+        if isinstance(text, bytes):
+            text = text.decode('utf-8', errors='replace')
+        # Убираем невидимые символы и нормализуем пробелы
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        # Заменяем проблемные символы
+        text = text.replace('\u200b', '')  # Zero-width space
+        text = text.replace('\ufeff', '')  # BOM
+        return text.strip()
 
     def _register_fonts(self):
         """Регистрация шрифтов с поддержкой кириллицы"""
-        import logging
-        logger = logging.getLogger(__name__)
+        import platform
 
         registered_fonts = {}
 
@@ -219,78 +536,111 @@ class PDFBookGenerator:
             except:
                 return False
 
-        # Пути для поиска шрифтов DejaVu
-        possible_paths = [
-            # Linux
-            "/usr/share/fonts/truetype/dejavu/",
-            "/usr/share/fonts/dejavu/",
-            # Windows
-            "C:/Windows/Fonts/",
-            # Локальная папка проекта
-            os.path.join(os.path.dirname(__file__), "fonts/"),
-            # Относительно backend
-            os.path.join(os.path.dirname(__file__), "../../../fonts/"),
-        ]
+        # Определяем систему
+        system = platform.system()
+        windows_fonts_dir = "C:/Windows/Fonts/"
 
-        dejavu_files = {
-            "DejaVuSans": "DejaVuSans.ttf",
-            "DejaVuSans-Bold": "DejaVuSans-Bold.ttf",
-            "DejaVuSans-Oblique": "DejaVuSans-Oblique.ttf",
-            "DejaVuSerif": "DejaVuSerif.ttf",
-            "DejaVuSerif-Bold": "DejaVuSerif-Bold.ttf",
-        }
+        # Список шрифтов для поиска (в порядке приоритета)
+        font_candidates = []
 
-        for font_name, font_file in dejavu_files.items():
-            # Проверяем, не зарегистрирован ли уже
+        # Локальные папки для шрифтов (приоритет выше системных)
+        local_fonts_dir = os.path.join(os.path.dirname(__file__), "fonts/")
+        backend_fonts_dir = os.path.join(os.path.dirname(__file__), "../../../fonts/")
+
+        if system == "Windows":
+            # Сначала проверяем локальные папки проекта (DejaVu)
+            dejavu_files = {
+                "DejaVuSans": "DejaVuSans.ttf",
+                "DejaVuSans-Bold": "DejaVuSans-Bold.ttf",
+            }
+            for font_name, font_file in dejavu_files.items():
+                font_candidates.append((font_name, font_file, local_fonts_dir))
+                font_candidates.append((font_name, font_file, backend_fonts_dir))
+
+            # Затем системные Windows шрифты с поддержкой кириллицы
+            font_candidates.extend([
+                ("DejaVuSans", "arial.ttf", windows_fonts_dir),
+                ("DejaVuSans-Bold", "arialbd.ttf", windows_fonts_dir),
+                ("DejaVuSans", "calibri.ttf", windows_fonts_dir),
+                ("DejaVuSans-Bold", "calibrib.ttf", windows_fonts_dir),
+                ("DejaVuSans", "times.ttf", windows_fonts_dir),
+                ("DejaVuSans-Bold", "timesbd.ttf", windows_fonts_dir),
+            ])
+        else:
+            # Linux/Mac - ищем DejaVu
+            possible_paths = [
+                "/usr/share/fonts/truetype/dejavu/",
+                "/usr/share/fonts/dejavu/",
+                "/usr/share/fonts/TTF/",
+                os.path.join(os.path.dirname(__file__), "fonts/"),
+                os.path.join(os.path.dirname(__file__), "../../../fonts/"),
+            ]
+
+            dejavu_files = {
+                "DejaVuSans": "DejaVuSans.ttf",
+                "DejaVuSans-Bold": "DejaVuSans-Bold.ttf",
+            }
+
+            for font_name, font_file in dejavu_files.items():
+                for path in possible_paths:
+                    font_candidates.append((font_name, font_file, path))
+
+        # Регистрируем шрифты
+        for font_name, font_file, base_path in font_candidates:
+            if font_name in registered_fonts:
+                continue
+
             if is_font_registered(font_name):
                 registered_fonts[font_name] = True
                 logger.info(f"Шрифт {font_name} уже зарегистрирован")
                 continue
 
-            for path in possible_paths:
-                font_path = os.path.join(path, font_file)
+            font_path = os.path.join(base_path, font_file)
+            if os.path.exists(font_path):
+                try:
+                    pdfmetrics.registerFont(TTFont(font_name, font_path))
+                    registered_fonts[font_name] = True
+                    logger.info(f"Успешно зарегистрирован шрифт {font_name} из {font_path}")
+                except Exception as e:
+                    logger.warning(f"Не удалось зарегистрировать {font_name} из {font_path}: {e}")
+                    continue
+
+        # Если не нашли шрифты, пробуем зарегистрировать любые доступные Windows шрифты
+        if not registered_fonts and system == "Windows":
+            windows_fonts = [
+                ("DejaVuSans", "arial.ttf"),
+                ("DejaVuSans-Bold", "arialbd.ttf"),
+                ("DejaVuSans", "calibri.ttf"),
+                ("DejaVuSans-Bold", "calibrib.ttf"),
+                ("DejaVuSans", "tahoma.ttf"),
+                ("DejaVuSans-Bold", "tahomabd.ttf"),
+            ]
+
+            for font_name, font_file in windows_fonts:
+                if font_name in registered_fonts:
+                    continue
+                font_path = os.path.join(windows_fonts_dir, font_file)
                 if os.path.exists(font_path):
                     try:
                         pdfmetrics.registerFont(TTFont(font_name, font_path))
                         registered_fonts[font_name] = True
-                        logger.info(f"Успешно зарегистрирован шрифт {font_name} из {font_path}")
+                        logger.info(f"Зарегистрирован {font_name} из {font_path}")
                         break
                     except Exception as e:
-                        logger.warning(f"Не удалось зарегистрировать {font_name} из {font_path}: {e}")
-                        continue
+                        logger.warning(f"Ошибка регистрации {font_name}: {e}")
 
-        # Fallback: используем Arial/Helvetica если DejaVu не найден
-        if not registered_fonts:
-            logger.info("DejaVu шрифты не найдены, пробуем Arial...")
-            # Пробуем Arial на Windows
-            arial_path = "C:/Windows/Fonts/arial.ttf"
-            arial_bold_path = "C:/Windows/Fonts/arialbd.ttf"
+        # Устанавливаем доступные шрифты
+        if registered_fonts.get("DejaVuSans"):
+            self.base_font = "DejaVuSans"
+            self.bold_font = "DejaVuSans-Bold" if registered_fonts.get("DejaVuSans-Bold") else "DejaVuSans"
+        else:
+            logger.warning("Кириллические шрифты не найдены! Используется Times-Roman (может не поддерживать все символы)")
+            self.base_font = "Times-Roman"
+            self.bold_font = "Times-Bold"
 
-            if os.path.exists(arial_path):
-                try:
-                    if not is_font_registered("DejaVuSans"):
-                        pdfmetrics.registerFont(TTFont("DejaVuSans", arial_path))
-                        registered_fonts["DejaVuSans"] = True
-                        logger.info("Зарегистрирован DejaVuSans как Arial")
-                    if os.path.exists(arial_bold_path):
-                        if not is_font_registered("DejaVuSans-Bold"):
-                            pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", arial_bold_path))
-                            registered_fonts["DejaVuSans-Bold"] = True
-                            logger.info("Зарегистрирован DejaVuSans-Bold как Arial Bold")
-                    else:
-                        if not is_font_registered("DejaVuSans-Bold"):
-                            pdfmetrics.registerFont(TTFont("DejaVuSans-Bold", arial_path))
-                            registered_fonts["DejaVuSans-Bold"] = True
-                            logger.info("Зарегистрирован DejaVuSans-Bold как Arial (regular)")
-                except Exception as e:
-                    logger.error(f"Не удалось зарегистрировать Arial: {e}")
-
-        # Устанавливаем доступные шрифты с fallback
-        self.base_font = "DejaVuSans" if registered_fonts.get("DejaVuSans") else "Helvetica"
-        self.bold_font = "DejaVuSans-Bold" if registered_fonts.get("DejaVuSans-Bold") else "Helvetica-Bold"
         self.fonts_available = bool(registered_fonts)
 
-        logger.info(f"Итоговые шрифты: base_font={self.base_font}, bold_font={self.bold_font}")
+        logger.info(f"Итоговые шрифты: base_font={self.base_font}, bold_font={self.bold_font}, fonts_available={self.fonts_available}")
 
     def _create_styles(self) -> Dict[str, ParagraphStyle]:
         """Создание стилей с кириллическими шрифтами"""
@@ -342,11 +692,11 @@ class PDFBookGenerator:
                 fontName=base_font,
                 fontSize=self.config["body_font_size"],
                 textColor=self.config["text"],
-                alignment=TA_JUSTIFY,
+                alignment=self.config.get("body_alignment", TA_JUSTIFY),
                 spaceBefore=6,
                 spaceAfter=8,
                 leading=self.config["body_font_size"] * 1.6,
-                firstLineIndent=25,
+                firstLineIndent=self.config.get("body_first_indent", 25),
             ),
             "intro": ParagraphStyle(
                 "Introduction",
@@ -402,7 +752,7 @@ class PDFBookGenerator:
                 "GenerationTitle",
                 fontName=bold_font,
                 fontSize=14,
-                textColor=white,
+                textColor=self.config.get("gen_title_color", white),
                 alignment=TA_CENTER,
                 spaceBefore=15,
                 spaceAfter=15,
@@ -450,8 +800,13 @@ class PDFBookGenerator:
         timeline: Optional[List[Dict]] = None,
         relatives: Optional[List] = None,
         relationships: Optional[List] = None,
+        relative_photos: Optional[Dict[int, str]] = None,
+        story_photos: Optional[Dict[str, str]] = None,
     ) -> bytes:
         """Генерация PDF книги"""
+        self.story_photos = story_photos
+        self.used_photo_keys = set()  # Отслеживание вставленных фото (без повторов)
+
         buffer = BytesIO()
 
         doc = SimpleDocTemplate(
@@ -476,7 +831,7 @@ class PDFBookGenerator:
 
         # 4. Семейное древо
         if relatives:
-            story.extend(self._create_family_tree_section(relatives, relationships))
+            story.extend(self._create_family_tree_section(relatives, relationships, relative_photos))
 
         # 5. Хронология
         if timeline:
@@ -484,7 +839,10 @@ class PDFBookGenerator:
 
         # 6. Главы
         for i, chapter in enumerate(chapters, 1):
-            story.extend(self._create_chapter(i, chapter["title"], chapter["content"]))
+            story.extend(self._create_chapter(
+                i, chapter["title"], chapter["content"],
+                fallback_photo_keys=chapter.get("photo_keys"),
+            ))
 
         # 7. Заключение
         story.extend(self._create_conclusion(conclusion))
@@ -492,7 +850,18 @@ class PDFBookGenerator:
         # 8. Финальная страница
         story.extend(self._create_final_page())
 
-        doc.build(story)
+        # Page background callback for dark theme
+        page_bg = self.config.get("page_bg")
+        if page_bg:
+            def on_page(canvas, doc_obj):
+                canvas.saveState()
+                canvas.setFillColor(page_bg)
+                canvas.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
+                canvas.restoreState()
+            doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
+        else:
+            doc.build(story)
+
         pdf_bytes = buffer.getvalue()
         buffer.close()
 
@@ -510,15 +879,16 @@ class PDFBookGenerator:
         elements.append(Spacer(1, 1.5 * cm))
 
         # Заголовок книги
-        elements.append(Paragraph(title, self.styles["title"]))
+        elements.append(Paragraph(self._prepare_text(title), self.styles["title"]))
 
         # Подзаголовок в зависимости от стиля
         subtitles = {
             BookStyle.CLASSIC: "История нашего рода",
             BookStyle.MODERN: "Семейная хроника",
             BookStyle.VINTAGE: "Летопись семьи",
+            BookStyle.CUSTOM: "История нашего рода",
         }
-        elements.append(Paragraph(subtitles[self.style], self.styles["subtitle"]))
+        elements.append(Paragraph(self._prepare_text(subtitles[self.style]), self.styles["subtitle"]))
 
         # Нижний декоративный элемент
         elements.append(Spacer(1, 1 * cm))
@@ -531,7 +901,7 @@ class PDFBookGenerator:
         # Дата создания внизу
         elements.append(Spacer(1, 3 * cm))
         today = date.today().strftime("%d.%m.%Y")
-        elements.append(Paragraph(f"Создано {today}", self.styles["footer"]))
+        elements.append(Paragraph(self._prepare_text(f"Создано {today}"), self.styles["footer"]))
 
         elements.append(PageBreak())
         return elements
@@ -567,7 +937,7 @@ class PDFBookGenerator:
         """Создание оглавления"""
         elements = []
 
-        elements.append(Paragraph("Содержание", self.styles["chapter_title"]))
+        elements.append(Paragraph(self._prepare_text("Содержание"), self.styles["chapter_title"]))
         elements.append(DecorativeHeader(450, self.config["border"], self.config["ornament_style"]))
         elements.append(Spacer(1, 0.5 * cm))
 
@@ -594,9 +964,9 @@ class PDFBookGenerator:
         for title, page in toc_items:
             dots = "." * (60 - len(title))
             toc_data.append([
-                Paragraph(title, self.styles["toc_entry"]),
-                Paragraph(dots, self.styles["toc_entry"]),
-                Paragraph(page, self.styles["toc_entry"]),
+                Paragraph(self._prepare_text(title), self.styles["toc_entry"]),
+                Paragraph(self._prepare_text(dots), self.styles["toc_entry"]),
+                Paragraph(self._prepare_text(page), self.styles["toc_entry"]),
             ])
 
         toc_table = Table(toc_data, colWidths=[300, 100, 50])
@@ -613,7 +983,7 @@ class PDFBookGenerator:
         """Создание введения"""
         elements = []
 
-        elements.append(Paragraph("Введение", self.styles["chapter_title"]))
+        elements.append(Paragraph(self._prepare_text("Введение"), self.styles["chapter_title"]))
         elements.append(DecorativeHeader(450, self.config["border"], self.config["ornament_style"]))
         elements.append(Spacer(1, 0.5 * cm))
 
@@ -622,24 +992,25 @@ class PDFBookGenerator:
             BookStyle.CLASSIC: "«Семья — это не главное, это всё»",
             BookStyle.MODERN: "Family is not an important thing. It's everything.",
             BookStyle.VINTAGE: "«В семье и каша гуще»",
+            BookStyle.CUSTOM: "«Семья — это не главное, это всё»",
         }
-        elements.append(Paragraph(epigraphs[self.style], self.styles["quote"]))
+        elements.append(Paragraph(self._prepare_text(epigraphs[self.style]), self.styles["quote"]))
         elements.append(Spacer(1, 0.5 * cm))
 
         # Текст введения
         paragraphs = text.split("\n\n") if "\n\n" in text else [text]
         for para in paragraphs:
             if para.strip():
-                elements.append(Paragraph(para.strip(), self.styles["intro"]))
+                elements.append(Paragraph(self._prepare_text(para.strip()), self.styles["intro"]))
 
         elements.append(PageBreak())
         return elements
 
-    def _create_family_tree_section(self, relatives: List, relationships: Optional[List]) -> List:
+    def _create_family_tree_section(self, relatives: List, relationships: Optional[List], relative_photos: Optional[Dict[int, str]] = None) -> List:
         """Создание раздела с семейным древом"""
         elements = []
 
-        elements.append(Paragraph("Семейное древо", self.styles["chapter_title"]))
+        elements.append(Paragraph(self._prepare_text("Семейное древо"), self.styles["chapter_title"]))
         elements.append(DecorativeHeader(450, self.config["border"], self.config["ornament_style"]))
         elements.append(Spacer(1, 0.5 * cm))
 
@@ -672,7 +1043,12 @@ class PDFBookGenerator:
                 death = r.death_date.strftime("%d.%m.%Y") if r.death_date else None
                 dates = f"{birth}" + (f" — {death}" if death else "")
                 gender = r.gender.value if r.gender else "other"
-                photo_url = r.image_url if hasattr(r, 'image_url') else None
+                # Получаем фото из переданного словаря или из объекта
+                photo_url = None
+                if relative_photos and r.id in relative_photos:
+                    photo_url = relative_photos[r.id]
+                elif hasattr(r, 'image_url') and r.image_url:
+                    photo_url = r.image_url
 
                 card = RelativeCard(name, dates, gender, self.config, photo_url, self.bold_font, self.base_font)
                 row.append(card)
@@ -703,7 +1079,7 @@ class PDFBookGenerator:
 
     def _create_generation_header(self, label: str) -> Table:
         """Создание заголовка поколения"""
-        data = [[Paragraph(label, self.styles["generation_title"])]]
+        data = [[Paragraph(self._prepare_text(label), self.styles["generation_title"])]]
         table = Table(data, colWidths=[400])
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, -1), self.config["accent"]),
@@ -736,7 +1112,7 @@ class PDFBookGenerator:
         """Создание хронологии"""
         elements = []
 
-        elements.append(Paragraph("Хронология событий", self.styles["chapter_title"]))
+        elements.append(Paragraph(self._prepare_text("Хронология событий"), self.styles["chapter_title"]))
         elements.append(DecorativeHeader(450, self.config["border"], self.config["ornament_style"]))
         elements.append(Spacer(1, 0.5 * cm))
 
@@ -748,10 +1124,10 @@ class PDFBookGenerator:
 
             # Год с маркером
             year_text = f"● {year}"
-            elements.append(Paragraph(year_text, self.styles["timeline_year"]))
+            elements.append(Paragraph(self._prepare_text(year_text), self.styles["timeline_year"]))
 
             # Описание события
-            elements.append(Paragraph(description, self.styles["timeline_event"]))
+            elements.append(Paragraph(self._prepare_text(description), self.styles["timeline_event"]))
 
             # Соединительная линия
             elements.append(TreeBranchLine(100, self.config["border"], 'dashed'))
@@ -759,25 +1135,163 @@ class PDFBookGenerator:
         elements.append(PageBreak())
         return elements
 
-    def _create_chapter(self, number: int, title: str, content: str) -> List:
-        """Создание главы"""
+    def _download_image(self, url: str) -> Optional[bytes]:
+        """Скачивание изображения по URL с обработкой ошибок"""
+        try:
+            import httpx
+            logger.info(f"Скачивание изображения: {url[:100]}...")
+            response = httpx.get(url, timeout=15, follow_redirects=True)
+            if response.status_code == 200 and len(response.content) > 0:
+                logger.info(f"Изображение скачано: {len(response.content)} байт")
+                return response.content
+            else:
+                logger.warning(f"Ошибка скачивания изображения: status={response.status_code}, size={len(response.content)}, url={url[:100]}")
+        except Exception as e:
+            logger.error(f"Исключение при скачивании изображения {url[:100]}: {type(e).__name__}: {e}")
+        return None
+
+    def _create_inline_photo(self, photo_key: str, caption: str = "") -> Optional[Flowable]:
+        """Создание встроенной фотографии из маркера"""
+        if not self.story_photos:
+            logger.warning(f"story_photos is None/empty, cannot create photo for key='{photo_key}'")
+            return None
+        if photo_key not in self.story_photos:
+            logger.warning(f"photo_key='{photo_key}' not found in story_photos keys: {list(self.story_photos.keys())[:10]}")
+            return None
+
+        url = self.story_photos[photo_key]
+        image_data = self._download_image(url)
+        if not image_data:
+            logger.warning(f"Не удалось скачать изображение для key='{photo_key}', url={url[:80]}")
+            return None
+
+        # Calculate available page width (A4 width minus margins)
+        page_content_width = A4[0] - 4 * cm  # 2cm margin each side
+
+        photo = InlinePhoto(
+            image_data=image_data,
+            caption=caption,
+            max_width=self.config.get("photo_max_width", 14 * cm),
+            border_width=self.config.get("photo_border_width", 0.5),
+            border_color=self.config.get("photo_border_color", HexColor("#CCCCCC")),
+            caption_style="italic",
+            base_font=self.base_font,
+            shadow=self.config.get("photo_shadow", True),
+            bg_color=self.config.get("photo_frame_bg"),
+            caption_color=self.config.get("photo_caption_color", HexColor("#666666")),
+            page_width=page_content_width,
+        )
+
+        if photo.valid:
+            logger.info(f"Фото создано успешно: key='{photo_key}', size={photo.img_width:.0f}x{photo.img_height:.0f}")
+            return photo
+
+        logger.warning(f"InlinePhoto невалидно для key='{photo_key}'")
+        return None
+
+    def _create_chapter(self, number: int, title: str, content: str,
+                        fallback_photo_keys: Optional[List[str]] = None) -> List:
+        """Создание главы с поддержкой встроенных фотографий"""
         elements = []
 
         chapter_title = f"Глава {number}. {title}"
-        elements.append(Paragraph(chapter_title, self.styles["chapter_title"]))
+        elements.append(Paragraph(self._prepare_text(chapter_title), self.styles["chapter_title"]))
         elements.append(DecorativeHeader(450, self.config["border"], self.config["ornament_style"]))
-        elements.append(Spacer(1, 0.5 * cm))
+        elements.append(Spacer(1, self.config.get("chapter_spacing", 0.5 * cm)))
 
-        # Разбиваем на абзацы
-        paragraphs = content.split("\n\n") if "\n\n" in content else content.split("\n")
-        for para in paragraphs:
-            clean_para = para.strip()
-            if clean_para:
-                # Очищаем от markdown
-                clean_para = clean_para.replace("**", "")
-                clean_para = clean_para.replace("*", "")
-                clean_para = clean_para.replace("#", "")
-                elements.append(Paragraph(clean_para, self.styles["body"]))
+        # Split content by photo markers
+        markers_found = PHOTO_MARKER_RE.findall(content)
+        parts = PHOTO_MARKER_RE.split(content)
+        # parts structure: [text, rid, story_key, media_idx, text, rid, story_key, media_idx, ...]
+
+        photos_inserted = 0
+
+        logger.info(f"Глава {number}: найдено {len(markers_found)} маркеров фото в тексте AI")
+        if markers_found:
+            logger.info(f"Глава {number}: маркеры: {markers_found}")
+
+        i = 0
+        while i < len(parts):
+            if i % 4 == 0:
+                # Text segment
+                text_segment = parts[i]
+                paragraphs = text_segment.split("\n\n") if "\n\n" in text_segment else text_segment.split("\n")
+                for para in paragraphs:
+                    clean_para = para.strip()
+                    if clean_para:
+                        # Очищаем от markdown
+                        clean_para = clean_para.replace("**", "")
+                        clean_para = clean_para.replace("*", "")
+                        clean_para = clean_para.replace("#", "")
+                        elements.append(Paragraph(self._prepare_text(clean_para), self.styles["body"]))
+            elif i % 4 == 1:
+                # Photo marker group: rid at i, story_key at i+1, media_idx at i+2
+                if i + 2 < len(parts):
+                    rid = parts[i]
+                    story_key = parts[i + 1]
+                    media_idx = parts[i + 2]
+                    photo_key = f"{rid}:{story_key}:{media_idx}"
+
+                    logger.info(f"Глава {number}: обработка маркера фото key='{photo_key}'")
+
+                    # Skip duplicates across chapters
+                    if photo_key in self.used_photo_keys:
+                        logger.info(f"Глава {number}: пропуск дубликата фото key='{photo_key}'")
+                        i += 1
+                        continue
+
+                    # Build caption
+                    caption = ""
+                    if self.story_photos and photo_key in self.story_photos:
+                        if story_key == "profile":
+                            caption = ""
+                        else:
+                            caption = story_key.replace("_", " ").title()
+                    else:
+                        logger.warning(f"Глава {number}: ключ '{photo_key}' НЕ найден в story_photos (доступно: {list(self.story_photos.keys()) if self.story_photos else 'None'})")
+
+                    photo_flowable = self._create_inline_photo(photo_key, caption)
+                    if photo_flowable:
+                        elements.append(Spacer(1, 0.3 * cm))
+                        elements.append(photo_flowable)
+                        elements.append(Spacer(1, 0.3 * cm))
+                        photos_inserted += 1
+                        self.used_photo_keys.add(photo_key)
+                        logger.info(f"Глава {number}: фото вставлено key='{photo_key}'")
+                    else:
+                        logger.warning(f"Глава {number}: не удалось создать фото для key='{photo_key}'")
+            i += 1
+
+        # Fallback: если AI не вставил маркеры, но есть доступные фото для этой главы
+        if photos_inserted == 0 and fallback_photo_keys and self.story_photos:
+            logger.info(f"Глава {number}: AI не вставил фото, используем fallback ({len(fallback_photo_keys)} доступных)")
+            elements.append(Spacer(1, 0.5 * cm))
+
+            fallback_count = 0
+            for photo_key in fallback_photo_keys:
+                if fallback_count >= 4:
+                    break
+                if photo_key in self.used_photo_keys:
+                    logger.info(f"Глава {number}: fallback пропуск дубликата key='{photo_key}'")
+                    continue
+                if photo_key not in self.story_photos:
+                    logger.warning(f"Глава {number}: fallback ключ '{photo_key}' не найден в story_photos")
+                    continue
+
+                # Build caption
+                key_parts = photo_key.split(":", 2)
+                story_key = key_parts[1] if len(key_parts) > 1 else ""
+                caption = "" if story_key == "profile" else story_key.replace("_", " ").title()
+
+                photo_flowable = self._create_inline_photo(photo_key, caption)
+                if photo_flowable:
+                    elements.append(photo_flowable)
+                    elements.append(Spacer(1, 0.3 * cm))
+                    fallback_count += 1
+                    self.used_photo_keys.add(photo_key)
+                    logger.info(f"Глава {number}: fallback фото вставлено key='{photo_key}'")
+
+            logger.info(f"Глава {number}: всего вставлено {fallback_count} fallback фото")
 
         elements.append(PageBreak())
         return elements
@@ -786,14 +1300,14 @@ class PDFBookGenerator:
         """Создание заключения"""
         elements = []
 
-        elements.append(Paragraph("Заключение", self.styles["chapter_title"]))
+        elements.append(Paragraph(self._prepare_text("Заключение"), self.styles["chapter_title"]))
         elements.append(DecorativeHeader(450, self.config["border"], self.config["ornament_style"]))
         elements.append(Spacer(1, 0.5 * cm))
 
         paragraphs = text.split("\n\n") if "\n\n" in text else [text]
         for para in paragraphs:
             if para.strip():
-                elements.append(Paragraph(para.strip(), self.styles["intro"]))
+                elements.append(Paragraph(self._prepare_text(para.strip()), self.styles["intro"]))
 
         elements.append(PageBreak())
         return elements
@@ -810,9 +1324,10 @@ class PDFBookGenerator:
             BookStyle.CLASSIC: "Помните о своих корнях,\nи ваши ветви будут крепки.",
             BookStyle.MODERN: "The love of family is life's greatest blessing.",
             BookStyle.VINTAGE: "Род силен не числом,\nа согласием и любовью.",
+            BookStyle.CUSTOM: "Помните о своих корнях,\nи ваши ветви будут крепки.",
         }
 
-        elements.append(Paragraph(final_quotes[self.style], self.styles["quote"]))
+        elements.append(Paragraph(self._prepare_text(final_quotes[self.style]), self.styles["quote"]))
         elements.append(Spacer(1, 1 * cm))
         elements.append(DecorativeHeader(450, self.config["accent"], self.config["ornament_style"]))
 

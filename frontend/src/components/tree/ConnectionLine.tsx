@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 
-// Relationship type labels in Russian
+// Relationship type labels in Russian (for displaying on lines)
 const RELATIONSHIP_LABELS: Record<string, string> = {
   father: 'Отец',
   mother: 'Мать',
@@ -14,8 +14,12 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
   grandmother: 'Бабушка',
   grandson: 'Внук',
   granddaughter: 'Внучка',
-  husband: 'Муж',
-  wife: 'Жена',
+  spouse: 'В браке',
+  husband: 'В браке',  // Legacy: display as "В браке"
+  wife: 'В браке',     // Legacy: display as "В браке"
+  ex_spouse: 'Был(а) в браке',
+  ex_husband: 'Был в браке',  // Legacy
+  ex_wife: 'Была в браке',    // Legacy
   uncle: 'Дядя',
   aunt: 'Тётя',
   nephew: 'Племянник',
@@ -26,7 +30,7 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
   stepmother: 'Мачеха',
   stepson: 'Пасынок',
   stepdaughter: 'Падчерица',
-  half_brother: 'Своднй брат',
+  half_brother: 'Сводный брат',
   half_sister: 'Сводная сестра',
   father_in_law: 'Тесть',
   mother_in_law: 'Тёща',
@@ -43,6 +47,48 @@ const RELATIONSHIP_LABELS: Record<string, string> = {
   parent: 'Родитель',
   child: 'Ребёнок',
   unknown: '?',
+}
+
+// Relationship types for dropdown selection (excludes deprecated types)
+const RELATIONSHIP_OPTIONS: Record<string, string> = {
+  father: 'Отец',
+  mother: 'Мать',
+  son: 'Сын',
+  daughter: 'Дочь',
+  brother: 'Брат',
+  sister: 'Сестра',
+  grandfather: 'Дед',
+  grandmother: 'Бабушка',
+  grandson: 'Внук',
+  granddaughter: 'Внучка',
+  spouse: 'В браке',
+  ex_spouse: 'Был(а) в браке',
+  uncle: 'Дядя',
+  aunt: 'Тётя',
+  nephew: 'Племянник',
+  niece: 'Племянница',
+  cousin: 'Кузен',
+  partner: 'Партнёр',
+  stepfather: 'Отчим',
+  stepmother: 'Мачеха',
+  stepson: 'Пасынок',
+  stepdaughter: 'Падчерица',
+  half_brother: 'Сводный брат',
+  half_sister: 'Сводная сестра',
+  father_in_law: 'Тесть',
+  mother_in_law: 'Тёща',
+  son_in_law: 'Зять',
+  daughter_in_law: 'Невестка',
+  brother_in_law: 'Деверь',
+  sister_in_law: 'Золовка',
+  godfather: 'Крёстный',
+  godmother: 'Крёстная',
+  godson: 'Крестник',
+  goddaughter: 'Крестница',
+  guardian: 'Опекун',
+  ward: 'Подопечный',
+  parent: 'Родитель',
+  child: 'Ребёнок',
 }
 
 interface ConnectionLineProps {
@@ -152,4 +198,4 @@ export default function ConnectionLine({
   )
 }
 
-export { RELATIONSHIP_LABELS }
+export { RELATIONSHIP_LABELS, RELATIONSHIP_OPTIONS }

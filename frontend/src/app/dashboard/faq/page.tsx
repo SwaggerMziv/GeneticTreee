@@ -1,12 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button, Spin, Collapse, Input } from 'antd'
+import { useState } from 'react'
 import {
-  TreePine,
-  ArrowLeft,
   HelpCircle,
   Search,
   MessageCircle,
@@ -17,10 +12,11 @@ import {
   CreditCard,
   Sparkles,
 } from 'lucide-react'
-import { authApi } from '@/lib/api/auth'
-import { User as UserType, ApiError } from '@/types'
-import { isAuthenticated, getErrorMessage } from '@/lib/utils'
-import { message } from 'antd'
+import { useUser } from '@/components/providers/UserProvider'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 
 interface FAQItem {
   key: string
@@ -30,36 +26,9 @@ interface FAQItem {
 }
 
 export default function FAQPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<UserType | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user } = useUser()
   const [searchTerm, setSearchTerm] = useState('')
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/auth')
-      return
-    }
-
-    const fetchData = async () => {
-      try {
-        const userData = await authApi.me()
-        setUser(userData)
-      } catch (error) {
-        const apiError = error as ApiError
-        const errorMessage = getErrorMessage(apiError)
-        message.error(errorMessage)
-        if (apiError.status === 401) {
-          router.push('/auth')
-        }
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [router])
 
   const categories = [
     { id: 'general', name: 'Общие вопросы', icon: HelpCircle },
@@ -221,140 +190,122 @@ export default function FAQPage() {
     return matchesSearch && matchesCategory
   })
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-charcoal-950">
-        <Spin size="large" />
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-charcoal-950">
-      {/* Header */}
-      <header className="border-b border-charcoal-700 bg-charcoal-900/80 backdrop-blur-sm sticky top-0 z-50">
-        <nav className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center transition-transform group-hover:scale-105">
-              <TreePine className="w-6 h-6 text-white" strokeWidth={2.5} />
-            </div>
-            <span className="font-serif text-2xl font-bold">
-              <span className="text-white">Genetic</span>
-              <span className="gradient-text">Tree</span>
-            </span>
-          </Link>
-
-          <Button
-            icon={<ArrowLeft className="w-4 h-4" />}
-            onClick={() => router.push('/dashboard')}
-            className="bg-charcoal-800 border-charcoal-700 hover:border-orange"
-          >
-            Назад
-          </Button>
-        </nav>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
-        {/* Page Header */}
-        <div className="mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-charcoal-800 border border-charcoal-700 mb-4">
-            <HelpCircle className="w-4 h-4 text-orange" />
-            <span className="text-sm text-gray-300 font-medium">
-              Помощь
-            </span>
-          </div>
-          <h1 className="font-serif text-4xl lg:text-5xl font-bold mb-4">
-            Часто задаваемые <span className="gradient-text">вопросы</span>
-          </h1>
-          <p className="text-lg text-gray-400 max-w-2xl">
-            Найдите ответы на популярные вопросы о работе с GeneticTree
-          </p>
+    <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
+      {/* Page Header */}
+      <div className="mb-12">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border mb-4">
+          <HelpCircle className="w-4 h-4 text-orange" />
+          <span className="text-sm text-muted-foreground font-medium">
+            Помощь
+          </span>
         </div>
+        <h1 className="font-serif text-4xl lg:text-5xl font-bold mb-4">
+          Часто задаваемые <span className="gradient-text">вопросы</span>
+        </h1>
+        <p className="text-lg text-muted-foreground max-w-2xl">
+          Найдите ответы на популярные вопросы о работе с GeneticTree
+        </p>
+      </div>
 
-        {/* Search */}
-        <div className="mb-8">
+      {/* Search */}
+      <div className="mb-8">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Поиск по вопросам..."
-            prefix={<Search className="w-4 h-4 text-gray-500" />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-md bg-charcoal-800 border-charcoal-700"
-            size="large"
+            className="pl-10 h-10 bg-muted border-border"
           />
         </div>
+      </div>
 
-        {/* Categories */}
-        <div className="flex flex-wrap gap-3 mb-8">
-          <Button
-            onClick={() => setActiveCategory(null)}
-            className={`${
-              activeCategory === null
-                ? 'bg-orange border-orange text-white'
-                : 'bg-charcoal-800 border-charcoal-700'
-            }`}
-          >
-            Все
-          </Button>
-          {categories.map((category) => (
+      {/* Categories */}
+      <div className="flex flex-wrap gap-3 mb-8">
+        <Button
+          onClick={() => setActiveCategory(null)}
+          variant={activeCategory === null ? 'default' : 'outline'}
+          className={
+            activeCategory === null
+              ? 'bg-orange hover:bg-orange/90 border-orange text-white'
+              : 'bg-charcoal-800 border-border hover:bg-charcoal-700'
+          }
+        >
+          Все
+        </Button>
+        {categories.map((category) => {
+          const Icon = category.icon
+          return (
             <Button
               key={category.id}
               onClick={() => setActiveCategory(category.id)}
-              icon={<category.icon className="w-4 h-4" />}
-              className={`${
+              variant={activeCategory === category.id ? 'default' : 'outline'}
+              className={
                 activeCategory === category.id
-                  ? 'bg-orange border-orange text-white'
-                  : 'bg-charcoal-800 border-charcoal-700'
-              }`}
+                  ? 'bg-orange hover:bg-orange/90 border-orange text-white'
+                  : 'bg-charcoal-800 border-border hover:bg-charcoal-700'
+              }
             >
+              <Icon className="w-4 h-4" />
               {category.name}
             </Button>
-          ))}
-        </div>
+          )
+        })}
+      </div>
 
-        {/* FAQ Count */}
-        <div className="mb-6 text-gray-400">
-          Найдено вопросов: <span className="text-orange font-bold">{filteredFAQ.length}</span>
-        </div>
+      {/* FAQ Count */}
+      <div className="mb-6 text-muted-foreground">
+        Найдено вопросов: <span className="text-orange font-bold">{filteredFAQ.length}</span>
+      </div>
 
-        {/* FAQ List */}
-        <Collapse
-          items={filteredFAQ.map((item) => ({
-            key: item.key,
-            label: (
-              <div className="flex items-center gap-3">
-                <HelpCircle className="w-5 h-5 text-orange flex-shrink-0" />
-                <span className="font-medium text-white">{item.question}</span>
-              </div>
-            ),
-            children: <p className="text-gray-300 pl-8">{item.answer}</p>,
-          }))}
-          className="bg-charcoal-900 border border-charcoal-700 rounded-2xl"
-          expandIconPosition="end"
-        />
+      {/* FAQ List */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-6">
+          <Accordion type="multiple">
+            {filteredFAQ.map((item, index) => (
+              <AccordionItem
+                key={item.key}
+                value={item.key}
+                className={index === filteredFAQ.length - 1 ? 'border-b-0' : ''}
+              >
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center gap-3">
+                    <HelpCircle className="w-5 h-5 text-orange flex-shrink-0" />
+                    <span className="font-medium text-foreground">{item.question}</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <p className="text-muted-foreground pl-8">{item.answer}</p>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
 
-        {/* Contact Support */}
-        <div className="mt-12 p-8 rounded-2xl bg-gradient-to-br from-charcoal-900 to-charcoal-800 border border-charcoal-700">
+      {/* Contact Support */}
+      <Card className="mt-12 border-border bg-gradient-to-br from-charcoal-900 to-charcoal-800">
+        <CardContent className="p-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
-              <h3 className="font-serif text-2xl font-bold mb-2 text-white">
+              <h3 className="font-serif text-2xl font-bold mb-2 text-foreground">
                 Не нашли ответ?
               </h3>
-              <p className="text-gray-400">
+              <p className="text-muted-foreground">
                 Свяжитесь с нашей службой поддержки — мы поможем решить любой вопрос
               </p>
             </div>
             <Button
-              type="primary"
-              size="large"
-              icon={<MessageCircle className="w-5 h-5" />}
+              size="lg"
               className="shadow-glow-orange"
             >
+              <MessageCircle className="w-5 h-5" />
               Написать в поддержку
             </Button>
           </div>
-        </div>
-      </main>
+        </CardContent>
+      </Card>
     </div>
   )
 }

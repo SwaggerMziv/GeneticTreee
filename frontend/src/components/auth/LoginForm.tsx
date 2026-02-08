@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Form, Input, Button, App } from 'antd'
+import { Form, Input } from 'antd'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { UserCircle, Lock } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
 import { LoginFormData, ApiError } from '@/types'
@@ -13,7 +15,6 @@ interface LoginFormProps {
 
 export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [form] = Form.useForm()
-  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (values: LoginFormData) => {
@@ -32,7 +33,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
       await authApi.login(loginData)
 
-      message.success('Вы успешно вошли в систему!')
+      toast.success('Вы успешно вошли в систему!')
       form.resetFields()
 
       // Redirect or callback
@@ -45,7 +46,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     } catch (error) {
       const apiError = error as ApiError
       const errorMessage = getErrorMessage(apiError)
-      message.error(errorMessage)
+      toast.error(errorMessage)
       console.error('Login error:', error)
     } finally {
       setLoading(false)
@@ -72,7 +73,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         ]}
       >
         <Input
-          prefix={<UserCircle className="w-4 h-4 text-gray-500" />}
+          prefix={<UserCircle className="w-4 h-4 text-muted-foreground" />}
           placeholder="username или email@example.com"
           className="h-12"
         />
@@ -90,7 +91,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         ]}
       >
         <Input.Password
-          prefix={<Lock className="w-4 h-4 text-gray-500" />}
+          prefix={<Lock className="w-4 h-4 text-muted-foreground" />}
           placeholder="Введите ваш пароль"
           className="h-12"
         />
@@ -100,7 +101,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       <div className="flex justify-end mb-4">
         <a
           href="/forgot-password"
-          className="text-sm text-gray-400 hover:text-orange transition-colors"
+          className="text-sm text-muted-foreground hover:text-orange transition-colors"
         >
           Забыли пароль?
         </a>
@@ -109,11 +110,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       {/* Submit Button */}
       <Form.Item className="mb-0">
         <Button
-          type="primary"
-          htmlType="submit"
-          block
-          loading={loading}
-          className="h-12 text-base font-semibold shadow-glow-orange hover:shadow-glow-orange transition-all"
+          type="submit"
+          disabled={loading}
+          className="w-full h-12 text-base font-semibold bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange transition-all"
         >
           {loading ? 'Вход...' : 'Войти'}
         </Button>

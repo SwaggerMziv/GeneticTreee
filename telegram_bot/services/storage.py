@@ -98,6 +98,8 @@ class UserStorage:
             self._data["users"][str(telegram_id)][
                 "last_broadcast_at"
             ] = datetime.now().isoformat()
+            # Сохраняем вопрос для использования при старте интервью
+            self._data["users"][str(telegram_id)]["pending_broadcast_question"] = question
 
         self._data["broadcast_history"].append(
             {
@@ -113,6 +115,20 @@ class UserStorage:
 
         self._data["last_broadcast"] = datetime.now().isoformat()
         self._save()
+
+    def get_and_clear_broadcast_question(self, telegram_id: int) -> Optional[str]:
+        """Get pending broadcast question and clear it (one-time use).
+
+        Returns the question that was sent in the last broadcast to this user,
+        so it can be used as the first interview question.
+        """
+        user = self._data["users"].get(str(telegram_id))
+        if not user:
+            return None
+        question = user.pop("pending_broadcast_question", None)
+        if question:
+            self._save()
+        return question
 
     def get_next_question_index(self, telegram_id: int, total_questions: int) -> int:
         """Get next question index for user (cycling through questions)."""

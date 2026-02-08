@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Form, Input, Button, App } from 'antd'
+import { Form, Input } from 'antd'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { User, Mail, Lock } from 'lucide-react'
 import { usersApi } from '@/lib/api/users'
 import { RegisterFormData, ApiError } from '@/types'
@@ -13,7 +15,6 @@ interface RegisterFormProps {
 
 export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [form] = Form.useForm()
-  const { message } = App.useApp()
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (values: RegisterFormData) => {
@@ -23,7 +24,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
       // Validate password
       const passwordValidation = validatePassword(values.password)
       if (!passwordValidation.isValid) {
-        message.error(passwordValidation.errors[0])
+        toast.error(passwordValidation.errors[0])
         setLoading(false)
         return
       }
@@ -31,14 +32,14 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
       // Validate username
       const usernameValidation = validateUsername(values.username)
       if (!usernameValidation.isValid) {
-        message.error(usernameValidation.errors[0])
+        toast.error(usernameValidation.errors[0])
         setLoading(false)
         return
       }
 
       // Check if passwords match
       if (values.password !== values.confirmPassword) {
-        message.error('Пароли не совпадают')
+        toast.error('Пароли не совпадают')
         setLoading(false)
         return
       }
@@ -50,7 +51,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         password: values.password,
       })
 
-      message.success('Аккаунт успешно создан! Теперь войдите.')
+      toast.success('Аккаунт успешно создан! Теперь войдите.')
       form.resetFields()
 
       // Call success callback or redirect
@@ -60,7 +61,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
     } catch (error) {
       const apiError = error as ApiError
       const errorMessage = getErrorMessage(apiError)
-      message.error(errorMessage)
+      toast.error(errorMessage)
       console.error('Registration error:', error)
     } finally {
       setLoading(false)
@@ -99,7 +100,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         ]}
       >
         <Input
-          prefix={<User className="w-4 h-4 text-gray-500" />}
+          prefix={<User className="w-4 h-4 text-muted-foreground" />}
           placeholder="Выберите имя пользователя"
           className="h-12"
         />
@@ -121,7 +122,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         ]}
       >
         <Input
-          prefix={<Mail className="w-4 h-4 text-gray-500" />}
+          prefix={<Mail className="w-4 h-4 text-muted-foreground" />}
           placeholder="email@example.com"
           type="email"
           className="h-12"
@@ -148,7 +149,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         ]}
       >
         <Input.Password
-          prefix={<Lock className="w-4 h-4 text-gray-500" />}
+          prefix={<Lock className="w-4 h-4 text-muted-foreground" />}
           placeholder="Создайте надёжный пароль"
           className="h-12"
         />
@@ -175,7 +176,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         ]}
       >
         <Input.Password
-          prefix={<Lock className="w-4 h-4 text-gray-500" />}
+          prefix={<Lock className="w-4 h-4 text-muted-foreground" />}
           placeholder="Повторите пароль"
           className="h-12"
         />
@@ -184,18 +185,16 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
       {/* Submit Button */}
       <Form.Item className="mb-0 pt-4">
         <Button
-          type="primary"
-          htmlType="submit"
-          block
-          loading={loading}
-          className="h-12 text-base font-semibold shadow-glow-orange hover:shadow-glow-orange transition-all"
+          type="submit"
+          disabled={loading}
+          className="w-full h-12 text-base font-semibold bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange transition-all"
         >
           {loading ? 'Создание аккаунта...' : 'Создать аккаунт'}
         </Button>
       </Form.Item>
 
       {/* Terms */}
-      <p className="text-xs text-gray-500 text-center mt-4">
+      <p className="text-xs text-muted-foreground text-center mt-4">
         Создавая аккаунт, вы соглашаетесь с{' '}
         <a href="/terms" className="text-orange hover:underline">
           Условиями использования

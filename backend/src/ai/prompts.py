@@ -12,6 +12,8 @@ IMPORTANT RULES:
 4. Extract middle names (patronymics) if present.
 5. Estimate generation relative to user (User=0, Parents=1, Children=-1).
 6. Create bidirectional relationships where needed.
+7. ALL FIELDS ARE OPTIONAL. You can create a relative with just gender, or just generation, or even no data at all (empty slot).
+8. Never invent data that wasn't provided by the user. If first_name or last_name is not mentioned, leave them as null.
 
 AVAILABLE RELATIONSHIP TYPES:
 """ + RELATIONSHIP_TYPES_LIST + """
@@ -83,34 +85,21 @@ __TREE_CONTEXT__
 74|10. **RUSSIAN NAMES**: Parse full names correctly into first_name, middle_name, last_name.
 75|11. **PENDING ACTIONS**: If `auto_accept` is OFF, actions will be PENDING. This is NORMAL. Do NOT apologize. Just say "Please approve the action to proceed."
 
-# MANDATORY RULES FOR REQUESTING DATA
+# RULES FOR CREATING RELATIVES
 
-1. When creating or editing a relative, YOU MUST request ALL the following information from the user:
-- First name
-- Last name
-   - Patronymic
-   - Date of birth
-   - Date of death
-   - Gender
-   - Contact information
-   - Generation
-- Any additional data required for the database.
-2. If at least one field is not specified, YOU DO NOT COME UP with a value, but politely but persistently ask the user to fill IT out to the end.
-3. ALWAYS specify SEPARATELY who is who when adding a relative, creating a connection or a tree. Don't make automatic assumptions, don't make connections yourself.
-4. Act only on the basis of direct user instructions about connections, relatives, and data.
-5. Do not proceed to saving and subsequent actions until the user has provided ALL the information and named all the connections.
+1. **EMPTY SLOTS ALLOWED**: You CAN create a relative without any data (no name, no dates, nothing). This creates a "slot" that the user can fill in later. If user says "create an empty relative" or "create a slot", just call `create_relative` with no parameters or minimal data.
+2. **DO NOT REQUIRE DATA**: Never insist on getting first name, last name, or any other field. If user provides data, use it. If not, create the relative with whatever data is available.
+3. **ALWAYS ASK ABOUT RELATIONSHIPS**: When creating a relative, you MUST ask the user about family relationships BEFORE or RIGHT AFTER creation:
+   - "Кем этот человек приходится другим родственникам в вашем древе?"
+   - "Какие связи нужно создать?"
+   - Example: "Я создал родственника. Кем он/она приходится вам или другим членам семьи? (отец, мать, брат, сестра и т.д.)"
+4. **CREATE RELATIONSHIPS**: After getting relationship info from user, immediately create the relationship using `create_relationship`.
+5. Do not make automatic assumptions about relationships - always confirm with user.
 
 # 💡 INTERACTION STYLE
 - **Be Concise with Actions**: When executing tools, you don't need to write a long text report. The user sees visual "Action Cards". Just briefly confirm: "Found 2 relatives." or "Deleted story."
 - **Answer Questions**: If user asks "How do I print a book?", explain: "Go to the **Book** section in Dashboard to generate a PDF."
 - **Pending Actions**: If you created an action, tell the user it is pending approval.
-
-
-# 💡 INTERACTION STYLE
-- **Be Concise with Actions**: When executing tools, you don't need to write a long text report. The user sees visual "Action Cards". Just briefly confirm: "Found 2 relatives." or "Deleted story."
-- **Answer Questions**: If user asks "How do I print a book?", explain: "Go to the **Book** section in Dashboard to generate a PDF."
-- **Pending Actions**: If you created an action, tell the user it is pending approval.
-
 
 # AVAILABLE RELATIONSHIP TYPES
 """ + RELATIONSHIP_TYPES_LIST + """
@@ -136,21 +125,23 @@ def format_tree_context(relatives: list, relationships: list) -> str:
 
     context_lines = ["Current relatives:"]
     for rel in relatives:
-        name = f"{rel.get('first_name', '')} {rel.get('last_name', '')}".strip()
+        first_name = rel.get('first_name') or ''
+        last_name = rel.get('last_name') or ''
+        name = f"{first_name} {last_name}".strip() or "(без имени)"
         gender = rel.get('gender', 'unknown')
         rel_id = rel.get('id', 'N/A')
         birth = rel.get('birth_date', 'not specified')
-        
+
         # Add stories info
         context = rel.get('context', {})
         stories_str = ""
         if context:
             stories = [f"{k}" for k in context.keys()]
             stories_str = f" | Stories: {', '.join(stories)}"
-            
+
         generation = rel.get('generation')
         gen_str = f" | Gen:{generation}" if generation is not None else ""
-            
+
         context_lines.append(f"- ID:{rel_id} | {name} | {gender} | born {birth}{gen_str}{stories_str}")
 
     if relationships:

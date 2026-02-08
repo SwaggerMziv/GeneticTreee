@@ -7,7 +7,8 @@ from src.family.schemas import (
     FamilyStatisticsSchema, FamilyRelationContextOutputSchema,
     StorySchema, StoryCreateSchema, StoryUpdateSchema, StoryMediaUploadResponseSchema,
     GenerateInvitationResponseSchema, ActivateInvitationRequestSchema,
-    InterviewMessageRequestSchema, BotStoryCreateSchema, StoriesCountResponseSchema
+    InterviewMessageRequestSchema, BotStoryCreateSchema, StoriesCountResponseSchema,
+    BotRelativeCreateSchema, BotRelativeCreateResponseSchema
 )
 from src.family.service import FamilyRelationService, FamilyRelationshipService
 from src.family.story_service import StoryService
@@ -202,6 +203,32 @@ async def create_story_from_bot(
     return await service.create_story_from_bot(relative_id, request.title, request.text)
 
 
+@router.post(
+    "/relatives/{relative_id}/stories/{story_key}/media",
+    response_model=StoryMediaUploadResponseSchema
+)
+async def upload_story_media_from_bot(
+    relative_id: int = Path(...),
+    story_key: str = Path(...),
+    file: UploadFile = File(...),
+    service: FamilyRelationService = Depends(get_family_relation_service),
+    s3_manager: S3Manager = Depends(get_s3_manager)
+):
+    """
+    Загрузить медиа-файл в историю от Telegram бота (публичный эндпоинт).
+
+    Лимит: максимум 5 изображений на историю.
+    """
+    # Get relative to find user_id
+    relative = await service.repository.get_by_id_without_user(relative_id)
+    if not relative:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Родственник не найден")
+
+    story_service = StoryService(service, s3_manager)
+    return await story_service.upload_media(relative.user_id, relative_id, story_key, file)
+
+
 @router.get("/relatives/{relative_id}/stories-count", response_model=StoriesCountResponseSchema)
 async def get_stories_count(
     relative_id: int = Path(...),
@@ -227,6 +254,48 @@ async def get_all_active_telegram_users(
 ):
     """Получить всех родственников с привязанным Telegram (публичный эндпоинт для рассылки)"""
     return await service.get_all_telegram_users()
+
+
+@router.get("/relatives/{relative_id}/related-stories")
+async def get_related_stories(
+    relative_id: int = Path(...),
+    service: FamilyRelationService = Depends(get_family_relation_service),
+    relationship_service: FamilyRelationshipService = Depends(get_family_relationship_service)
+):
+    """
+    Получить истории связанных родственников для контекста интервью.
+    Публичный эндпоинт для Telegram бота.
+
+    Возвращает список родственников с их историями:
+    - name: имя родственника
+    - relationship: тип связи (отец, мать, брат и т.д.)
+    - stories: список историй с названием и превью
+    """
+    return await service.get_related_stories(relative_id, relationship_service.repository)
+
+
+@router.post("/relatives/create-from-bot", response_model=BotRelativeCreateResponseSchema)
+async def create_relative_from_bot(
+    request: BotRelativeCreateSchema = Body(...),
+    service: FamilyRelationService = Depends(get_family_relation_service),
+    relationship_service: FamilyRelationshipService = Depends(get_family_relationship_service)
+):
+    """
+    Создать родственника из Telegram бота (публичный эндпоинт).
+
+    Создаёт нового родственника и связывает его с интервьюируемым.
+    Используется когда бот обнаруживает упоминание родственника в интервью.
+    """
+    return await service.create_relative_from_bot(
+        interviewer_relative_id=request.interviewer_relative_id,
+        first_name=request.first_name,
+        relationship_type=request.relationship_type.value,
+        relationship_repo=relationship_service.repository,
+        last_name=request.last_name,
+        birth_year=request.birth_year,
+        gender=request.gender.value,
+        additional_info=request.additional_info
+    )
 
 
 # Family Relationships endpoints

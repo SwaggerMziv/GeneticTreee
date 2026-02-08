@@ -4,7 +4,14 @@ from src.database.base import Base
 import asyncio
 
 DATABASE_URL = f"postgresql+asyncpg://{settings.database_username}:{settings.database_password}@{settings.database_host}:{settings.database_port}/{settings.database_name}"
-async_engine = create_async_engine(url=DATABASE_URL, echo=True)
+async_engine = create_async_engine(
+    url=DATABASE_URL,
+    echo=True,
+    pool_pre_ping=True,  # Проверяет соединение перед использованием
+    pool_recycle=3600,   # Пересоздаёт соединения каждый час
+    pool_size=5,         # Размер пула соединений
+    max_overflow=10,     # Максимум дополнительных соединений
+)
 async_session = async_sessionmaker[AsyncSession](async_engine, expire_on_commit=False)
 
 async def get_session():

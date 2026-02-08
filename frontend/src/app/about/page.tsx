@@ -89,10 +89,10 @@ export default function AboutPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-charcoal-800/80 backdrop-blur-sm border border-charcoal-700 mb-8"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/80 backdrop-blur-sm border border-border mb-8"
               >
                 <Heart className="w-4 h-4 text-orange" />
-                <span className="text-sm text-gray-300 font-medium">
+                <span className="text-sm text-muted-foreground font-medium">
                   О проекте GeneticTree
                 </span>
               </motion.div>
@@ -102,7 +102,7 @@ export default function AboutPage() {
                 <ShinyText duration={4}>вашей семьи</ShinyText>
               </h1>
 
-              <p className="text-xl text-gray-400 leading-relaxed">
+              <p className="text-xl text-muted-foreground leading-relaxed">
                 GeneticTree — это современное приложение для создания и управления семейным древом.
                 Мы помогаем семьям по всему миру сохранять свою историю, объединять поколения
                 и передавать знания о предках будущим потомкам.
@@ -121,7 +121,7 @@ export default function AboutPage() {
                 <h2 className="font-serif text-4xl lg:text-5xl font-bold mb-6">
                   Наша <span className="gradient-text">миссия</span>
                 </h2>
-                <div className="space-y-4 text-lg text-gray-400 leading-relaxed">
+                <div className="space-y-4 text-lg text-muted-foreground leading-relaxed">
                   <p>
                     Мы верим, что каждая семья имеет уникальную историю, которая заслуживает быть
                     сохранённой и рассказанной. В эпоху цифровых технологий мы даём семьям
@@ -141,7 +141,7 @@ export default function AboutPage() {
               </div>
 
               <div className="relative">
-                <div className="relative rounded-3xl bg-gradient-to-br from-orange/20 to-orange-dark/20 p-8 border border-charcoal-700">
+                <div className="relative rounded-3xl bg-gradient-to-br from-orange/20 to-orange-dark/20 p-8 border border-border">
                   <div className="space-y-6">
                     <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-xl bg-orange/20 flex items-center justify-center flex-shrink-0">
@@ -149,7 +149,7 @@ export default function AboutPage() {
                       </div>
                       <div>
                         <h3 className="text-xl font-semibold mb-2">Для всей семьи</h3>
-                        <p className="text-gray-400">
+                        <p className="text-muted-foreground">
                           Приложение разработано так, чтобы им могли пользоваться все: от детей
                           до бабушек и дедушек.
                         </p>
@@ -162,7 +162,7 @@ export default function AboutPage() {
                       </div>
                       <div>
                         <h3 className="text-xl font-semibold mb-2">С любовью к деталям</h3>
-                        <p className="text-gray-400">
+                        <p className="text-muted-foreground">
                           Мы продумали каждую деталь, чтобы процесс создания древа был приятным
                           и интуитивным.
                         </p>
@@ -175,7 +175,7 @@ export default function AboutPage() {
                       </div>
                       <div>
                         <h3 className="text-xl font-semibold mb-2">Безопасность превыше всего</h3>
-                        <p className="text-gray-400">
+                        <p className="text-muted-foreground">
                           Ваши семейные данные защищены современными стандартами безопасности
                           и шифрования.
                         </p>
@@ -190,14 +190,14 @@ export default function AboutPage() {
       </section>
 
       {/* Features Grid */}
-      <section className="relative py-20 lg:py-28 bg-charcoal-900">
+      <section className="relative py-20 lg:py-28 bg-background">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <FadeContent duration={800} threshold={0.2}>
             <div className="text-center max-w-3xl mx-auto mb-16">
               <h2 className="font-serif text-4xl lg:text-5xl font-bold mb-6">
                 Возможности <span className="gradient-text">платформы</span>
               </h2>
-              <p className="text-xl text-gray-400">
+              <p className="text-xl text-muted-foreground">
                 Всё, что нужно для создания полного и детального семейного древа
               </p>
             </div>
@@ -211,12 +211,12 @@ export default function AboutPage() {
                 delay={index * 100}
                 threshold={0.1}
               >
-                <div className="p-6 rounded-2xl bg-charcoal-800/50 border border-charcoal-700 hover:border-orange/50 transition-all group">
+                <div className="p-6 rounded-2xl bg-muted/50 border border-border hover:border-orange/50 transition-all group">
                   <div className="w-12 h-12 rounded-xl bg-orange/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <feature.icon className="w-6 h-6 text-orange" />
                   </div>
                   <h3 className="text-lg font-semibold mb-3">{feature.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
                 </div>
               </FadeContent>
             ))}
@@ -232,7 +232,7 @@ export default function AboutPage() {
               <h2 className="font-serif text-4xl lg:text-5xl font-bold mb-6">
                 Как это <span className="gradient-text">работает</span>
               </h2>
-              <p className="text-xl text-gray-400">
+              <p className="text-xl text-muted-foreground">
                 Создать семейное древо легко — следуйте этим простым шагам
               </p>
             </div>
@@ -259,7 +259,7 @@ export default function AboutPage() {
                       </span>
                     </div>
                     <h3 className="text-xl font-semibold mb-3 text-center">{item.title}</h3>
-                    <p className="text-gray-400 text-center leading-relaxed">{item.description}</p>
+                    <p className="text-muted-foreground text-center leading-relaxed">{item.description}</p>
                   </div>
                 </div>
               </FadeContent>
@@ -269,16 +269,16 @@ export default function AboutPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative py-20 lg:py-28 bg-charcoal-900">
+      <section className="relative py-20 lg:py-28 bg-background">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <FadeContent duration={1000} threshold={0.3}>
             <div className="relative rounded-4xl bg-gradient-to-br from-orange to-orange-dark p-1">
-              <div className="rounded-4xl bg-charcoal-900 p-12 lg:p-16">
+              <div className="rounded-4xl bg-background p-12 lg:p-16">
                 <div className="max-w-3xl mx-auto text-center">
                   <h2 className="font-serif text-4xl lg:text-5xl font-bold mb-6">
                     Начните сохранять историю семьи уже сегодня
                   </h2>
-                  <p className="text-xl text-gray-400 leading-relaxed mb-8">
+                  <p className="text-xl text-muted-foreground leading-relaxed mb-8">
                     Каждый день мы теряем уникальные воспоминания и истории наших близких.
                     Не позвольте времени стереть память о ваших предках. Создайте семейное древо
                     прямо сейчас и сохраните наследие вашей семьи для будущих поколений.
@@ -292,12 +292,12 @@ export default function AboutPage() {
                     </a>
                     <a
                       href="/"
-                      className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-charcoal-800 border border-charcoal-700 text-white font-semibold hover:border-orange/50 transition-all"
+                      className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-muted border border-border text-foreground font-semibold hover:border-orange/50 transition-all"
                     >
                       Узнать больше
                     </a>
                   </div>
-                  <p className="mt-6 text-sm text-gray-500">
+                  <p className="mt-6 text-sm text-muted-foreground">
                     Регистрация занимает менее минуты. Никаких скрытых платежей.
                   </p>
                 </div>

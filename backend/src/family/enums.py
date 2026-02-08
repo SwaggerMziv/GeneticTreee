@@ -55,10 +55,12 @@ class RelationshipType(str, Enum):
     STEPSISTER = "stepsister"
 
     # Супруги
-    HUSBAND = "husband"
-    WIFE = "wife"
-    EX_HUSBAND = "ex_husband"
-    EX_WIFE = "ex_wife"
+    SPOUSE = "spouse"  # В браке (универсальный тип)
+    HUSBAND = "husband"  # Deprecated: используйте SPOUSE
+    WIFE = "wife"  # Deprecated: используйте SPOUSE
+    EX_SPOUSE = "ex_spouse"  # Бывший супруг/супруга
+    EX_HUSBAND = "ex_husband"  # Deprecated
+    EX_WIFE = "ex_wife"  # Deprecated
     PARTNER = "partner"  # Гражданский брак
 
     # Тети и дяди

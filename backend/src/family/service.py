@@ -185,16 +185,25 @@ class FamilyRelationService:
     @log_service_operation
     async def activate_invitation(self, token: str, telegram_user_id: int, telegram_username: str = None) -> FamilyRelationModel:
         """Активировать родственника по токену приглашения"""
+        from src.family.exceptions import (
+            InvalidInvitationTokenError,
+            RelativeAlreadyActivatedError,
+            TelegramUserAlreadyLinkedError
+        )
+
         # Find relative by token
         relative = await self.repository.get_by_invitation_token(token)
         if not relative:
-            from src.family.exceptions import InvalidInvitationTokenError
             raise InvalidInvitationTokenError()
 
-        # Check if already activated
+        # Check if this relative is already activated
         if relative.is_activated:
-            from src.family.exceptions import RelativeAlreadyActivatedError
             raise RelativeAlreadyActivatedError(relative.id)
+
+        # Check if this Telegram user is already linked to ANOTHER relative
+        existing_relative = await self.repository.get_by_telegram_user_id(telegram_user_id)
+        if existing_relative and existing_relative.id != relative.id:
+            raise TelegramUserAlreadyLinkedError(telegram_user_id)
 
         # Activate relative
         activated_relative = await self.repository.activate_relative(
@@ -308,6 +317,112 @@ class FamilyRelationService:
     async def get_all_telegram_users(self) -> List[FamilyRelationModel]:
         """Получить всех родственников с привязанным Telegram (для рассылки)"""
         return await self.repository.get_all_telegram_users()
+
+    @log_service_operation
+    async def get_related_stories(self, relative_id: int, relationship_repo: "FamilyRelationshipRepository") -> List[dict]:
+        """
+        Получить истории связанных родственников для контекста интервью.
+        Используется Telegram ботом для обогащения вопросов.
+        """
+        return await self.repository.get_related_relatives_with_stories(relative_id, relationship_repo)
+
+    @log_service_operation
+    async def create_relative_from_bot(
+        self,
+        interviewer_relative_id: int,
+        first_name: str,
+        relationship_type: str,
+        relationship_repo: "FamilyRelationshipRepository",
+        last_name: str = None,
+        birth_year: int = None,
+        gender: str = "other",
+        additional_info: str = None
+    ) -> dict:
+        """
+        Создать родственника из Telegram бота и связать с интервьюируемым.
+
+        Args:
+            interviewer_relative_id: ID родственника, который проходит интервью
+            first_name: Имя нового родственника
+            relationship_type: Тип связи (mother, father, brother, etc.)
+            relationship_repo: Репозиторий для создания связи
+            last_name: Фамилия (опционально)
+            birth_year: Год рождения (опционально)
+            gender: Пол (male, female, other)
+            additional_info: Дополнительная информация
+
+        Returns:
+            dict: Информация о созданном родственнике
+        """
+        from datetime import datetime, timezone
+        from src.family.enums import GenderType, RelationshipType
+        from src.family.schemas import FamilyRelationCreateSchema, FamilyRelationshipCreateSchema
+
+        # Получаем интервьюируемого родственника
+        interviewer = await self.repository.get_by_id_without_user(interviewer_relative_id)
+        if not interviewer:
+            raise RelativeNotFoundError(interviewer_relative_id)
+
+        user_id = interviewer.user_id
+
+        # Определяем пол из типа связи если не указан
+        gender_enum = GenderType(gender) if gender else GenderType.OTHER
+        if gender == "other":
+            # Автоматически определяем пол по типу связи
+            female_types = {"mother", "grandmother", "sister", "aunt", "daughter", "granddaughter", "niece"}
+            male_types = {"father", "grandfather", "brother", "uncle", "son", "grandson", "nephew"}
+            if relationship_type in female_types:
+                gender_enum = GenderType.FEMALE
+            elif relationship_type in male_types:
+                gender_enum = GenderType.MALE
+
+        # Преобразуем год рождения в дату
+        birth_date = None
+        if birth_year:
+            birth_date = datetime(birth_year, 1, 1, tzinfo=timezone.utc)
+
+        # Сохраняем дополнительную информацию в контекст
+        context = {}
+        if additional_info:
+            context["bot_collected_info"] = additional_info
+
+        # Создаём родственника
+        relative_data = FamilyRelationCreateSchema(
+            first_name=first_name,
+            last_name=last_name,
+            birth_date=birth_date,
+            gender=gender_enum,
+            context=context,
+            generation=interviewer.generation  # Такое же поколение по умолчанию
+        )
+
+        new_relative = await self.create_relative(user_id, relative_data)
+
+        # Создаём связь между интервьюируемым и новым родственником
+        # Направление связи: from -> relationship -> to
+        # Например: interviewer <- mother (новый родственник является матерью интервьюируемого)
+        relationship_type_enum = RelationshipType(relationship_type)
+
+        relationship_data = FamilyRelationshipCreateSchema(
+            from_relative_id=new_relative.id,
+            to_relative_id=interviewer_relative_id,
+            relationship_type=relationship_type_enum
+        )
+
+        await relationship_repo.create(
+            user_id=user_id,
+            from_relative_id=new_relative.id,
+            to_relative_id=interviewer_relative_id,
+            relationship_type=relationship_type_enum,
+            is_active=True
+        )
+
+        return {
+            "relative_id": new_relative.id,
+            "first_name": new_relative.first_name,
+            "relationship_type": relationship_type,
+            "message": "Родственник успешно создан"
+        }
 
 
 class FamilyRelationshipService:
