@@ -542,7 +542,7 @@ class FamilyRelationRepository(FamilyRelationRepositoryAbstract[FamilyRelationMo
             select(self.model).where(
                 self.model.telegram_user_id == telegram_user_id,
                 self.model.is_activated == True
-            )
+            ).limit(1)
         )
         return result.scalar_one_or_none()
 

@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { FamilyRelative } from '@/types'
 
 const STORAGE_KEY = 'genetictree_onboarding_completed'
 
 export function useOnboarding(userId: number | undefined) {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [step, setStep] = useState(0)
+  const [createdRelatives, setCreatedRelatives] = useState<FamilyRelative[]>([])
 
   useEffect(() => {
     if (!userId) return
@@ -27,6 +29,10 @@ export function useOnboarding(userId: number | undefined) {
   const nextStep = useCallback(() => setStep((s) => s + 1), [])
   const prevStep = useCallback(() => setStep((s) => Math.max(0, s - 1)), [])
 
+  const addCreatedRelative = useCallback((relative: FamilyRelative) => {
+    setCreatedRelatives((prev) => [...prev, relative])
+  }, [])
+
   return {
     showOnboarding,
     setShowOnboarding,
@@ -35,5 +41,7 @@ export function useOnboarding(userId: number | undefined) {
     nextStep,
     prevStep,
     completeOnboarding,
+    createdRelatives,
+    addCreatedRelative,
   }
 }

@@ -7,8 +7,10 @@ import { TreePine, Users, MessageCircle, Share2, Lock, Zap, Heart, BookOpen, Cam
 import FadeContent from '@/components/ui/FadeContent'
 import ShinyText from '@/components/ui/ShinyText'
 import GradientBackground from '@/components/ui/GradientBackground'
+import { useAuthLink } from '@/hooks/use-auth-link'
 
 export default function AboutPage() {
+  const authLink = useAuthLink()
   const features = [
     {
       icon: TreePine,
@@ -285,7 +287,7 @@ export default function AboutPage() {
                   </p>
                   <div className="flex flex-wrap items-center justify-center gap-4">
                     <a
-                      href="/auth"
+                      href={authLink}
                       className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-orange to-orange-dark text-white font-semibold hover:shadow-glow-orange transition-all"
                     >
                       Создать аккаунт бесплатно

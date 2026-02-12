@@ -4,8 +4,11 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 import FadeContent from '@/components/ui/FadeContent'
+import { useAuthLink } from '@/hooks/use-auth-link'
 
 export default function CTA() {
+  const authLink = useAuthLink()
+
   return (
     <section className="relative py-24 lg:py-32 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -24,7 +27,7 @@ export default function CTA() {
                 <p className="text-xl text-muted-foreground leading-relaxed mb-10">
                   Соберите истории вашей семьи, пока они ещё живы в памяти.
                 </p>
-                <Link href="/auth">
+                <Link href={authLink}>
                   <Button
                     className="h-14 px-10 text-lg font-semibold bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange hover:scale-105 transition-all duration-300"
                   >

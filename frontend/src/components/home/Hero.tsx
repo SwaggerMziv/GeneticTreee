@@ -14,6 +14,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useAuthLink } from '@/hooks/use-auth-link'
 
 function BookPreview() {
   return (
@@ -116,6 +117,8 @@ function BookPreview() {
 }
 
 export default function Hero() {
+  const authLink = useAuthLink()
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       {/* Subtle background */}
@@ -166,7 +169,7 @@ export default function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
             >
-              <Link href="/auth">
+              <Link href={authLink}>
                 <Button
                   className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange hover:scale-105 transition-all duration-300"
                 >

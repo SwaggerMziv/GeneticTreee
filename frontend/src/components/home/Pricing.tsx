@@ -4,6 +4,7 @@ import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import FadeContent from '@/components/ui/FadeContent'
+import { useAuthLink } from '@/hooks/use-auth-link'
 
 interface PricingPlan {
   name: string
@@ -65,6 +66,7 @@ const pricingPlans: PricingPlan[] = [
 ]
 
 export default function Pricing() {
+  const authLink = useAuthLink()
   return (
     <section className="relative py-24 lg:py-32 bg-background overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -122,7 +124,7 @@ export default function Pricing() {
                   ))}
                 </ul>
 
-                <Link href="/auth" className="w-full">
+                <Link href={authLink} className="w-full">
                   {plan.highlighted ? (
                     <Button className="h-12 w-full bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange">
                       {plan.buttonText}

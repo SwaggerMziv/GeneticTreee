@@ -1,21 +1,21 @@
 'use client'
 
-import { useCallback, useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useCallback, useRef, useState } from 'react'
 import {
-  TreePine,
+  User as UserIcon,
   Users,
-  Bot,
-  BookOpen,
   Send,
-  FileText,
   ArrowRight,
   ArrowLeft,
   Check,
+  Copy,
+  Plus,
+  Trash2,
+  Loader2,
+  TreePine,
   Sparkles,
-  MessageCircle,
-  Camera,
-  Rocket,
+  Bot,
+  BookOpen,
 } from 'lucide-react'
 import {
   Dialog,
@@ -25,27 +25,63 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useOnboarding } from '@/hooks/use-onboarding'
 import { useUser } from '@/components/providers/UserProvider'
+import { familyApi, relationshipApi } from '@/lib/api/family'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+import type { FamilyRelative, Gender, RelationshipType } from '@/types'
 
-function StepIndicator({
-  current,
-  total,
-  onStepClick,
-}: {
-  current: number
-  total: number
-  onStepClick: (step: number) => void
-}) {
+/* ─── Types ─── */
+
+interface SelfFormData {
+  first_name: string
+  last_name: string
+  birth_date: string
+  gender: Gender
+}
+
+interface FamilyMember {
+  id: string
+  first_name: string
+  last_name: string
+  relationLabel: string
+  relationshipType: RelationshipType
+  fromIsSelf: boolean
+  gender: Gender
+}
+
+const EXTRA_RELATION_OPTIONS: {
+  label: string
+  type: RelationshipType
+  fromIsSelf: boolean
+  gender: Gender
+}[] = [
+  { label: 'Брат', type: 'brother', fromIsSelf: false, gender: 'male' },
+  { label: 'Сестра', type: 'sister', fromIsSelf: false, gender: 'female' },
+  { label: 'Бабушка', type: 'grandmother', fromIsSelf: false, gender: 'female' },
+  { label: 'Дедушка', type: 'grandfather', fromIsSelf: false, gender: 'male' },
+  { label: 'Супруг', type: 'husband', fromIsSelf: false, gender: 'male' },
+  { label: 'Супруга', type: 'wife', fromIsSelf: false, gender: 'female' },
+  { label: 'Сын', type: 'son', fromIsSelf: true, gender: 'male' },
+  { label: 'Дочь', type: 'daughter', fromIsSelf: true, gender: 'female' },
+]
+
+// Info steps are steps 0-3, functional steps are 4-6
+const INFO_STEPS_COUNT = 4
+const TOTAL_STEPS = 7
+
+/* ─── Step Indicator ─── */
+
+function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
     <div className="flex items-center justify-center gap-2">
       {Array.from({ length: total }, (_, i) => (
-        <button
+        <div
           key={i}
-          onClick={() => onStepClick(i)}
           className={cn(
-            'h-2 rounded-full transition-all duration-300 cursor-pointer hover:opacity-80',
+            'h-2 rounded-full transition-all duration-300',
             i === current
               ? 'w-8 bg-orange'
               : i < current
@@ -58,463 +94,592 @@ function StepIndicator({
   )
 }
 
-/* ─── Step 0: Welcome — Auto-building mini tree ─── */
-function WelcomeStep() {
-  const treeNodes = [
-    { id: 'you', label: 'Вы', x: 150, y: 130, color: '#F97316' },
-    { id: 'mom', label: 'Мама', x: 90, y: 70, color: '#EC4899' },
-    { id: 'dad', label: 'Папа', x: 210, y: 70, color: '#3B82F6' },
-    { id: 'grandma', label: 'Бабушка', x: 90, y: 10, color: '#8B5CF6' },
-  ]
+/* ─── Info Step Component ─── */
 
-  const connections = [
-    { from: 'you', to: 'mom' },
-    { from: 'you', to: 'dad' },
-    { from: 'mom', to: 'grandma' },
-  ]
-
-  const [visibleCount, setVisibleCount] = useState(0)
-  const [skipped, setSkipped] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const totalNodes = treeNodes.length
-  const allVisible = visibleCount >= totalNodes
-
-  useEffect(() => {
-    if (skipped || allVisible) return
-    timerRef.current = setTimeout(() => {
-      setVisibleCount((c) => c + 1)
-    }, 800)
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [visibleCount, skipped, allVisible])
-
-  const handleSkip = () => {
-    setSkipped(true)
-    setVisibleCount(totalNodes)
-  }
-
-  const getNode = (id: string) => treeNodes.find((n) => n.id === id)
-
+function InfoItem({
+  icon: Icon,
+  color,
+  text,
+}: {
+  icon: React.ElementType
+  color: string
+  text: string
+}) {
   return (
-    <div className="space-y-4">
-      <div className="relative bg-muted/30 rounded-xl border border-border overflow-hidden" style={{ height: 200 }}>
-        <svg width="300" height="180" viewBox="0 0 300 180" className="mx-auto block">
-          {connections.map((conn) => {
-            const from = getNode(conn.from)
-            const to = getNode(conn.to)
-            if (!from || !to) return null
-            const fromIdx = treeNodes.findIndex((n) => n.id === conn.from)
-            const toIdx = treeNodes.findIndex((n) => n.id === conn.to)
-            const visible = visibleCount > fromIdx && visibleCount > toIdx
-            return (
-              <line
-                key={`${conn.from}-${conn.to}`}
-                x1={from.x}
-                y1={from.y + 16}
-                x2={to.x}
-                y2={to.y + 16}
-                stroke="currentColor"
-                strokeWidth={2}
-                className={cn(
-                  'text-border transition-all duration-500',
-                  visible ? 'opacity-100' : 'opacity-0'
-                )}
-              />
-            )
-          })}
-          {treeNodes.map((node, i) => {
-            const visible = i < visibleCount
-            return (
-              <g
-                key={node.id}
-                className={cn('transition-all duration-500', visible ? 'opacity-100' : 'opacity-0')}
-                style={{ transform: visible ? 'scale(1)' : 'scale(0.5)', transformOrigin: `${node.x}px ${node.y + 16}px` }}
-              >
-                <rect
-                  x={node.x - 36}
-                  y={node.y}
-                  width={72}
-                  height={32}
-                  rx={8}
-                  fill={node.color}
-                  opacity={0.15}
-                  stroke={node.color}
-                  strokeWidth={1.5}
-                />
-                <text
-                  x={node.x}
-                  y={node.y + 20}
-                  textAnchor="middle"
-                  fill={node.color}
-                  fontSize={13}
-                  fontWeight={600}
-                >
-                  {node.label}
-                </text>
-              </g>
-            )
-          })}
-        </svg>
+    <div className="flex items-start gap-3 p-3 rounded-xl border border-border bg-muted/30">
+      <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', color)}>
+        <Icon className="w-4 h-4" />
       </div>
-
-      {!allVisible ? (
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full border-dashed text-muted-foreground"
-          onClick={handleSkip}
-        >
-          <Sparkles className="w-4 h-4 mr-2" />
-          Ускорить
-        </Button>
-      ) : (
-        <p className="text-center text-sm text-orange font-medium animate-in fade-in slide-in-from-bottom-2">
-          Вот что вы сможете построить!
-        </p>
-      )}
+      <span className="text-sm leading-relaxed">{text}</span>
     </div>
   )
 }
 
-/* ─── Step 1: Build Tree — Two paths ─── */
-function BuildTreeStep() {
-  const [selected, setSelected] = useState<'manual' | 'ai' | null>(null)
+/* ─── Info Step 0: Welcome ─── */
 
+function WelcomeInfoStep() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground text-center">
+        GeneticTree поможет собрать и сохранить историю вашей семьи. Вот как это работает:
+      </p>
+      <InfoItem
+        icon={TreePine}
+        color="bg-orange/10 text-orange"
+        text="Вы создаёте семейное древо — добавляете себя и родственников"
+      />
+      <InfoItem
+        icon={Send}
+        color="bg-blue-500/10 text-blue-500"
+        text="Отправляете приглашения в Telegram — бот проведёт интервью"
+      />
+      <InfoItem
+        icon={BookOpen}
+        color="bg-purple-500/10 text-purple-500"
+        text="Из собранных историй создаётся семейная книга в PDF"
+      />
+    </div>
+  )
+}
+
+/* ─── Info Step 1: Tree Building ─── */
+
+function TreeInfoStep() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground text-center">
+        Два способа добавлять родственников — выбирайте удобный
+      </p>
+      <InfoItem
+        icon={Users}
+        color="bg-blue-500/10 text-blue-500"
+        text="Вручную — заполните карточку с именем, датой рождения и фото на странице «Древо»"
+      />
+      <InfoItem
+        icon={Sparkles}
+        color="bg-purple-500/10 text-purple-500"
+        text="Через ИИ-ассистента — просто напишите «Добавь маму Анна 1965» в чате"
+      />
+      <p className="text-xs text-muted-foreground text-center mt-2">
+        Оба способа всегда доступны — можно комбинировать
+      </p>
+    </div>
+  )
+}
+
+/* ─── Info Step 2: Telegram Bot ─── */
+
+function BotInfoStep() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground text-center">
+        Telegram-бот — главный инструмент сбора воспоминаний
+      </p>
+      <InfoItem
+        icon={Send}
+        color="bg-blue-500/10 text-blue-500"
+        text="Вы отправляете родственнику персональную ссылку-приглашение в Telegram"
+      />
+      <InfoItem
+        icon={Bot}
+        color="bg-green-500/10 text-green-500"
+        text="Бот проводит интервью с ИИ — задаёт вопросы о семье, событиях, воспоминаниях"
+      />
+      <InfoItem
+        icon={Check}
+        color="bg-cyan-500/10 text-cyan-500"
+        text="Родственник отвечает текстом, голосом или фото — всё сохраняется автоматически"
+      />
+    </div>
+  )
+}
+
+/* ─── Info Step 3: Book ─── */
+
+function BookInfoStep() {
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground text-center">
+        Все собранные истории можно превратить в семейную книгу
+      </p>
+      <InfoItem
+        icon={BookOpen}
+        color="bg-purple-500/10 text-purple-500"
+        text="Выберите стиль оформления — классический, современный или винтажный"
+      />
+      <InfoItem
+        icon={Sparkles}
+        color="bg-amber-500/10 text-amber-500"
+        text="ИИ оформит истории в главы, добавит фотографии и создаст PDF-книгу"
+      />
+      <p className="text-xs text-muted-foreground text-center mt-2">
+        Чем больше историй соберёте — тем интереснее получится книга
+      </p>
+    </div>
+  )
+}
+
+/* ─── Functional Step: About You ─── */
+
+function AboutYouStep({
+  form,
+  setForm,
+}: {
+  form: SelfFormData
+  setForm: React.Dispatch<React.SetStateAction<SelfFormData>>
+}) {
   return (
     <div className="space-y-4">
-      <p className="text-muted-foreground text-sm text-center">
-        Выберите способ, который вам больше нравится
-      </p>
-
       <div className="grid grid-cols-2 gap-3">
-        {/* Manual card */}
-        <button
-          onClick={() => setSelected('manual')}
-          className={cn(
-            'relative text-left p-4 rounded-xl border transition-all duration-300',
-            selected === 'manual'
-              ? 'border-orange/50 bg-orange/5 ring-2 ring-orange/20'
-              : 'border-border bg-muted/30 hover:border-orange/20'
-          )}
-        >
-          {selected === 'manual' && (
-            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-orange flex items-center justify-center">
-              <Check className="w-3 h-3 text-white" />
-            </div>
-          )}
-          <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
-            <Users className="w-5 h-5 text-blue-500" />
-          </div>
-          <h4 className="text-sm font-semibold mb-2">Вручную</h4>
-          <div className="space-y-1.5">
-            {['Имя', 'Пол', 'Дата рождения', 'Фото'].map((field) => (
-              <div key={field} className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
-                <span className="text-xs text-muted-foreground">{field}</span>
-              </div>
-            ))}
-          </div>
-          <p className="text-[10px] text-muted-foreground/70 mt-2">На странице «Древо»</p>
-        </button>
-
-        {/* AI card */}
-        <button
-          onClick={() => setSelected('ai')}
-          className={cn(
-            'relative text-left p-4 rounded-xl border transition-all duration-300',
-            selected === 'ai'
-              ? 'border-orange/50 bg-orange/5 ring-2 ring-orange/20'
-              : 'border-border bg-muted/30 hover:border-orange/20'
-          )}
-        >
-          {selected === 'ai' && (
-            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-orange flex items-center justify-center">
-              <Check className="w-3 h-3 text-white" />
-            </div>
-          )}
-          <div className="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center mb-3">
-            <Sparkles className="w-5 h-5 text-purple-500" />
-          </div>
-          <h4 className="text-sm font-semibold mb-2">ИИ-ассистент</h4>
-          <div className="bg-muted/50 rounded-lg p-2 space-y-1.5">
-            <div className="bg-blue-500 text-white text-[10px] rounded-lg rounded-br-sm px-2 py-1 ml-auto max-w-[90%]">
-              Добавь маму Анна 1965
-            </div>
-            <div className="bg-background border border-border text-[10px] rounded-lg rounded-bl-sm px-2 py-1 max-w-[90%]">
-              Готово! Мама добавлена
-            </div>
-          </div>
-        </button>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">
+            Имя <span className="text-destructive">*</span>
+          </label>
+          <Input
+            placeholder="Иван"
+            value={form.first_name}
+            onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">
+            Фамилия <span className="text-destructive">*</span>
+          </label>
+          <Input
+            placeholder="Иванов"
+            value={form.last_name}
+            onChange={(e) => setForm((f) => ({ ...f, last_name: e.target.value }))}
+          />
+        </div>
       </div>
 
-      {selected && (
-        <p className="text-center text-sm text-orange font-medium animate-in fade-in slide-in-from-bottom-2">
-          Оба способа всегда доступны!
-        </p>
-      )}
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">Дата рождения</label>
+        <Input
+          type="date"
+          value={form.birth_date}
+          onChange={(e) => setForm((f) => ({ ...f, birth_date: e.target.value }))}
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">Пол</label>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={form.gender === 'male' ? 'default' : 'outline'}
+            className={cn(
+              'flex-1',
+              form.gender === 'male' && 'bg-blue-500 hover:bg-blue-600 text-white'
+            )}
+            onClick={() => setForm((f) => ({ ...f, gender: 'male' }))}
+          >
+            Мужской
+          </Button>
+          <Button
+            type="button"
+            variant={form.gender === 'female' ? 'default' : 'outline'}
+            className={cn(
+              'flex-1',
+              form.gender === 'female' && 'bg-pink-500 hover:bg-pink-600 text-white'
+            )}
+            onClick={() => setForm((f) => ({ ...f, gender: 'female' }))}
+          >
+            Женский
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
 
-/* ─── Step 2: Invitations & Stories ─── */
-function InvitationsStoriesStep() {
-  const [chatStep, setChatStep] = useState(0)
+/* ─── Functional Step: Your Family ─── */
 
-  const badges = [
-    { icon: Send, label: 'Отправьте ссылку', desc: 'Telegram-приглашение', color: 'bg-blue-500/10 text-blue-500' },
-    { icon: Bot, label: 'Бот проведёт интервью', desc: 'Вопросы с ИИ', color: 'bg-green-500/10 text-green-500' },
-    { icon: Camera, label: 'Истории с фото', desc: 'Текст, фото, голос', color: 'bg-purple-500/10 text-purple-500' },
-  ]
+function YourFamilyStep({
+  members,
+  setMembers,
+}: {
+  members: FamilyMember[]
+  setMembers: React.Dispatch<React.SetStateAction<FamilyMember[]>>
+}) {
+  const [showExtra, setShowExtra] = useState(false)
 
-  const chatMessages = [
-    { from: 'bot', text: 'Расскажите, какое ваше самое яркое воспоминание о бабушке?' },
-    { from: 'user', text: 'Помню, как она пекла пирожки каждое воскресенье. У меня есть фото!' },
-    { from: 'bot', text: '✅ История сохранена! Фото добавлено к воспоминанию.' },
-  ]
-
-  return (
-    <div className="space-y-4">
-      {/* Info badges */}
-      <div className="flex gap-2">
-        {badges.map((b) => (
-          <div key={b.label} className="flex-1 flex flex-col items-center gap-1.5 p-2.5 rounded-xl border border-border bg-muted/30 text-center">
-            <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', b.color)}>
-              <b.icon className="w-4 h-4" />
-            </div>
-            <span className="text-[11px] font-medium leading-tight">{b.label}</span>
-            <span className="text-[9px] text-muted-foreground leading-tight">{b.desc}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Mini chat demo */}
-      <div className="bg-muted/30 rounded-xl border border-border p-3 space-y-2">
-        <div className="flex items-center gap-2 pb-2 border-b border-border">
-          <div className="w-6 h-6 rounded-full bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center">
-            <Bot className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-xs font-medium">GeneticTree Bot</span>
-        </div>
-
-        <div className="space-y-2 min-h-[80px]">
-          {chatMessages.slice(0, chatStep).map((msg, i) => (
-            <div
-              key={i}
-              className={cn(
-                'flex animate-in fade-in slide-in-from-bottom-1 duration-300',
-                msg.from === 'user' ? 'justify-end' : 'justify-start'
-              )}
-            >
-              <div className={cn(
-                'max-w-[85%] px-2.5 py-1.5 rounded-xl text-xs',
-                msg.from === 'user'
-                  ? 'bg-blue-500 text-white rounded-br-sm'
-                  : 'bg-muted border border-border rounded-bl-sm'
-              )}>
-                {msg.text}
-              </div>
-            </div>
-          ))}
-          {chatStep === 0 && (
-            <div className="flex items-center justify-center h-16 text-muted-foreground text-xs">
-              <MessageCircle className="w-3.5 h-3.5 mr-1.5 opacity-50" />
-              Нажмите кнопку ниже...
-            </div>
-          )}
-        </div>
-      </div>
-
-      {chatStep < chatMessages.length ? (
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full border-dashed"
-          onClick={() => setChatStep((s) => s + 1)}
-        >
-          <MessageCircle className="w-4 h-4 mr-2" />
-          Следующее сообщение ({chatStep + 1}/{chatMessages.length})
-        </Button>
-      ) : (
-        <p className="text-center text-sm text-orange font-medium animate-in fade-in slide-in-from-bottom-2">
-          Истории с фото и голосом — всё сохраняется автоматически
-        </p>
-      )}
-    </div>
-  )
-}
-
-/* ─── Step 3: Book — Style picker + generation demo ─── */
-function BookStep() {
-  const [selectedStyle, setSelectedStyle] = useState<string | null>(null)
-  const [generating, setGenerating] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [done, setDone] = useState(false)
-
-  const styles = [
-    { id: 'classic', label: 'Классика', emoji: '📜', desc: 'Элегантный стиль', color: 'border-amber-500/50 bg-amber-500/5' },
-    { id: 'modern', label: 'Современный', emoji: '✨', desc: 'Минимализм', color: 'border-blue-500/50 bg-blue-500/5' },
-    { id: 'vintage', label: 'Винтаж', emoji: '🕰️', desc: 'Ретро-стиль', color: 'border-purple-500/50 bg-purple-500/5' },
-  ]
-
-  const handleGenerate = () => {
-    setGenerating(true)
-    setProgress(0)
+  const updateMember = (id: string, field: keyof FamilyMember, value: string) => {
+    setMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m))
+    )
   }
 
-  useEffect(() => {
-    if (!generating || done) return
-    const interval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          clearInterval(interval)
-          setDone(true)
-          setGenerating(false)
-          return 100
-        }
-        return p + 4
-      })
-    }, 60)
-    return () => clearInterval(interval)
-  }, [generating, done])
+  const removeMember = (id: string) => {
+    setMembers((prev) => prev.filter((m) => m.id !== id))
+  }
 
-  const stages = [
-    { threshold: 0, text: 'Сбор историй...' },
-    { threshold: 30, text: 'Оформление глав...' },
-    { threshold: 60, text: 'Генерация PDF...' },
-    { threshold: 90, text: 'Готово!' },
-  ]
-  const currentStage = [...stages].reverse().find((s) => progress >= s.threshold)
+  const addMember = (option: (typeof EXTRA_RELATION_OPTIONS)[number]) => {
+    setMembers((prev) => [
+      ...prev,
+      {
+        id: `extra_${Date.now()}`,
+        first_name: '',
+        last_name: '',
+        relationLabel: option.label,
+        relationshipType: option.type,
+        fromIsSelf: option.fromIsSelf,
+        gender: option.gender,
+      },
+    ])
+    setShowExtra(false)
+  }
+
+  const momDad = members.filter((m) => m.id === 'mom' || m.id === 'dad')
+  const extras = members.filter((m) => m.id !== 'mom' && m.id !== 'dad')
 
   return (
     <div className="space-y-4">
-      <p className="text-muted-foreground text-sm text-center">
-        Выберите стиль и нажмите «Создать книгу»
+      <p className="text-sm text-muted-foreground text-center">
+        Добавьте ближайших родственников. Можно заполнить только имя.
       </p>
 
-      {/* Style picker */}
-      <div className="grid grid-cols-3 gap-2">
-        {styles.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => !generating && !done && setSelectedStyle(s.id)}
-            className={cn(
-              'p-3 rounded-xl border-2 text-center transition-all duration-300',
-              selectedStyle === s.id
-                ? s.color + ' ring-2 ring-orange/20'
-                : 'border-border bg-muted/30 hover:border-muted-foreground/30',
-              (generating || done) && 'pointer-events-none'
-            )}
-          >
-            <span className="text-2xl block mb-1">{s.emoji}</span>
-            <span className="text-xs font-semibold block">{s.label}</span>
-            <span className="text-[9px] text-muted-foreground">{s.desc}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* Progress / Generate */}
-      {(generating || done) ? (
-        <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-muted-foreground">{done ? 'Готово!' : currentStage?.text}</span>
-            <span className="font-mono text-foreground">{Math.min(progress, 100)}%</span>
+      {momDad.map((member) => (
+        <div key={member.id} className="p-3 rounded-xl border border-border bg-muted/30 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold">{member.relationLabel}</span>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div
-              className={cn(
-                'h-full rounded-full transition-all duration-200',
-                done ? 'bg-green-500' : 'bg-gradient-to-r from-orange to-orange-dark'
-              )}
-              style={{ width: `${Math.min(progress, 100)}%` }}
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              placeholder="Имя"
+              value={member.first_name}
+              onChange={(e) => updateMember(member.id, 'first_name', e.target.value)}
+            />
+            <Input
+              placeholder="Фамилия"
+              value={member.last_name}
+              onChange={(e) => updateMember(member.id, 'last_name', e.target.value)}
             />
           </div>
-          {done && (
-            <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 animate-in fade-in zoom-in-95">
-              <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                <Check className="w-5 h-5 text-green-500" />
-              </div>
-              <span className="text-sm font-medium">Книга готова!</span>
-            </div>
-          )}
+        </div>
+      ))}
+
+      {extras.map((member) => (
+        <div key={member.id} className="p-3 rounded-xl border border-border bg-muted/30 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold">{member.relationLabel}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+              onClick={() => removeMember(member.id)}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              placeholder="Имя"
+              value={member.first_name}
+              onChange={(e) => updateMember(member.id, 'first_name', e.target.value)}
+            />
+            <Input
+              placeholder="Фамилия"
+              value={member.last_name}
+              onChange={(e) => updateMember(member.id, 'last_name', e.target.value)}
+            />
+          </div>
+        </div>
+      ))}
+
+      {showExtra ? (
+        <div className="p-3 rounded-xl border border-dashed border-orange/40 bg-orange/5 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Выберите родство:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {EXTRA_RELATION_OPTIONS.map((opt) => (
+              <Button
+                key={opt.type}
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => addMember(opt)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-muted-foreground"
+            onClick={() => setShowExtra(false)}
+          >
+            Отмена
+          </Button>
         </div>
       ) : (
         <Button
-          className="w-full bg-gradient-to-r from-orange to-orange-dark text-white"
-          onClick={handleGenerate}
-          disabled={!selectedStyle}
+          variant="outline"
+          className="w-full border-dashed"
+          onClick={() => setShowExtra(true)}
         >
-          <Sparkles className="w-4 h-4 mr-2" />
-          Создать книгу
+          <Plus className="w-4 h-4 mr-2" />
+          Добавить ещё родственника
         </Button>
       )}
     </div>
   )
 }
 
-/* ─── Step 4: Let's Go — Summary + navigation ─── */
-function LetsGoStep({ onNavigate }: { onNavigate: (path: string) => void }) {
-  const checklist = [
-    { icon: TreePine, label: 'Постройте семейное древо', color: 'text-orange' },
-    { icon: Send, label: 'Пригласите родственников', color: 'text-blue-500' },
-    { icon: BookOpen, label: 'Создайте семейную книгу', color: 'text-purple-500' },
-  ]
+/* ─── Functional Step: Invite Family ─── */
+
+function InviteFamilyStep({
+  relatives,
+  invitations,
+  onGenerate,
+  generatingId,
+}: {
+  relatives: FamilyRelative[]
+  invitations: Record<number, string>
+  onGenerate: (relativeId: number) => void
+  generatingId: number | null
+}) {
+  const copyToClipboard = (url: string) => {
+    navigator.clipboard.writeText(url)
+    toast.success('Ссылка скопирована')
+  }
+
+  if (relatives.length === 0) {
+    return (
+      <div className="text-center py-6 space-y-2">
+        <p className="text-muted-foreground text-sm">
+          Вы не добавили родственников на предыдущем шаге.
+        </p>
+        <p className="text-muted-foreground text-xs">
+          Вы можете пригласить их позже со страницы древа.
+        </p>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-5">
-      <div className="space-y-2">
-        {checklist.map((item) => (
-          <div key={item.label} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
-            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-              <item.icon className={cn('w-4 h-4', item.color)} />
-            </div>
-            <span className="text-sm font-medium">{item.label}</span>
-            <Check className="w-4 h-4 text-muted-foreground/40 ml-auto" />
-          </div>
-        ))}
-      </div>
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground text-center">
+        Отправьте ссылку родственнику — бот проведёт интервью и соберёт их воспоминания
+      </p>
 
-      <div className="space-y-2">
-        <Button
-          className="w-full bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange"
-          onClick={() => onNavigate('/tree')}
-        >
-          <Rocket className="w-4 h-4 mr-2" />
-          Перейти к древу
-        </Button>
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => onNavigate('/dashboard/ai-assistant')}
-        >
-          <Sparkles className="w-4 h-4 mr-2" />
-          Попробовать ИИ-ассистента
-        </Button>
-      </div>
+      {relatives.map((rel) => {
+        const url = invitations[rel.id]
+        const isGenerating = generatingId === rel.id
+
+        return (
+          <div
+            key={rel.id}
+            className="p-3 rounded-xl border border-border bg-muted/30 space-y-2"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">
+                {rel.first_name} {rel.last_name || ''}
+              </span>
+              {url ? (
+                <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                  <Check className="w-3.5 h-3.5" />
+                  Готово
+                </div>
+              ) : null}
+            </div>
+
+            {url ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  readOnly
+                  value={url}
+                  className="text-xs h-8 bg-background"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 shrink-0"
+                  onClick={() => copyToClipboard(url)}
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => onGenerate(rel.id)}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5 mr-2" />
+                )}
+                Сгенерировать ссылку
+              </Button>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
 
 /* ─── Main Wizard ─── */
+
 export default function OnboardingWizard() {
-  const { user } = useUser()
-  const router = useRouter()
+  const { user, refreshStats } = useUser()
   const {
     showOnboarding,
-    setShowOnboarding,
     step,
     setStep,
     nextStep,
     prevStep,
     completeOnboarding,
+    createdRelatives,
+    addCreatedRelative,
   } = useOnboarding(user?.id)
 
-  const handleNavigate = useCallback((path: string) => {
-    completeOnboarding()
-    router.push(path)
-  }, [completeOnboarding, router])
+  // Functional step state
+  const [selfForm, setSelfForm] = useState<SelfFormData>({
+    first_name: '',
+    last_name: '',
+    birth_date: '',
+    gender: 'male',
+  })
+  const [selfRelativeId, setSelfRelativeId] = useState<number | null>(null)
 
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([
+    {
+      id: 'mom',
+      first_name: '',
+      last_name: '',
+      relationLabel: 'Мама',
+      relationshipType: 'mother',
+      fromIsSelf: false,
+      gender: 'female',
+    },
+    {
+      id: 'dad',
+      first_name: '',
+      last_name: '',
+      relationLabel: 'Папа',
+      relationshipType: 'father',
+      fromIsSelf: false,
+      gender: 'male',
+    },
+  ])
+
+  const [invitations, setInvitations] = useState<Record<number, string>>({})
+  const [generatingId, setGeneratingId] = useState<number | null>(null)
+  const [loading, setLoading] = useState(false)
+  const completingRef = useRef(false)
+
+  const canProceedAboutYou =
+    selfForm.first_name.trim() !== '' && selfForm.last_name.trim() !== ''
+
+  // About You → create self relative
+  const handleAboutYouNext = useCallback(async () => {
+    if (!user || !canProceedAboutYou) return
+    setLoading(true)
+    try {
+      const relative = await familyApi.createRelative(user.id, {
+        first_name: selfForm.first_name.trim(),
+        last_name: selfForm.last_name.trim(),
+        birth_date: selfForm.birth_date || undefined,
+        gender: selfForm.gender,
+        generation: 0,
+      })
+      setSelfRelativeId(relative.id)
+      addCreatedRelative(relative)
+      nextStep()
+    } catch {
+      toast.error('Не удалось сохранить данные. Попробуйте ещё раз.')
+    } finally {
+      setLoading(false)
+    }
+  }, [user, selfForm, canProceedAboutYou, addCreatedRelative, nextStep])
+
+  // Your Family → create family members + relationships
+  const handleFamilyNext = useCallback(async () => {
+    if (!user || selfRelativeId === null) return
+
+    const filledMembers = familyMembers.filter((m) => m.first_name.trim() !== '')
+    if (filledMembers.length === 0) {
+      nextStep()
+      return
+    }
+
+    setLoading(true)
+    try {
+      for (const member of filledMembers) {
+        const created = await familyApi.createRelative(user.id, {
+          first_name: member.first_name.trim(),
+          last_name: member.last_name.trim() || undefined,
+          gender: member.gender,
+          generation:
+            member.relationshipType === 'mother' || member.relationshipType === 'father'
+              ? -1
+              : member.relationshipType === 'grandmother' ||
+                member.relationshipType === 'grandfather'
+              ? -2
+              : member.relationshipType === 'son' || member.relationshipType === 'daughter'
+              ? 1
+              : 0,
+        })
+
+        addCreatedRelative(created)
+
+        if (member.fromIsSelf) {
+          await relationshipApi.createRelationship(user.id, {
+            from_relative_id: selfRelativeId,
+            to_relative_id: created.id,
+            relationship_type: member.relationshipType,
+          })
+        } else {
+          await relationshipApi.createRelationship(user.id, {
+            from_relative_id: created.id,
+            to_relative_id: selfRelativeId,
+            relationship_type: member.relationshipType,
+          })
+        }
+      }
+
+      nextStep()
+    } catch {
+      toast.error('Не удалось добавить родственников. Попробуйте ещё раз.')
+    } finally {
+      setLoading(false)
+    }
+  }, [user, selfRelativeId, familyMembers, addCreatedRelative, nextStep])
+
+  // Generate invitation
+  const handleGenerateInvitation = useCallback(
+    async (relativeId: number) => {
+      if (!user) return
+      setGeneratingId(relativeId)
+      try {
+        const response = await familyApi.generateInvitation(user.id, relativeId)
+        setInvitations((prev) => ({ ...prev, [relativeId]: response.invitation_url }))
+      } catch {
+        toast.error('Не удалось сгенерировать ссылку')
+      } finally {
+        setGeneratingId(null)
+      }
+    },
+    [user]
+  )
+
+  // Complete (guarded to prevent double-fire)
+  const handleComplete = useCallback(async () => {
+    if (completingRef.current) return
+    completingRef.current = true
+    completeOnboarding()
+    await refreshStats()
+    toast.success('Добро пожаловать в GeneticTree!')
+  }, [completeOnboarding, refreshStats])
+
+  const familyRelatives = createdRelatives.filter((r) => r.id !== selfRelativeId)
+
+  // Step definitions: 0-3 info, 4-6 functional
   const steps = [
     {
       icon: (
@@ -522,9 +687,54 @@ export default function OnboardingWizard() {
           <Sparkles className="w-8 h-8 text-white" />
         </div>
       ),
-      title: 'Создадим семейную книгу!',
-      description: 'Посмотрите, как строится ваше семейное древо.',
-      content: <WelcomeStep />,
+      title: 'Добро пожаловать!',
+      description: 'Как работает GeneticTree',
+      content: <WelcomeInfoStep />,
+      isInfo: true,
+    },
+    {
+      icon: (
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+          <TreePine className="w-8 h-8 text-white" />
+        </div>
+      ),
+      title: 'Семейное древо',
+      description: 'Два способа построить древо',
+      content: <TreeInfoStep />,
+      isInfo: true,
+    },
+    {
+      icon: (
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+          <Bot className="w-8 h-8 text-white" />
+        </div>
+      ),
+      title: 'Telegram-бот',
+      description: 'Сбор историй через интервью',
+      content: <BotInfoStep />,
+      isInfo: true,
+    },
+    {
+      icon: (
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+          <BookOpen className="w-8 h-8 text-white" />
+        </div>
+      ),
+      title: 'Семейная книга',
+      description: 'Все истории — в одной книге',
+      content: <BookInfoStep />,
+      isInfo: true,
+    },
+    {
+      icon: (
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center">
+          <UserIcon className="w-8 h-8 text-white" />
+        </div>
+      ),
+      title: 'О вас',
+      description: 'Расскажите немного о себе',
+      content: <AboutYouStep form={selfForm} setForm={setSelfForm} />,
+      isInfo: false,
     },
     {
       icon: (
@@ -532,63 +742,62 @@ export default function OnboardingWizard() {
           <Users className="w-8 h-8 text-white" />
         </div>
       ),
-      title: 'Как добавлять родственников',
-      description: 'Два способа — вручную или через ИИ-ассистента.',
-      content: <BuildTreeStep />,
-    },
-    {
-      icon: (
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center">
-          <Send className="w-8 h-8 text-white" />
-        </div>
-      ),
-      title: 'Приглашения и истории',
-      description: 'Пригласите семью — бот соберёт их воспоминания с фото.',
-      content: <InvitationsStoriesStep />,
-    },
-    {
-      icon: (
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-          <FileText className="w-8 h-8 text-white" />
-        </div>
-      ),
-      title: 'Создайте книгу',
-      description: 'Выберите стиль — и все истории станут PDF-книгой.',
-      content: <BookStep />,
+      title: 'Ваша семья',
+      description: 'Добавьте ближайших родственников',
+      content: <YourFamilyStep members={familyMembers} setMembers={setFamilyMembers} />,
+      isInfo: false,
     },
     {
       icon: (
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-          <Rocket className="w-8 h-8 text-white" />
+          <Send className="w-8 h-8 text-white" />
         </div>
       ),
-      title: 'Всё готово!',
-      description: 'Выберите, с чего начать.',
-      content: <LetsGoStep onNavigate={handleNavigate} />,
+      title: 'Пригласите родных',
+      description: 'Отправьте приглашения — бот соберёт воспоминания',
+      content: (
+        <InviteFamilyStep
+          relatives={familyRelatives}
+          invitations={invitations}
+          onGenerate={handleGenerateInvitation}
+          generatingId={generatingId}
+        />
+      ),
+      isInfo: false,
     },
   ]
 
-  const totalSteps = steps.length
-  const isLastStep = step === totalSteps - 1
   const currentStep = steps[step] ?? steps[0]
+  const isLastStep = step === TOTAL_STEPS - 1
+  const isInfoStep = step < INFO_STEPS_COUNT
+
+  // "About You" step index
+  const ABOUT_YOU_STEP = INFO_STEPS_COUNT
+  const FAMILY_STEP = INFO_STEPS_COUNT + 1
 
   const handleNext = useCallback(() => {
-    if (isLastStep) {
-      completeOnboarding()
-    } else {
+    if (isInfoStep) {
       nextStep()
+    } else if (step === ABOUT_YOU_STEP) {
+      handleAboutYouNext()
+    } else if (step === FAMILY_STEP) {
+      handleFamilyNext()
+    } else {
+      handleComplete()
     }
-  }, [isLastStep, completeOnboarding, nextStep])
-
-  const handleSkip = useCallback(() => {
-    completeOnboarding()
-  }, [completeOnboarding])
+  }, [step, isInfoStep, handleAboutYouNext, handleFamilyNext, handleComplete, nextStep, ABOUT_YOU_STEP, FAMILY_STEP])
 
   if (!showOnboarding) return null
 
   return (
-    <Dialog open={showOnboarding} onOpenChange={setShowOnboarding}>
-      <DialogContent className="sm:max-w-2xl">
+    <Dialog open={showOnboarding} onOpenChange={() => {}}>
+      <DialogContent
+        className="sm:max-w-lg [&>button]:hidden"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => {
+          if (!isLastStep) e.preventDefault()
+        }}
+      >
         <DialogHeader className="text-center items-center pt-2">
           {currentStep.icon}
           <DialogTitle className="text-xl font-serif mt-3">
@@ -603,27 +812,47 @@ export default function OnboardingWizard() {
           {currentStep.content}
         </div>
 
-        <StepIndicator current={step} total={totalSteps} onStepClick={setStep} />
+        <StepIndicator current={step} total={TOTAL_STEPS} />
 
         <div className="flex items-center justify-between pt-1">
           <div>
-            {step > 0 ? (
-              <Button variant="ghost" size="sm" onClick={prevStep}>
+            {step > 0 && !isLastStep && (
+              <Button variant="ghost" size="sm" onClick={prevStep} disabled={loading}>
                 <ArrowLeft className="w-4 h-4 mr-1" />
                 Назад
               </Button>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={handleSkip} className="text-muted-foreground">
+            )}
+            {isLastStep && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleComplete}
+                className="text-muted-foreground"
+              >
                 Пропустить
               </Button>
             )}
+            {step === 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setStep(INFO_STEPS_COUNT)}
+                className="text-muted-foreground"
+              >
+                Пропустить обзор
+              </Button>
+            )}
           </div>
-          {!isLastStep && (
-            <Button onClick={handleNext} className="bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange">
-              Далее
-              <ArrowRight className="w-4 h-4 ml-1" />
-            </Button>
-          )}
+
+          <Button
+            onClick={handleNext}
+            disabled={loading || (step === ABOUT_YOU_STEP && !canProceedAboutYou)}
+            className="bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange"
+          >
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {isLastStep ? 'Готово' : 'Далее'}
+            {!isLastStep && !loading && <ArrowRight className="w-4 h-4 ml-1" />}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -70,6 +70,7 @@ async def start_interview(message: Message, state: FSMContext):
                 relative_name=user_data.get("name", ""),
                 interview_messages=[],
                 question_count=0,
+                interview_photos=[],
             )
             data = await state.get_data()
         else:
@@ -123,6 +124,8 @@ async def start_interview(message: Message, state: FSMContext):
     # Update state
     if not messages:
         messages = [{"role": "assistant", "content": first_question}]
+        # Reset interview photos for new interview
+        await state.update_data(interview_photos=[])
     else:
         messages.append({"role": "assistant", "content": first_question})
 
@@ -139,7 +142,7 @@ async def start_interview(message: Message, state: FSMContext):
     progress = get_progress_text(question_count)
 
     if question_count == 1:
-        response_text = f"Давай начнём!\n\n{first_question}\n\n{progress}\n\n_Можно текстом или голосовым_"
+        response_text = f"Давай начнём!\n\n{first_question}\n\n{progress}\n\n_Отвечайте текстом, голосовым или отправьте фото — всё пригодится для истории_ 📸🎤"
     else:
         response_text = f"{first_question}\n\n{progress}"
 
@@ -165,6 +168,33 @@ async def create_story_manually(message: Message, state: FSMContext):
         return
 
     await create_story_from_messages(message, state)
+
+
+@router.message(InterviewStates.waiting_answer, F.photo)
+async def handle_interview_photo(message: Message, state: FSMContext):
+    """Handle photo sent during interview — store for later attachment to story."""
+    data = await state.get_data()
+    interview_photos = data.get("interview_photos", [])
+
+    if len(interview_photos) >= MAX_PHOTOS_PER_STORY:
+        await message.answer(
+            f"Уже сохранено {MAX_PHOTOS_PER_STORY} фото — это максимум для одной истории.\n"
+            "Продолжайте отвечать на вопросы или создайте историю.",
+        )
+        return
+
+    # Store the file_id of the largest photo size
+    photo_file_id = message.photo[-1].file_id
+    interview_photos.append(photo_file_id)
+    await state.update_data(interview_photos=interview_photos)
+
+    count = len(interview_photos)
+    remaining = MAX_PHOTOS_PER_STORY - count
+    await message.answer(
+        f"📸 Фото сохранено ({count}/{MAX_PHOTOS_PER_STORY}). "
+        f"{'Можно добавить ещё ' + str(remaining) + '.' if remaining > 0 else 'Лимит достигнут.'}\n"
+        f"Продолжайте отвечать на вопросы — фото прикрепятся к истории автоматически.",
+    )
 
 
 @router.message(InterviewStates.waiting_answer, F.voice)
@@ -461,11 +491,12 @@ async def create_story_from_messages(message: Message, state: FSMContext):
 
 @router.callback_query(InterviewStates.confirming_story, F.data == "story_save")
 async def confirm_story_save(callback: CallbackQuery, state: FSMContext):
-    """Save the confirmed story and offer to add photos."""
+    """Save the confirmed story and upload pre-collected photos."""
     data = await state.get_data()
     relative_id = data["relative_id"]
     title = data.get("pending_story_title", "История")
     text = data.get("pending_story_text", "")
+    interview_photos = data.get("interview_photos", [])
 
     # Save to backend
     success = await backend_api.save_story(relative_id, title, text)
@@ -473,25 +504,63 @@ async def confirm_story_save(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
 
     if success:
-        # Save story key for photo uploads
+        # Upload any photos collected during the interview
+        uploaded_count = 0
+        if interview_photos:
+            uploading_msg = await callback.message.answer(
+                f"📤 Загружаю {len(interview_photos)} фото, собранных во время интервью..."
+            )
+            for i, file_id in enumerate(interview_photos):
+                try:
+                    file = await bot.get_file(file_id)
+                    file_bytes = await bot.download_file(file.file_path)
+                    photo_data = file_bytes.read()
+                    result = await backend_api.upload_story_media(
+                        relative_id, title, photo_data, f"photo_{i + 1}.jpg"
+                    )
+                    if result:
+                        uploaded_count += 1
+                except Exception as e:
+                    logger.error(f"Error uploading interview photo {i}: {e}")
+            try:
+                await uploading_msg.delete()
+            except Exception:
+                pass
+
+        # Clear interview photos from state
+        remaining_slots = MAX_PHOTOS_PER_STORY - uploaded_count
+
+        # Save story key for additional photo uploads
         await state.update_data(
             saved_story_key=title,
-            story_photo_count=0,
+            story_photo_count=uploaded_count,
+            interview_photos=[],
         )
         await state.set_state(InterviewStates.collecting_story_photos)
+
+        if uploaded_count > 0:
+            photo_msg = f"📸 Прикреплено {uploaded_count} фото из интервью."
+            if remaining_slots > 0:
+                photo_msg += f"\nМожно добавить ещё {remaining_slots} — отправьте фото или нажмите «Готово»."
+            else:
+                photo_msg += "\nЛимит фотографий достигнут."
+        else:
+            photo_msg = f"📸 Хотите добавить фотографии к этой истории? (до {MAX_PHOTOS_PER_STORY} штук)\nОтправьте фото или нажмите «Пропустить»"
 
         await callback.message.edit_text(
             f"*{title}*\n\n"
             f"История сохранена!\n\n"
-            f"📸 Хотите добавить фотографии к этой истории? (до 5 штук)\n"
-            f"Отправьте фото или нажмите «Пропустить»",
+            f"{photo_msg}",
             parse_mode="Markdown",
         )
 
-        await callback.message.answer(
-            "Отправьте фото или выберите действие:",
-            reply_markup=get_photo_collection_keyboard(),
-        )
+        if remaining_slots > 0:
+            await callback.message.answer(
+                "Отправьте фото или выберите действие:",
+                reply_markup=get_photo_collection_keyboard(uploaded_count),
+            )
+        else:
+            await finish_photo_collection(callback.message, state)
     else:
         await callback.message.edit_text(
             "Не удалось сохранить историю. Попробуйте ещё раз.",
@@ -914,6 +983,7 @@ async def finish_photo_collection(message: Message, state: FSMContext):
         pending_story_text=None,
         interview_messages=[],
         question_count=0,
+        interview_photos=[],
     )
     await state.set_state(None)
 
