@@ -1,19 +1,20 @@
 import type { Metadata } from 'next'
-import { Inter, Playfair_Display } from 'next/font/google'
+import { Comfortaa, Nunito } from 'next/font/google'
 import ThemeProvider from '@/components/providers/ThemeProvider'
 import AntdProvider from '@/components/providers/AntdProvider'
 import { Toaster } from 'sonner'
 import './globals.css'
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
+const comfortaa = Comfortaa({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-comfortaa',
   display: 'swap',
 })
 
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  variable: '--font-playfair',
+const nunito = Nunito({
+  subsets: ['latin', 'cyrillic'],
+  variable: '--font-heading',
+  weight: ['400', '600', '700', '800', '900'],
   display: 'swap',
 })
 
@@ -31,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${playfair.variable} font-sans`}
+        className={`${comfortaa.variable} ${nunito.variable} font-sans`}
         suppressHydrationWarning
       >
         <ThemeProvider>

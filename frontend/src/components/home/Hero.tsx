@@ -22,11 +22,11 @@ function BookPreview() {
       {/* Book mock */}
       <div className="relative bg-card rounded-2xl border border-border shadow-2xl p-6 transform rotate-2 hover:rotate-0 transition-transform duration-500">
         {/* Book cover / title page */}
-        <div className="bg-gradient-to-br from-orange/10 to-orange-dark/10 rounded-xl p-5 border border-orange/20">
+        <div className="bg-gradient-to-br from-azure/10 to-azure-dark/10 rounded-xl p-5 border border-azure/20">
           <div className="text-center space-y-2 mb-5">
-            <TreePine className="w-8 h-8 text-orange mx-auto" />
+            <TreePine className="w-8 h-8 text-azure mx-auto" />
             <h3 className="font-serif text-lg font-bold">Семейная Книга</h3>
-            <div className="w-12 h-0.5 bg-orange mx-auto" />
+            <div className="w-12 h-0.5 bg-azure mx-auto" />
             <p className="text-xs text-muted-foreground">История нашего рода</p>
           </div>
 
@@ -42,7 +42,7 @@ function BookPreview() {
               { icon: FileText, label: 'Заключение', page: '16' },
             ].map((item, i) => (
               <div key={i} className="flex items-center gap-2 text-[10px]">
-                <item.icon className="w-3 h-3 text-orange/60 shrink-0" />
+                <item.icon className="w-3 h-3 text-azure/60 shrink-0" />
                 <span className="text-muted-foreground truncate flex-1">{item.label}</span>
                 <span className="text-muted-foreground/50 font-mono">{item.page}</span>
               </div>
@@ -52,7 +52,7 @@ function BookPreview() {
           {/* Family tree section preview */}
           <div className="bg-background/60 rounded-lg p-3 border border-border/50 mb-3">
             <p className="text-[10px] font-semibold text-muted-foreground mb-2 flex items-center gap-1">
-              <Users className="w-3 h-3 text-orange/60" />
+              <Users className="w-3 h-3 text-azure/60" />
               Семейное древо
             </p>
             <div className="flex gap-1.5 justify-center">
@@ -74,7 +74,7 @@ function BookPreview() {
           {/* Chapter with photo preview */}
           <div className="bg-background/60 rounded-lg p-3 border border-border/50">
             <p className="text-[10px] font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-              <FileText className="w-3 h-3 text-orange/60" />
+              <FileText className="w-3 h-3 text-azure/60" />
               Глава 1. Детские воспоминания
             </p>
             <div className="flex gap-2">
@@ -84,8 +84,8 @@ function BookPreview() {
                 <div className="h-1.5 bg-muted rounded-full w-full" />
                 <div className="h-1.5 bg-muted rounded-full w-3/5" />
               </div>
-              <div className="w-14 h-12 rounded border border-border bg-gradient-to-br from-orange/10 to-orange-dark/10 flex items-center justify-center shrink-0">
-                <Camera className="w-4 h-4 text-orange/30" />
+              <div className="w-14 h-12 rounded border border-border bg-gradient-to-br from-azure/10 to-azure-dark/10 flex items-center justify-center shrink-0">
+                <Camera className="w-4 h-4 text-azure/30" />
               </div>
             </div>
           </div>
@@ -123,8 +123,8 @@ export default function Hero() {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       {/* Subtle background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-orange/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-dark/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-azure/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-azure-dark/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6 lg:px-8 py-24 lg:py-32">
@@ -137,7 +137,7 @@ export default function Hero() {
               transition={{ duration: 0.6 }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/80 backdrop-blur-sm border border-border mb-8"
             >
-              <BookOpen className="w-4 h-4 text-orange" />
+              <BookOpen className="w-4 h-4 text-azure" />
               <span className="text-sm text-muted-foreground font-medium">
                 Древо, истории и книга в одном месте
               </span>
@@ -171,7 +171,7 @@ export default function Hero() {
             >
               <Link href={authLink}>
                 <Button
-                  className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange hover:scale-105 transition-all duration-300"
+                  className="h-14 px-8 text-lg font-semibold bg-gradient-to-r from-azure to-azure-dark text-white hover:shadow-glow-azure hover:scale-105 transition-all duration-300"
                 >
                   Начать бесплатно
                   <ArrowRight className="w-5 h-5 ml-2" />

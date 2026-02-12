@@ -101,7 +101,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       <div className="flex justify-end mb-4">
         <a
           href="/forgot-password"
-          className="text-sm text-muted-foreground hover:text-orange transition-colors"
+          className="text-sm text-muted-foreground hover:text-azure transition-colors"
         >
           Забыли пароль?
         </a>
@@ -112,7 +112,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full h-12 text-base font-semibold bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange transition-all"
+          className="w-full h-12 text-base font-semibold bg-gradient-to-r from-azure to-azure-dark text-white hover:shadow-glow-azure transition-all"
         >
           {loading ? 'Вход...' : 'Войти'}
         </Button>

@@ -147,7 +147,7 @@ export default function ConnectionLine({
       <path
         d={pathData.path}
         fill="none"
-        stroke="#ff6b35"
+        stroke="#6BC4DD"
         strokeWidth="2"
         strokeLinecap="round"
         className="transition-all duration-300"
@@ -157,7 +157,7 @@ export default function ConnectionLine({
       <path
         d={pathData.path}
         fill="none"
-        stroke="#ff6b35"
+        stroke="#6BC4DD"
         strokeWidth="6"
         strokeLinecap="round"
         opacity="0.2"
@@ -168,7 +168,7 @@ export default function ConnectionLine({
         cx={pathData.endX}
         cy={pathData.endY}
         r="4"
-        fill="#ff6b35"
+        fill="#6BC4DD"
       />
 
       {/* Label background */}
@@ -178,8 +178,8 @@ export default function ConnectionLine({
         width="60"
         height="20"
         rx="4"
-        fill="#1a1a1a"
-        stroke="#ff6b35"
+        className="fill-background"
+        stroke="#6BC4DD"
         strokeWidth="1"
       />
 
@@ -189,7 +189,7 @@ export default function ConnectionLine({
         y={pathData.labelY + 4}
         textAnchor="middle"
         fontSize="10"
-        fill="#ff6b35"
+        fill="#6BC4DD"
         fontWeight="500"
       >
         {label}

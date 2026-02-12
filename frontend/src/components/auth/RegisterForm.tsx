@@ -187,7 +187,7 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         <Button
           type="submit"
           disabled={loading}
-          className="w-full h-12 text-base font-semibold bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange transition-all"
+          className="w-full h-12 text-base font-semibold bg-gradient-to-r from-azure to-azure-dark text-white hover:shadow-glow-azure transition-all"
         >
           {loading ? 'Создание аккаунта...' : 'Создать аккаунт'}
         </Button>
@@ -196,11 +196,11 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
       {/* Terms */}
       <p className="text-xs text-muted-foreground text-center mt-4">
         Создавая аккаунт, вы соглашаетесь с{' '}
-        <a href="/terms" className="text-orange hover:underline">
+        <a href="/terms" className="text-azure hover:underline">
           Условиями использования
         </a>{' '}
         и{' '}
-        <a href="/privacy" className="text-orange hover:underline">
+        <a href="/privacy" className="text-azure hover:underline">
           Политикой конфиденциальности
         </a>
         .

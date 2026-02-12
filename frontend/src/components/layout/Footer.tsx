@@ -32,7 +32,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-azure to-azure-dark flex items-center justify-center">
                 <TreePine className="w-6 h-6 text-white" strokeWidth={2.5} />
               </div>
               <span className="font-serif text-2xl font-bold">
@@ -48,7 +48,7 @@ export default function Footer() {
                 <a key={social.label} href={social.href} target="_blank" rel="noopener noreferrer"
                   className="w-10 h-10 rounded-lg bg-muted hover:bg-accent flex items-center justify-center transition-colors group"
                   aria-label={social.label}>
-                  <social.icon className="w-5 h-5 text-muted-foreground group-hover:text-orange transition-colors" />
+                  <social.icon className="w-5 h-5 text-muted-foreground group-hover:text-azure transition-colors" />
                 </a>
               ))}
             </div>
@@ -59,7 +59,7 @@ export default function Footer() {
               <ul className="space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <Link href={link.href} className="text-muted-foreground hover:text-orange transition-colors text-base">
+                    <Link href={link.href} className="text-muted-foreground hover:text-azure transition-colors text-base">
                       {link.label}
                     </Link>
                   </li>

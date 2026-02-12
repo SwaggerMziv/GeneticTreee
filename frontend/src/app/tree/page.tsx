@@ -73,59 +73,59 @@ const HORIZONTAL_GAP = 60  // Reduced spacing
 const VERTICAL_GAP = 100    // Reduced vertical spacing
 const EDGE_PAD = 6
 
-// Relationship colors - unique colors for different relationship types
+// Relationship colors - warm pastel palette, soft and muted
 const RELATIONSHIP_COLORS: Record<string, string> = {
-  // Parents (green tones)
-  father: '#22c55e',
-  mother: '#4ade80',
-  parent: '#16a34a',
-  stepfather: '#86efac',
-  stepmother: '#bbf7d0',
-  // Children (blue tones)
-  son: '#3b82f6',
-  daughter: '#60a5fa',
-  child: '#2563eb',
-  stepson: '#93c5fd',
-  stepdaughter: '#bfdbfe',
-  // Siblings (purple tones)
-  brother: '#8b5cf6',
-  sister: '#a78bfa',
-  half_brother: '#c4b5fd',
-  half_sister: '#ddd6fe',
-  // Spouse (red/pink tones)
-  spouse: '#ef4444',
-  husband: '#ef4444',
-  wife: '#ef4444',
-  ex_spouse: '#f87171',
-  partner: '#fb923c',
-  // Grandparents (amber tones)
-  grandfather: '#f59e0b',
-  grandmother: '#fbbf24',
-  // Grandchildren (cyan tones)
-  grandson: '#06b6d4',
-  granddaughter: '#22d3ee',
-  // Extended family (various)
-  uncle: '#6366f1',
-  aunt: '#818cf8',
-  nephew: '#14b8a6',
-  niece: '#2dd4bf',
-  cousin: '#ec4899',
-  // In-laws (slate tones)
-  father_in_law: '#64748b',
-  mother_in_law: '#94a3b8',
-  son_in_law: '#475569',
-  daughter_in_law: '#cbd5e1',
-  brother_in_law: '#334155',
-  sister_in_law: '#e2e8f0',
-  // Godparents (indigo)
-  godfather: '#4f46e5',
-  godmother: '#6366f1',
-  godson: '#7c3aed',
-  goddaughter: '#8b5cf6',
+  // Parents (warm peach / coral)
+  father: '#E8956E',
+  mother: '#F0A986',
+  parent: '#D9845F',
+  stepfather: '#F0BDA4',
+  stepmother: '#F5CCBA',
+  // Children (soft sky / lavender)
+  son: '#7EB5D6',
+  daughter: '#96C5E0',
+  child: '#6BA5CA',
+  stepson: '#AED4EA',
+  stepdaughter: '#C5E0F0',
+  // Siblings (dusty mauve / rose)
+  brother: '#B88A94',
+  sister: '#C9A0A8',
+  half_brother: '#D4B5BC',
+  half_sister: '#E0C8CE',
+  // Spouse (warm coral)
+  spouse: '#ED7855',
+  husband: '#ED7855',
+  wife: '#ED7855',
+  ex_spouse: '#E89580',
+  partner: '#FFA477',
+  // Grandparents (soft amber / gold)
+  grandfather: '#D4A65A',
+  grandmother: '#E0B96E',
+  // Grandchildren (muted teal)
+  grandson: '#6EB5B0',
+  granddaughter: '#88C5C0',
+  // Extended family (various muted)
+  uncle: '#8B8ABF',
+  aunt: '#A09FC8',
+  nephew: '#6EAA9E',
+  niece: '#88BDB3',
+  cousin: '#C48BA0',
+  // In-laws (warm grey)
+  father_in_law: '#8A8090',
+  mother_in_law: '#A098A6',
+  son_in_law: '#706878',
+  daughter_in_law: '#B8B0BF',
+  brother_in_law: '#605868',
+  sister_in_law: '#C8C0CE',
+  // Godparents (dusty purple)
+  godfather: '#7A70A8',
+  godmother: '#8E85B5',
+  godson: '#9585B8',
+  goddaughter: '#A898C5',
   // Other
-  guardian: '#d946ef',
-  ward: '#e879f9',
-  unknown: '#ff6b35',
+  guardian: '#B880C0',
+  ward: '#C898D0',
+  unknown: '#AC6D78',
 }
 
 
@@ -252,7 +252,18 @@ export default function TreePage() {
       return acc
     }, new Map<number, { order: number; roman: string }>())
   }, [uniqueGenerations])
-  const generationOptions = [-2, -1, 0, 1, 2, 3, 4, 5, 6, 7]
+  const generationOptions: { value: number; label: string }[] = [
+    { value: -2, label: 'Внуки' },
+    { value: -1, label: 'Дети' },
+    { value: 0, label: 'Вы (нынешнее)' },
+    { value: 1, label: 'Родители' },
+    { value: 2, label: 'Бабушки / Дедушки' },
+    { value: 3, label: 'Прабабушки / Прадедушки' },
+    { value: 4, label: 'Прапрабабушки / Прапрадедушки' },
+    { value: 5, label: 'Пра-пра-прадеды' },
+    { value: 6, label: '4× прадеды' },
+    { value: 7, label: '5× прадеды' },
+  ]
 
   const canvasMetrics = useMemo(() => {
     if (nodePositions.length === 0) {
@@ -727,7 +738,7 @@ export default function TreePage() {
         size: 'large'
       },
       cancelButtonProps: {
-        className: 'text-muted-foreground hover:text-foreground border-white/10 hover:border-white/20 hover:bg-white/5',
+        className: 'text-muted-foreground hover:text-foreground border-border hover:border-border',
         size: 'large'
       },
       onOk: async () => {
@@ -1032,16 +1043,16 @@ export default function TreePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-charcoal-950">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Spin size="large" />
       </div>
     )
   }
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex flex-col bg-charcoal-950 overflow-hidden">
+    <div className="h-[calc(100vh-3.5rem)] flex flex-col bg-background overflow-hidden">
       {/* Floating Toolbar */}
-      <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-charcoal-900/90 backdrop-blur-sm border-b border-charcoal-700">
+      <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-card/90 backdrop-blur-sm border-b border-border">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -1049,13 +1060,13 @@ export default function TreePage() {
             placeholder="Поиск родственников..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 w-full bg-charcoal-800 border-charcoal-700 h-10"
+            className="pl-9 w-full bg-muted border-border h-10"
             size="middle"
           />
         </div>
 
         {/* Zoom controls */}
-        <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-charcoal-800 border border-charcoal-700">
+        <div className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-muted border border-border">
           <Tooltip title="Уменьшить">
             <Button
               type="text"
@@ -1088,7 +1099,7 @@ export default function TreePage() {
         {/* Sidebar Toggle Button */}
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className={`absolute top-4 z-20 p-2 rounded-r-xl bg-charcoal-900 border border-charcoal-700 text-muted-foreground hover:text-foreground transition-all duration-300 ${
+          className={`absolute top-4 z-20 p-2 rounded-r-xl bg-card border border-border text-muted-foreground hover:text-foreground transition-all duration-300 ${
             isSidebarOpen ? 'left-56' : 'left-0 rounded-l-none border-l-0'
           }`}
         >
@@ -1097,7 +1108,7 @@ export default function TreePage() {
 
         {/* Filter Sidebar */}
         <div 
-          className={`flex-shrink-0 border-r border-charcoal-700 bg-charcoal-900/50 p-4 overflow-y-auto control-panel transition-all duration-300 ${
+          className={`flex-shrink-0 border-r border-border bg-card/50 p-4 overflow-y-auto control-panel transition-all duration-300 ${
             isSidebarOpen ? 'w-56 translate-x-0' : 'w-0 -translate-x-full px-0 border-none opacity-0'
           }`}
         >
@@ -1108,7 +1119,7 @@ export default function TreePage() {
               icon={<Plus className="w-4 h-4" />}
               onClick={() => setAddRelativeModal(true)}
               block
-              className="shadow-glow-orange h-10 flex items-center justify-center gap-1 text-sm"
+              className="shadow-glow-azure h-10 flex items-center justify-center gap-1 text-sm"
             >
               Родственник
             </Button>
@@ -1116,7 +1127,7 @@ export default function TreePage() {
               icon={<Link2 className="w-4 h-4" />}
               onClick={() => setAddRelationshipModal(true)}
               block
-              className="bg-charcoal-800 border-charcoal-700 h-9 flex items-center justify-center gap-1 text-sm"
+              className="bg-muted border-border h-9 flex items-center justify-center gap-1 text-sm"
               disabled={relatives.length < 2}
             >
               Связь
@@ -1125,7 +1136,7 @@ export default function TreePage() {
 
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium text-sm flex items-center gap-2">
-              <Filter className="w-4 h-4 text-orange" />
+              <Filter className="w-4 h-4 text-azure" />
               Фильтры
             </h3>
             {hasActiveFilters && (
@@ -1140,7 +1151,7 @@ export default function TreePage() {
             <Button
               block
               size="small"
-              className={`text-xs ${!showConnections ? 'bg-orange/20 text-orange border-orange/30' : 'bg-charcoal-800 border-charcoal-700 text-muted-foreground'}`}
+              className={`text-xs ${!showConnections ? 'bg-azure/20 text-azure border-azure/30' : 'bg-muted border-border text-muted-foreground'}`}
               onClick={() => setShowConnections(!showConnections)}
             >
               {showConnections ? 'Скрыть связи' : 'Показать связи'}
@@ -1216,7 +1227,7 @@ export default function TreePage() {
           </div>
 
           {/* Stats */}
-          <div className="mt-6 pt-4 border-t border-charcoal-700">
+          <div className="mt-6 pt-4 border-t border-border">
             <h4 className="text-xs text-muted-foreground mb-3">Статистика</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -1236,7 +1247,7 @@ export default function TreePage() {
 
           {/* Generation legend */}
           {uniqueGenerations.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-charcoal-700">
+            <div className="mt-4 pt-4 border-t border-border">
               <h4 className="text-xs text-muted-foreground mb-3 flex items-center gap-2">
                 <Layers className="w-3 h-3" />
                 Поколения
@@ -1248,15 +1259,15 @@ export default function TreePage() {
                     onClick={() => setFilterGeneration(filterGeneration === g ? null : g)}
                     className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
                       filterGeneration === g
-                        ? 'bg-orange/20 text-orange'
-                        : 'hover:bg-charcoal-700 text-muted-foreground'
+                        ? 'bg-azure/20 text-azure'
+                        : 'hover:bg-muted text-muted-foreground'
                     }`}
                   >
-                    <span className="font-semibold text-orange">
+                    <span className="font-semibold text-azure">
                       {generationLabels.get(g)?.roman ?? g}
                     </span>{' '}
                     поколение
-                    <span className="text-[11px] text-gray-500 ml-1">значение {g}</span>{' '}
+                    <span className="text-[11px] text-muted-foreground ml-1">значение {g}</span>{' '}
                     ({relatives.filter((r) => r.generation === g).length})
                   </button>
                 ))}
@@ -1268,28 +1279,12 @@ export default function TreePage() {
         {/* Tree Canvas Area */}
         <div
           ref={containerRef}
-          className="flex-1 relative overflow-hidden cursor-grab active:cursor-grabbing"
+          className="flex-1 relative overflow-hidden cursor-grab active:cursor-grabbing bg-background"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
-          style={{
-            background: `
-              radial-gradient(ellipse at 50% 0%, rgba(255, 107, 53, 0.03) 0%, transparent 50%),
-              radial-gradient(circle at 20% 80%, rgba(255, 107, 53, 0.02) 0%, transparent 30%),
-              radial-gradient(circle at 80% 60%, rgba(255, 107, 53, 0.02) 0%, transparent 30%),
-              linear-gradient(180deg, #0a0a0a 0%, #0f0f0f 100%)
-            `,
-          }}
         >
-          {/* Decorative tree trunk pattern */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.03]"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0v60M0 30h60' stroke='%23ff6b35' stroke-width='0.5' fill='none'/%3E%3C/svg%3E")`,
-              backgroundSize: '60px 60px',
-            }}
-          />
           {relatives.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Empty
@@ -1303,7 +1298,7 @@ export default function TreePage() {
                   type="primary"
                   icon={<Plus className="w-4 h-4" />}
                   onClick={() => setAddRelativeModal(true)}
-                  className="shadow-glow-orange"
+                  className="shadow-glow-azure"
                 >
                   Добавить первого родственника
                 </Button>
@@ -1321,14 +1316,16 @@ export default function TreePage() {
                 transformOrigin: '0 0',
               }}
             >
+              {/* Grid pattern - scales with zoom */}
               <div
-                className="absolute inset-0 pointer-events-none rounded-2xl border border-orange/25"
+                className="absolute inset-0 pointer-events-none"
                 style={{
-                  boxShadow: '0 0 0 1px rgba(255,107,53,0.08), 0 0 80px rgba(255,107,53,0.12)',
-                  background:
-                    'radial-gradient(circle at 30% 30%, rgba(255,107,53,0.04), transparent 42%), radial-gradient(circle at 80% 70%, rgba(255,107,53,0.03), transparent 40%)',
-                  outline: '120px solid rgba(255,107,53,0.02)',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M60 0H0v60' stroke='%23AC6D78' stroke-width='0.35' fill='none' opacity='0.18'/%3E%3C/svg%3E")`,
+                  backgroundSize: '60px 60px',
                 }}
+              />
+              <div
+                className="absolute inset-0 pointer-events-none rounded-2xl border border-[#AC6D78]/10"
               />
               {/* SVG for connection lines - Family tree style with orthogonal routing */}
               {showConnections && (
@@ -1504,7 +1501,7 @@ export default function TreePage() {
                                 width={labelWidth}
                                 height="24"
                                 rx="12"
-                                fill="#0a0a0a"
+                                className="fill-background"
                                 stroke={wireColor}
                                 strokeWidth="1.5"
                               />
@@ -1536,8 +1533,8 @@ export default function TreePage() {
                     key={node.relative.id}
                     className={`absolute relative-card select-none transition-shadow ${
                       isDraggingThis
-                        ? 'cursor-grabbing z-50 shadow-2xl shadow-orange/30'
-                        : 'cursor-grab hover:shadow-lg hover:shadow-orange/10'
+                        ? 'cursor-grabbing z-50 shadow-2xl shadow-[#ED7855]/20'
+                        : 'cursor-grab hover:shadow-lg hover:shadow-[#ED7855]/10'
                     }`}
                     style={{
                       left: toCanvasX(node.x),
@@ -1578,21 +1575,21 @@ export default function TreePage() {
           <div className="absolute bottom-4 right-4 control-panel flex flex-col gap-2">
             <Tooltip title="Показать всё" placement="left">
               <Button
-                className="bg-charcoal-800 border-charcoal-700"
+                className="bg-muted border-border"
                 icon={<Maximize2 className="w-4 h-4" />}
                 onClick={fitToView}
               />
             </Tooltip>
             <Tooltip title="Центрировать" placement="left">
               <Button
-                className="bg-charcoal-800 border-charcoal-700"
+                className="bg-muted border-border"
                 icon={<Move className="w-4 h-4" />}
                 onClick={centerView}
               />
             </Tooltip>
             <Tooltip title="Сбросить позиции карточек" placement="left">
               <Button
-                className="bg-charcoal-800 border-charcoal-700"
+                className="bg-muted border-border"
                 icon={<RotateCcw className="w-4 h-4" />}
                 onClick={resetPositions}
               />
@@ -1602,7 +1599,7 @@ export default function TreePage() {
           {/* Hint about dragging */}
           {nodePositions.length > 0 && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 control-panel">
-              <div className="px-3 py-1.5 rounded-full bg-charcoal-800/80 border border-charcoal-700 text-xs text-muted-foreground flex items-center gap-2">
+              <div className="px-3 py-1.5 rounded-full bg-card/80 border border-border text-xs text-muted-foreground flex items-center gap-2">
                 <Move className="w-3 h-3" />
                 <span>Перетащите карточки для изменения позиции</span>
               </div>
@@ -1612,7 +1609,7 @@ export default function TreePage() {
 
         {/* Selected Relative Panel */}
         {selectedRelative && (
-          <div className="w-72 flex-shrink-0 border-l border-charcoal-700 bg-charcoal-900 overflow-y-auto control-panel">
+          <div className="w-72 flex-shrink-0 border-l border-border bg-card overflow-y-auto control-panel">
             <div className="p-4">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
@@ -1626,7 +1623,7 @@ export default function TreePage() {
               </div>
 
               {/* Photo */}
-              <div className="w-full aspect-square rounded-xl overflow-hidden bg-charcoal-800 mb-4 relative">
+              <div className="w-full aspect-square rounded-xl overflow-hidden bg-muted mb-4 relative">
                 {selectedRelative.image_url ? (
                   <Image
                     src={getProxiedImageUrl(selectedRelative.image_url) || ''}
@@ -1636,8 +1633,8 @@ export default function TreePage() {
                     unoptimized
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-charcoal-700 to-charcoal-800">
-                    <span className="text-5xl font-bold text-gray-500">
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-secondary">
+                    <span className="text-5xl font-bold text-muted-foreground">
                       {selectedRelative.first_name?.charAt(0) || selectedRelative.last_name?.charAt(0) || '?'}
                     </span>
                   </div>
@@ -1649,7 +1646,7 @@ export default function TreePage() {
                 <h2 className="text-xl font-bold">
                   {selectedRelative.first_name || selectedRelative.last_name
                     ? `${selectedRelative.first_name || ''} ${selectedRelative.last_name || ''}`.trim()
-                    : <span className="text-gray-500 italic">Без имени</span>
+                    : <span className="text-muted-foreground italic">Без имени</span>
                   }
                 </h2>
                 {selectedRelative.middle_name && (
@@ -1689,7 +1686,7 @@ export default function TreePage() {
                 {selectedRelative.generation !== null && selectedRelative.generation !== undefined && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Поколение</span>
-                    <span className="px-2 py-0.5 rounded-full bg-orange/20 text-orange text-xs">
+                    <span className="px-2 py-0.5 rounded-full bg-azure/20 text-azure text-xs">
                       {selectedRelative.generation}
                     </span>
                   </div>
@@ -1713,7 +1710,7 @@ export default function TreePage() {
                     type="link"
                     size="small"
                     onClick={openStoriesModal}
-                    className="p-0 h-auto text-orange"
+                    className="p-0 h-auto text-azure"
                   >
                     Управление
                   </Button>
@@ -1729,13 +1726,13 @@ export default function TreePage() {
                       return (
                         <div
                           key={key}
-                          className="p-2 rounded-lg bg-charcoal-800 cursor-pointer hover:bg-charcoal-700 transition-colors flex items-center gap-2"
+                          className="p-2 rounded-lg bg-muted cursor-pointer hover:bg-accent transition-colors flex items-center gap-2"
                           onClick={() => {
                             setViewingStory(storyData)
                             setStoriesModal(true)
                           }}
                         >
-                          <BookOpen className="w-3 h-3 text-orange flex-shrink-0" />
+                          <BookOpen className="w-3 h-3 text-azure flex-shrink-0" />
                           <p className="text-xs font-medium text-foreground truncate flex-1">{key}</p>
                           {photoCount > 0 && (
                             <span className="flex items-center gap-0.5 text-xs text-muted-foreground flex-shrink-0">
@@ -1748,7 +1745,7 @@ export default function TreePage() {
                     })}
                   </div>
                 ) : (
-                  <p className="text-xs text-gray-500">Нет историй</p>
+                  <p className="text-xs text-muted-foreground">Нет историй</p>
                 )}
               </div>
 
@@ -1772,9 +1769,9 @@ export default function TreePage() {
                       return (
                         <div
                           key={rel.id}
-                          className="flex items-center gap-2 p-2 rounded bg-charcoal-800 text-xs group"
+                          className="flex items-center gap-2 p-2 rounded bg-muted text-xs group"
                         >
-                          <span className="text-orange flex-shrink-0">
+                          <span className="text-azure flex-shrink-0">
                             {RELATIONSHIP_LABELS[rel.relationship_type] || rel.relationship_type}
                           </span>
                           <span className="text-muted-foreground">→</span>
@@ -1795,7 +1792,7 @@ export default function TreePage() {
                       r.from_relative_id === selectedRelative.id ||
                       r.to_relative_id === selectedRelative.id
                   ).length === 0 && (
-                    <p className="text-xs text-gray-500">Нет связей</p>
+                    <p className="text-xs text-muted-foreground">Нет связей</p>
                   )}
                 </div>
               </div>
@@ -1903,8 +1900,9 @@ export default function TreePage() {
             <Form.Item name="generation" label="Поколение">
               <Select placeholder="Выберите поколение">
                 {generationOptions.map((g) => (
-                  <Select.Option key={g} value={g}>
-                    Поколение {g}
+                  <Select.Option key={g.value} value={g.value}>
+                    <span className="font-medium">{g.value}</span>
+                    <span className="text-muted-foreground ml-1.5">— {g.label}</span>
                   </Select.Option>
                 ))}
               </Select>
@@ -1924,7 +1922,7 @@ export default function TreePage() {
             <Input placeholder="Телефон или email" />
           </Form.Item>
 
-          <div className="text-xs text-muted-foreground mb-4 p-3 rounded-lg bg-charcoal-800 border border-charcoal-700">
+          <div className="text-xs text-muted-foreground mb-4 p-3 rounded-lg bg-muted border border-border">
             💡 Можно создать «пустого» родственника (слот) без данных и заполнить информацию позже
           </div>
 
@@ -1992,8 +1990,9 @@ export default function TreePage() {
             <Form.Item name="generation" label="Поколение">
               <Select placeholder="Выберите поколение">
                 {generationOptions.map((g) => (
-                  <Select.Option key={g} value={g}>
-                    Поколение {g}
+                  <Select.Option key={g.value} value={g.value}>
+                    <span className="font-medium">{g.value}</span>
+                    <span className="text-muted-foreground ml-1.5">— {g.label}</span>
                   </Select.Option>
                 ))}
               </Select>
@@ -2089,7 +2088,7 @@ export default function TreePage() {
       <Modal
         title={
           <div className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-orange" />
+            <BookOpen className="w-5 h-5 text-azure" />
             <span>Истории о {selectedRelative?.first_name}</span>
           </div>
         }
@@ -2114,8 +2113,8 @@ export default function TreePage() {
               >
                 ← Назад к списку
               </Button>
-              <div className="p-4 rounded-lg bg-charcoal-800">
-                <h3 className="text-lg font-medium text-orange mb-3">{viewingStory.key}</h3>
+              <div className="p-4 rounded-lg bg-muted">
+                <h3 className="text-lg font-medium text-azure mb-3">{viewingStory.key}</h3>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed mb-4">{viewingStory.value}</p>
 
                 {/* Photo gallery */}
@@ -2150,7 +2149,7 @@ export default function TreePage() {
 
                 {/* Upload photo button */}
                 {(!viewingStory.media || viewingStory.media.filter((m) => m.type === 'image').length < 5) && (
-                  <div className="border-t border-charcoal-700 pt-4">
+                  <div className="border-t border-border pt-4">
                     <Upload
                       accept="image/*"
                       showUploadList={false}
@@ -2193,11 +2192,11 @@ export default function TreePage() {
                       return (
                         <div
                           key={story.key}
-                          className="p-3 rounded-lg bg-charcoal-800 group flex items-center justify-between gap-2 cursor-pointer hover:bg-charcoal-700 transition-colors"
+                          className="p-3 rounded-lg bg-muted group flex items-center justify-between gap-2 cursor-pointer hover:bg-accent transition-colors"
                           onClick={() => setViewingStory(story)}
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <BookOpen className="w-4 h-4 text-orange flex-shrink-0" />
+                            <BookOpen className="w-4 h-4 text-azure flex-shrink-0" />
                             <span className="text-sm font-medium text-foreground truncate">{story.key}</span>
                             {photoCount > 0 && (
                               <span className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
@@ -2225,7 +2224,7 @@ export default function TreePage() {
               )}
 
               {/* Add new story */}
-              <div className={stories.length > 0 ? "border-t border-charcoal-700 pt-4" : ""}>
+              <div className={stories.length > 0 ? "border-t border-border pt-4" : ""}>
                 <h4 className="text-sm font-medium text-muted-foreground mb-3">Добавить новую историю</h4>
                 <div className="space-y-3">
                   <div>

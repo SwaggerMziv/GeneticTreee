@@ -194,8 +194,8 @@ export default function FAQPage() {
     <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
       {/* Page Header */}
       <div className="mb-12">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border mb-4">
-          <HelpCircle className="w-4 h-4 text-orange" />
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border shadow-sm mb-4">
+          <HelpCircle className="w-4 h-4 text-azure" />
           <span className="text-sm text-muted-foreground font-medium">
             Помощь
           </span>
@@ -228,7 +228,7 @@ export default function FAQPage() {
           variant={activeCategory === null ? 'default' : 'outline'}
           className={
             activeCategory === null
-              ? 'bg-orange hover:bg-orange/90 border-orange text-white'
+              ? 'bg-azure hover:bg-azure/90 border-azure text-white'
               : 'bg-charcoal-800 border-border hover:bg-charcoal-700'
           }
         >
@@ -243,7 +243,7 @@ export default function FAQPage() {
               variant={activeCategory === category.id ? 'default' : 'outline'}
               className={
                 activeCategory === category.id
-                  ? 'bg-orange hover:bg-orange/90 border-orange text-white'
+                  ? 'bg-azure hover:bg-azure/90 border-azure text-white'
                   : 'bg-charcoal-800 border-border hover:bg-charcoal-700'
               }
             >
@@ -256,7 +256,7 @@ export default function FAQPage() {
 
       {/* FAQ Count */}
       <div className="mb-6 text-muted-foreground">
-        Найдено вопросов: <span className="text-orange font-bold">{filteredFAQ.length}</span>
+        Найдено вопросов: <span className="text-azure font-bold">{filteredFAQ.length}</span>
       </div>
 
       {/* FAQ List */}
@@ -271,7 +271,7 @@ export default function FAQPage() {
               >
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
-                    <HelpCircle className="w-5 h-5 text-orange flex-shrink-0" />
+                    <HelpCircle className="w-5 h-5 text-azure flex-shrink-0" />
                     <span className="font-medium text-foreground">{item.question}</span>
                   </div>
                 </AccordionTrigger>
@@ -298,7 +298,7 @@ export default function FAQPage() {
             </div>
             <Button
               size="lg"
-              className="shadow-glow-orange"
+              className="shadow-glow-azure"
             >
               <MessageCircle className="w-5 h-5" />
               Написать в поддержку

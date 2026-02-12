@@ -20,14 +20,14 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center px-6 py-12 relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-1/4 w-96 h-96 bg-orange/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-1/4 w-96 h-96 bg-orange-dark/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-1/4 w-96 h-96 bg-azure/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-1/4 w-96 h-96 bg-azure-dark/10 rounded-full blur-3xl" />
       </div>
 
       {/* Back to Home */}
       <Link
         href="/"
-        className="absolute top-6 left-6 flex items-center gap-2 text-muted-foreground hover:text-orange transition-colors group"
+        className="absolute top-6 left-6 flex items-center gap-2 text-muted-foreground hover:text-azure transition-colors group"
       >
         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
         <span className="text-sm font-medium">На главную</span>
@@ -38,7 +38,7 @@ export default function AuthPage() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center transition-transform group-hover:scale-105">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-azure to-azure-dark flex items-center justify-center transition-transform group-hover:scale-105">
               <TreePine className="w-7 h-7 text-white" strokeWidth={2.5} />
             </div>
             <span className="font-serif text-3xl font-bold">
@@ -48,7 +48,7 @@ export default function AuthPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-3xl bg-card border border-border p-8 shadow-dark-xl">
+        <div className="rounded-3xl bg-card border border-border p-8 shadow-candy">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="font-serif text-3xl font-bold mb-2">

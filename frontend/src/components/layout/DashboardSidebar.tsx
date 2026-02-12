@@ -47,7 +47,7 @@ export default function DashboardSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarHeader className="p-4 group-data-[collapsible=icon]:p-2">
         <Link href="/" className="flex items-center gap-3 group/logo group-data-[collapsible=icon]:justify-center">
-          <div className="w-9 h-9 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 rounded-xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center transition-transform group-hover/logo:scale-105 shrink-0">
+          <div className="w-9 h-9 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 rounded-xl bg-gradient-to-br from-azure to-azure-dark flex items-center justify-center transition-transform group-hover/logo:scale-105 shrink-0">
             <TreePine className="w-5 h-5 text-white" strokeWidth={2.5} />
           </div>
           <span className="font-serif text-xl font-bold group-data-[collapsible=icon]:hidden">

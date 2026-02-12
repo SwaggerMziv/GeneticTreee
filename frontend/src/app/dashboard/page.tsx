@@ -23,28 +23,28 @@ export default function DashboardPage() {
       icon: TreePine,
       title: 'Семейное древо',
       description: 'Визуальное дерево с родственниками и связями между ними',
-      color: 'from-orange to-orange-dark',
+      color: 'from-[#7BAEC8] to-[#6A9DC4]',
     },
     {
       href: '/dashboard/ai-assistant',
       icon: Sparkles,
       title: 'ИИ Ассистент',
       description: 'Добавляйте родственников и связи текстовыми командами',
-      color: 'from-purple-500 to-purple-600',
+      color: 'from-[#A893C4] to-[#9680B8]',
     },
     {
       href: '/dashboard/telegram',
       icon: Send,
       title: 'Telegram',
       description: 'Пригласите родственников — бот проведёт интервью и соберёт истории',
-      color: 'from-blue-500 to-blue-600',
+      color: 'from-[#6BA5CA] to-[#5A94BE]',
     },
     {
       href: '/dashboard/stories',
       icon: BookOpen,
       title: 'Истории',
       description: 'Семейные воспоминания и рассказы от родственников',
-      color: 'from-green-500 to-green-600',
+      color: 'from-[#7EBB9E] to-[#6DAE8E]',
       stat: stats && stats.total_stories > 0
         ? `${stats.total_stories} ${stats.total_stories === 1 ? 'история' : stats.total_stories < 5 ? 'истории' : 'историй'}`
         : null,
@@ -54,7 +54,7 @@ export default function DashboardPage() {
       icon: FileText,
       title: 'Книга',
       description: 'Сгенерируйте PDF-книгу из собранных историй вашей семьи',
-      color: 'from-rose-500 to-rose-600',
+      color: 'from-[#C48A9E] to-[#B87A90]',
     },
   ]
 
@@ -74,7 +74,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
         {quickActions.map((action) => (
           <Link key={action.href} href={action.href}>
-            <Card className="group cursor-pointer hover:border-orange/50 hover:shadow-lg hover:shadow-orange/5 transition-all duration-300 h-full">
+            <Card className="group cursor-pointer shadow-pastel hover:border-azure/50 hover:shadow-candy transition-all duration-300 h-full">
               <CardContent className="p-6 flex items-start gap-4">
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
                   <action.icon className="w-6 h-6 text-white" />
@@ -86,7 +86,7 @@ export default function DashboardPage() {
                   </div>
                   <p className="text-sm text-muted-foreground">{action.description}</p>
                   {action.stat && (
-                    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 text-green-600 dark:text-green-400">
+                    <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#7EBB9E]/10 text-[#5DA882] dark:text-[#7EBB9E]">
                       <BookOpen className="w-3 h-3" />
                       <span className="text-xs font-semibold">{action.stat}</span>
                     </div>
@@ -109,10 +109,10 @@ export default function DashboardPage() {
               {/* Gender bars */}
               <div className="space-y-3 mb-5">
                 {[
-                  { label: 'Мужчины', value: stats.gender_distribution.male, color: 'bg-blue-500' },
-                  { label: 'Женщины', value: stats.gender_distribution.female, color: 'bg-pink-500' },
+                  { label: 'Мужчины', value: stats.gender_distribution.male, color: 'bg-[#7BAEC8]' },
+                  { label: 'Женщины', value: stats.gender_distribution.female, color: 'bg-[#D4607E]' },
                   ...(stats.gender_distribution.other > 0
-                    ? [{ label: 'Другие', value: stats.gender_distribution.other, color: 'bg-gray-500' }]
+                    ? [{ label: 'Другие', value: stats.gender_distribution.other, color: 'bg-[#B0A898]' }]
                     : []),
                 ].map((item) => (
                   <div key={item.label}>
@@ -137,8 +137,8 @@ export default function DashboardPage() {
               <div className="pt-4 border-t">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="w-9 h-9 rounded-lg bg-orange/10 flex items-center justify-center">
-                      <Users className="w-4.5 h-4.5 text-orange" />
+                    <div className="w-9 h-9 rounded-lg bg-azure/10 flex items-center justify-center">
+                      <Users className="w-4.5 h-4.5 text-azure" />
                     </div>
                     <div>
                       <div className="text-lg font-bold">{stats.total_relatives}</div>
@@ -146,8 +146,8 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="w-9 h-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                      <Send className="w-4 h-4 text-blue-500" />
+                    <div className="w-9 h-9 rounded-lg bg-[#6BA5CA]/10 flex items-center justify-center">
+                      <Send className="w-4 h-4 text-[#6BA5CA]" />
                     </div>
                     <div>
                       <div className="text-lg font-bold">{stats.activated_relatives}</div>
@@ -165,8 +165,8 @@ export default function DashboardPage() {
               <h3 className="font-serif text-lg font-bold mb-5">Статус</h3>
               <div className="space-y-3">
                 {[
-                  { label: 'Живые', value: stats.alive_relatives, color: 'bg-green-500' },
-                  { label: 'Ушедшие', value: stats.deceased_relatives, color: 'bg-gray-600' },
+                  { label: 'Живые', value: stats.alive_relatives, color: 'bg-[#7EBB9E]' },
+                  { label: 'Ушедшие', value: stats.deceased_relatives, color: 'bg-[#9A9098]' },
                 ].map((item) => (
                   <div key={item.label}>
                     <div className="flex items-center gap-3 mb-1.5">
@@ -190,15 +190,15 @@ export default function DashboardPage() {
               <div className="mt-5 pt-4 border-t">
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div>
-                    <div className="text-xl font-bold text-orange">{stats.generations_count}</div>
+                    <div className="text-xl font-bold text-azure">{stats.generations_count}</div>
                     <div className="text-xs text-muted-foreground">Поколений</div>
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-orange">{stats.relationship_types_count}</div>
+                    <div className="text-xl font-bold text-azure">{stats.relationship_types_count}</div>
                     <div className="text-xs text-muted-foreground">Типов связей</div>
                   </div>
                   <div>
-                    <div className="text-xl font-bold text-orange">
+                    <div className="text-xl font-bold text-azure">
                       {stats.relationship_types
                         .filter(r => ['husband', 'wife', 'partner', 'spouse'].includes(r.type))
                         .reduce((acc, curr) => acc + curr.count, 0)}
@@ -216,7 +216,7 @@ export default function DashboardPage() {
       {stats && stats.total_relatives === 0 && (
         <Card className="border-dashed border-2">
           <CardContent className="p-10 text-center">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center mb-6">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-azure to-azure-dark flex items-center justify-center mb-6">
               <TreePine className="w-8 h-8 text-white" />
             </div>
             <h3 className="font-serif text-2xl font-bold mb-3">Создайте свою семейную книгу</h3>
@@ -230,18 +230,18 @@ export default function DashboardPage() {
                 { step: '3', title: 'Соберите истории', desc: 'Бот проведёт интервью', icon: BookOpen },
                 { step: '4', title: 'Создайте книгу', desc: 'Получите PDF', icon: FileText },
               ].map((item) => (
-                <div key={item.step} className="text-center p-4 rounded-xl bg-muted border border-border">
-                  <div className="w-8 h-8 rounded-full bg-orange text-white font-bold flex items-center justify-center mx-auto mb-3 text-sm">
+                <div key={item.step} className="text-center p-4 rounded-xl bg-muted border border-border shadow-sm">
+                  <div className="w-8 h-8 rounded-full bg-azure text-white font-bold flex items-center justify-center mx-auto mb-3 text-sm">
                     {item.step}
                   </div>
-                  <item.icon className="w-5 h-5 text-orange mx-auto mb-2" />
+                  <item.icon className="w-5 h-5 text-azure mx-auto mb-2" />
                   <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
                   <p className="text-xs text-muted-foreground">{item.desc}</p>
                 </div>
               ))}
             </div>
             <Link href="/tree">
-              <Button className="bg-gradient-to-r from-orange to-orange-dark text-white h-12 px-8">
+              <Button className="bg-gradient-to-r from-azure to-azure-dark text-white h-12 px-8">
                 <TreePine className="w-5 h-5 mr-2" />
                 Начать строить древо
               </Button>

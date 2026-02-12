@@ -58,7 +58,7 @@ export default function Header() {
       <nav className="max-w-7xl mx-auto px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center transition-transform group-hover:scale-105">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-azure to-azure-dark flex items-center justify-center transition-transform group-hover:scale-105">
             <TreePine className="w-6 h-6 text-white" strokeWidth={2.5} />
           </div>
           <span className="font-serif text-2xl font-bold">
@@ -74,8 +74,8 @@ export default function Header() {
               key={link.href}
               href={link.href}
               className={cn(
-                'text-base font-medium transition-colors hover:text-orange',
-                pathname === link.href ? 'text-orange' : 'text-muted-foreground'
+                'text-base font-medium transition-colors hover:text-azure',
+                pathname === link.href ? 'text-azure' : 'text-muted-foreground'
               )}
             >
               {link.label}
@@ -88,14 +88,14 @@ export default function Header() {
           <ThemeToggle />
           {!loading && (
             isAuthenticated ? (
-              <Button asChild size="lg" className="font-medium shadow-glow-orange hover:shadow-glow-orange transition-shadow">
+              <Button asChild size="lg" className="font-medium shadow-glow-azure hover:shadow-glow-azure transition-shadow">
                 <Link href="/dashboard">
                   <LayoutDashboard className="w-4 h-4" />
                   Дашборд
                 </Link>
               </Button>
             ) : (
-              <Button asChild size="lg" className="font-medium shadow-glow-orange hover:shadow-glow-orange transition-shadow">
+              <Button asChild size="lg" className="font-medium shadow-glow-azure hover:shadow-glow-azure transition-shadow">
                 <Link href="/auth">
                   Войти
                 </Link>
@@ -126,8 +126,8 @@ export default function Header() {
                       href={link.href}
                       onClick={handleNavClick}
                       className={cn(
-                        'text-base font-medium transition-colors hover:text-orange py-2',
-                        pathname === link.href ? 'text-orange' : 'text-muted-foreground'
+                        'text-base font-medium transition-colors hover:text-azure py-2',
+                        pathname === link.href ? 'text-azure' : 'text-muted-foreground'
                       )}
                     >
                       {link.label}
@@ -139,14 +139,14 @@ export default function Header() {
                 {!loading && (
                   <div className="pt-4 border-t border-border">
                     {isAuthenticated ? (
-                      <Button asChild size="lg" className="w-full font-medium shadow-glow-orange">
+                      <Button asChild size="lg" className="w-full font-medium shadow-glow-azure">
                         <Link href="/dashboard" onClick={handleNavClick}>
                           <LayoutDashboard className="w-4 h-4" />
                           Дашборд
                         </Link>
                       </Button>
                     ) : (
-                      <Button asChild size="lg" className="w-full font-medium shadow-glow-orange">
+                      <Button asChild size="lg" className="w-full font-medium shadow-glow-azure">
                         <Link href="/auth" onClick={handleNavClick}>
                           Войти
                         </Link>

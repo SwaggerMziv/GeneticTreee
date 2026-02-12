@@ -19,7 +19,7 @@ interface AnimatedBackgroundProps {
 
 export default function AnimatedBackground({
   particleCount = 50,
-  color = '#ff6b35',
+  color = '#6BC4DD',
   speed = 0.5,
 }: AnimatedBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)

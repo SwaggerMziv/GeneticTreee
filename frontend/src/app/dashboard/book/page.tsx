@@ -139,8 +139,8 @@ export default function BookGeneratorPage() {
     <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
       {/* Page Header */}
       <div className="mb-12">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border mb-4">
-          <Sparkles className="w-4 h-4 text-orange" />
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border shadow-sm mb-4">
+          <Sparkles className="w-4 h-4 text-azure" />
           <span className="text-sm text-muted-foreground font-medium">
             AI Генерация
           </span>
@@ -160,7 +160,7 @@ export default function BookGeneratorPage() {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <h3 className="font-serif text-xl font-bold mb-6 text-foreground flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-orange" />
+                <BookOpen className="w-5 h-5 text-azure" />
                 Стиль книги
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -170,7 +170,7 @@ export default function BookGeneratorPage() {
                     onClick={() => generationStatus === 'idle' && setBookStyle(style.value)}
                     className={`p-4 rounded-xl border cursor-pointer transition-all ${
                       bookStyle === style.value
-                        ? 'border-orange bg-orange/10'
+                        ? 'border-azure bg-azure/10'
                         : 'border-border hover:border-muted-foreground'
                     } ${generationStatus !== 'idle' ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
@@ -191,7 +191,7 @@ export default function BookGeneratorPage() {
                     onChange={(e) => setCustomStyleDescription(e.target.value.slice(0, 500))}
                     disabled={generationStatus !== 'idle'}
                     placeholder="Например: Пиши в стиле сказки для детей, с простыми словами и добрыми интонациями..."
-                    className="w-full h-24 p-3 rounded-xl bg-muted border border-border text-foreground placeholder-muted-foreground resize-none focus:border-orange focus:outline-none disabled:opacity-50"
+                    className="w-full h-24 p-3 rounded-xl bg-muted border border-border shadow-sm text-foreground placeholder-muted-foreground resize-none focus:border-azure focus:outline-none disabled:opacity-50"
                     maxLength={500}
                   />
                   <div className="text-xs text-muted-foreground mt-1 text-right">
@@ -206,7 +206,7 @@ export default function BookGeneratorPage() {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <h3 className="font-serif text-xl font-bold mb-6 text-foreground flex items-center gap-2">
-                <Palette className="w-5 h-5 text-orange" />
+                <Palette className="w-5 h-5 text-azure" />
                 Тема оформления
               </h3>
               <div className="grid grid-cols-2 gap-4">
@@ -214,7 +214,7 @@ export default function BookGeneratorPage() {
                   onClick={() => generationStatus === 'idle' && setBookTheme('light')}
                   className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
                     bookTheme === 'light'
-                      ? 'border-orange bg-orange/10'
+                      ? 'border-azure bg-azure/10'
                       : 'border-border hover:border-muted-foreground'
                   } ${generationStatus !== 'idle' ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
@@ -230,7 +230,7 @@ export default function BookGeneratorPage() {
                   onClick={() => generationStatus === 'idle' && setBookTheme('dark')}
                   className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
                     bookTheme === 'dark'
-                      ? 'border-orange bg-orange/10'
+                      ? 'border-azure bg-azure/10'
                       : 'border-border hover:border-muted-foreground'
                   } ${generationStatus !== 'idle' ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
@@ -250,7 +250,7 @@ export default function BookGeneratorPage() {
           <Card className="border-border bg-card">
             <CardContent className="p-6">
               <h3 className="font-serif text-xl font-bold mb-6 text-foreground flex items-center gap-2">
-                <FileText className="w-5 h-5 text-orange" />
+                <FileText className="w-5 h-5 text-azure" />
                 Содержание книги
               </h3>
               <div className="space-y-4">
@@ -287,7 +287,7 @@ export default function BookGeneratorPage() {
             <Card className="border-border bg-card">
               <CardContent className="p-6">
                 <h3 className="font-serif text-xl font-bold mb-6 text-foreground flex items-center gap-2">
-                  {generationStatus === 'generating' && <Clock className="w-5 h-5 text-orange animate-pulse" />}
+                  {generationStatus === 'generating' && <Clock className="w-5 h-5 text-azure animate-pulse" />}
                   {generationStatus === 'completed' && <CheckCircle className="w-5 h-5 text-green-500" />}
                   {generationStatus === 'error' && <AlertCircle className="w-5 h-5 text-red-500" />}
                   Статус генерации
@@ -307,7 +307,7 @@ export default function BookGeneratorPage() {
                 <div className="mt-4 text-sm text-muted-foreground">
                   {statusMessage}
                   {currentChapter && generationStatus === 'generating' && (
-                    <span className="block mt-1 text-orange">
+                    <span className="block mt-1 text-azure">
                       Глава: {currentChapter}
                     </span>
                   )}
@@ -321,7 +321,7 @@ export default function BookGeneratorPage() {
                     <div className="flex gap-3">
                       <Button
                         onClick={handleDownloadPdf}
-                        className="shadow-glow-orange"
+                        className="shadow-glow-azure"
                       >
                         <Download className="w-4 h-4" />
                         Скачать PDF
@@ -391,7 +391,7 @@ export default function BookGeneratorPage() {
               generationStatus === 'generating' ||
               (bookStyle === 'custom' && !customStyleDescription.trim())
             }
-            className="w-full h-14 text-lg shadow-glow-orange"
+            className="w-full h-14 text-lg shadow-glow-azure"
           >
             {generationStatus === 'generating' ? (
               <>
@@ -407,7 +407,7 @@ export default function BookGeneratorPage() {
           </Button>
 
           {bookStyle === 'custom' && !customStyleDescription.trim() && (
-            <p className="text-center text-sm text-orange">
+            <p className="text-center text-sm text-azure">
               Опишите желаемый стиль для генерации книги
             </p>
           )}
@@ -422,7 +422,7 @@ export default function BookGeneratorPage() {
           <Card className="border-border bg-muted">
             <CardContent className="p-4">
               <p className="text-sm text-muted-foreground">
-                <span className="text-orange font-medium">Примечание:</span> Генерация книги использует искусственный интеллект для создания связного повествования на основе ваших семейных данных и историй.
+                <span className="text-azure font-medium">Примечание:</span> Генерация книги использует искусственный интеллект для создания связного повествования на основе ваших семейных данных и историй.
               </p>
             </CardContent>
           </Card>
@@ -432,7 +432,7 @@ export default function BookGeneratorPage() {
             <Card className="border-border bg-muted">
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground">
-                  <Clock className="w-4 h-4 inline mr-2 text-orange" />
+                  <Clock className="w-4 h-4 inline mr-2 text-azure" />
                   Примерное время: 1-3 минуты в зависимости от количества родственников
                 </p>
               </CardContent>

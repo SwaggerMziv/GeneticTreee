@@ -17,10 +17,10 @@ const config: Config = {
   				'900': 'hsl(var(--charcoal-900))',
   				'950': 'hsl(var(--charcoal-950))'
   			},
-  			orange: {
-  				DEFAULT: '#ff6b35',
-  				light: '#ff8c5e',
-  				dark: '#f7931e'
+  			azure: {
+  				DEFAULT: '#6BC4DD',
+  				light: '#8FD4E8',
+  				dark: '#4FABC8'
   			},
   			cream: {
   				DEFAULT: '#d4a574',
@@ -80,14 +80,14 @@ const config: Config = {
   		},
   		fontFamily: {
   			sans: [
-  				'var(--font-inter)',
+  				'var(--font-comfortaa)',
   				'system-ui',
   				'sans-serif'
   			],
   			serif: [
-  				'var(--font-playfair)',
-  				'Georgia',
-  				'serif'
+  				'var(--font-heading)',
+  				'system-ui',
+  				'sans-serif'
   			]
   		},
   		fontSize: {
@@ -127,7 +127,11 @@ const config: Config = {
   			'dark-md': '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)',
   			'dark-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)',
   			'dark-xl': '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3)',
-  			'glow-orange': '0 0 20px rgba(255, 107, 53, 0.3)'
+  			'glow-azure': '0 0 16px rgba(107, 196, 221, 0.12)',
+  			'soft': '0 1px 8px rgba(107, 196, 221, 0.04)',
+  			'warm': '0 2px 10px rgba(180, 170, 200, 0.06)',
+  			'pastel': '0 2px 10px rgba(107, 196, 221, 0.05), 0 1px 4px rgba(180, 170, 200, 0.03)',
+  			'candy': '0 4px 14px rgba(107, 196, 221, 0.07), 0 1px 5px rgba(172, 109, 215, 0.02)'
   		},
   		animation: {
   			'fade-in': 'fadeIn 0.6s ease-out',

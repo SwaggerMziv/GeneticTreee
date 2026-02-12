@@ -4,99 +4,99 @@
 
 @layer base {
   :root {
-    --font-inter: 'Inter', system-ui, sans-serif;
-    --font-playfair: 'Playfair Display', Georgia, serif;
+    --font-comfortaa: 'Comfortaa', system-ui, sans-serif;
+    --font-heading: 'Nunito', system-ui, sans-serif;
 
-    --background: 0 0% 98%;
-    --foreground: 0 0% 8%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 8%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 8%;
-    --primary: 18 100% 60%;
+    --background: 210 40% 97%;
+    --foreground: 215 20% 18%;
+    --card: 210 35% 95%;
+    --card-foreground: 215 20% 18%;
+    --popover: 210 35% 95%;
+    --popover-foreground: 215 20% 18%;
+    --primary: 195 60% 58%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 30 15% 92%;
-    --secondary-foreground: 0 0% 15%;
-    --muted: 30 10% 94%;
-    --muted-foreground: 0 0% 40%;
-    --accent: 30 15% 92%;
-    --accent-foreground: 0 0% 10%;
+    --secondary: 210 25% 92%;
+    --secondary-foreground: 215 20% 18%;
+    --muted: 210 20% 93%;
+    --muted-foreground: 215 10% 45%;
+    --accent: 210 25% 92%;
+    --accent-foreground: 215 20% 18%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 30 10% 88%;
-    --input: 30 10% 88%;
-    --ring: 18 100% 60%;
+    --border: 210 18% 87%;
+    --input: 210 18% 87%;
+    --ring: 195 60% 58%;
     --radius: 0.75rem;
 
-    /* Charcoal bridge: light mode values */
-    --charcoal-950: 0 0% 96%;
-    --charcoal-900: 0 0% 98%;
-    --charcoal-800: 0 0% 100%;
-    --charcoal-700: 30 10% 88%;
-    --charcoal-600: 0 0% 60%;
+    /* Charcoal bridge: light mode values (cool pastel tinted) */
+    --charcoal-950: 210 30% 96%;
+    --charcoal-900: 210 25% 94%;
+    --charcoal-800: 210 20% 97%;
+    --charcoal-700: 210 18% 87%;
+    --charcoal-600: 215 10% 50%;
 
     /* Charts */
-    --chart-1: 18 100% 60%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --chart-1: 195 60% 58%;
+    --chart-2: 340 50% 72%;
+    --chart-3: 43 70% 70%;
+    --chart-4: 260 45% 68%;
+    --chart-5: 15 70% 72%;
 
-    /* Sidebar - dark in both themes */
-    --sidebar-background: 220 15% 13%;
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 18 100% 60%;
+    /* Sidebar - light in light theme */
+    --sidebar-background: 210 30% 96%;
+    --sidebar-foreground: 215 15% 30%;
+    --sidebar-primary: 195 60% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 18 100% 60%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 220 10% 20%;
-    --sidebar-ring: 18 100% 60%;
+    --sidebar-accent: 195 55% 90%;
+    --sidebar-accent-foreground: 195 60% 35%;
+    --sidebar-border: 210 18% 90%;
+    --sidebar-ring: 195 60% 58%;
   }
 
   .dark {
-    --background: 0 0% 4%;
+    --background: 215 15% 6%;
     --foreground: 0 0% 96%;
-    --card: 0 0% 6%;
+    --card: 215 15% 8%;
     --card-foreground: 0 0% 96%;
-    --popover: 0 0% 6%;
+    --popover: 215 15% 8%;
     --popover-foreground: 0 0% 96%;
-    --primary: 18 100% 60%;
+    --primary: 195 60% 55%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 12%;
+    --secondary: 215 10% 12%;
     --secondary-foreground: 0 0% 96%;
-    --muted: 0 0% 12%;
+    --muted: 215 10% 12%;
     --muted-foreground: 0 0% 60%;
-    --accent: 0 0% 12%;
+    --accent: 215 10% 12%;
     --accent-foreground: 0 0% 96%;
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 16%;
-    --input: 0 0% 16%;
-    --ring: 18 100% 60%;
+    --border: 215 8% 16%;
+    --input: 215 8% 16%;
+    --ring: 195 60% 55%;
 
-    /* Charcoal bridge: dark mode values (original hex mapped) */
-    --charcoal-950: 0 0% 4%;
-    --charcoal-900: 0 0% 8%;
-    --charcoal-800: 0 0% 10%;
-    --charcoal-700: 0 0% 16%;
-    --charcoal-600: 0 0% 25%;
+    /* Charcoal bridge: dark mode values */
+    --charcoal-950: 215 15% 4%;
+    --charcoal-900: 215 15% 8%;
+    --charcoal-800: 215 12% 10%;
+    --charcoal-700: 215 10% 16%;
+    --charcoal-600: 215 8% 25%;
 
     /* Charts */
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-1: 195 60% 55%;
+    --chart-2: 340 55% 65%;
+    --chart-3: 43 75% 60%;
+    --chart-4: 260 50% 62%;
+    --chart-5: 15 65% 65%;
 
     /* Sidebar */
-    --sidebar-background: 0 0% 6%;
+    --sidebar-background: 215 15% 6%;
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 18 100% 60%;
+    --sidebar-primary: 195 60% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 18 100% 60%;
+    --sidebar-accent: 195 60% 55%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 16%;
-    --sidebar-ring: 18 100% 60%;
+    --sidebar-border: 215 8% 16%;
+    --sidebar-ring: 195 60% 55%;
   }
 
   * {
@@ -121,7 +121,7 @@ body {
 }
 
 body {
-  font-family: var(--font-inter);
+  font-family: var(--font-comfortaa);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -151,7 +151,7 @@ html {
 
 /* Custom selection color */
 ::selection {
-  background-color: #ff6b35;
+  background-color: #6BC4DD;
   color: white;
 }
 
@@ -169,25 +169,25 @@ html {
 
 .dark .ant-input:hover,
 .dark .ant-input-password:hover {
-  border-color: #ff6b35 !important;
+  border-color: #6BC4DD !important;
 }
 
 .dark .ant-input:focus,
 .dark .ant-input-password:focus,
 .dark .ant-input-focused,
 .dark .ant-input-password-focused {
-  border-color: #ff6b35 !important;
-  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.1) !important;
+  border-color: #6BC4DD !important;
+  box-shadow: 0 0 0 2px rgba(107, 196, 221, 0.15) !important;
 }
 
 .ant-btn-primary {
-  background-color: #ff6b35 !important;
-  border-color: #ff6b35 !important;
+  background-color: #6BC4DD !important;
+  border-color: #6BC4DD !important;
 }
 
 .ant-btn-primary:hover {
-  background-color: #ff8c5e !important;
-  border-color: #ff8c5e !important;
+  background-color: #8FD4E8 !important;
+  border-color: #8FD4E8 !important;
 }
 
 .ant-tabs-tab {
@@ -195,11 +195,11 @@ html {
 }
 
 .ant-tabs-tab-active .ant-tabs-tab-btn {
-  color: #ff6b35 !important;
+  color: #6BC4DD !important;
 }
 
 .ant-tabs-ink-bar {
-  background: #ff6b35 !important;
+  background: #6BC4DD !important;
 }
 
 .dark .ant-message-notice-content {
@@ -245,7 +245,7 @@ html {
 
 /* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  background: linear-gradient(135deg, #6BC4DD 0%, #4FABC8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -256,4 +256,9 @@ html {
   background: hsl(var(--charcoal-800) / 0.7);
   backdrop-filter: blur(10px);
   border: 1px solid hsl(var(--border) / 0.3);
+}
+
+/* Pastel card shadows */
+.shadow-pastel {
+  box-shadow: 0 2px 10px rgba(107, 196, 221, 0.05), 0 1px 4px rgba(180, 170, 200, 0.03);
 }

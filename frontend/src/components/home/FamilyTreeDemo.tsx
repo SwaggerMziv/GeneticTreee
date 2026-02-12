@@ -28,7 +28,7 @@ const FamilyMemberCard = ({ person, size = 'md' }: FamilyMemberCardProps) => {
       background="hsl(var(--card))"
       borderRadius="16px"
       borderColor="hsl(var(--border))"
-      glareColor="#ff6b35"
+      glareColor="#6BC4DD"
       glareOpacity={0.3}
       transitionDuration={500}
       className="shadow-dark-lg hover:shadow-dark-xl transition-shadow"
@@ -63,13 +63,13 @@ const ConnectionLine = ({
   length?: number
 }) => {
   if (type === 'horizontal') {
-    return <div className={`h-0.5 w-${length} bg-gradient-to-r from-border via-orange/50 to-border`} />
+    return <div className={`h-0.5 w-${length} bg-gradient-to-r from-border via-azure/50 to-border`} />
   }
 
   if (type === 'branch') {
     return (
       <div className="flex flex-col items-center">
-        <div className={`w-0.5 h-8 bg-gradient-to-b from-orange/50 to-border`} />
+        <div className={`w-0.5 h-8 bg-gradient-to-b from-azure/50 to-border`} />
         <div className="flex items-center">
           <div className="w-24 h-0.5 bg-border" />
           <div className="w-0.5 h-4 bg-border" />
@@ -79,7 +79,7 @@ const ConnectionLine = ({
     )
   }
 
-  return <div className={`w-0.5 h-${length} bg-gradient-to-b from-border to-orange/50`} />
+  return <div className={`w-0.5 h-${length} bg-gradient-to-b from-border to-azure/50`} />
 }
 
 export default function FamilyTreeDemo() {
@@ -108,8 +108,8 @@ export default function FamilyTreeDemo() {
     <section className="relative py-24 lg:py-32 bg-background overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-orange/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 left-1/4 w-96 h-96 bg-orange-dark/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-azure/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 left-1/4 w-96 h-96 bg-azure-dark/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
@@ -150,8 +150,8 @@ export default function FamilyTreeDemo() {
           {/* Connection Lines from Grandparents to Parents */}
           <FadeContent duration={800} delay={400} threshold={0.2}>
             <div className="flex justify-center items-center gap-24 mb-6">
-              <div className="w-0.5 h-10 bg-gradient-to-b from-border to-orange/50" />
-              <div className="w-0.5 h-10 bg-gradient-to-b from-border to-orange/50" />
+              <div className="w-0.5 h-10 bg-gradient-to-b from-border to-azure/50" />
+              <div className="w-0.5 h-10 bg-gradient-to-b from-border to-azure/50" />
             </div>
           </FadeContent>
 
@@ -169,7 +169,7 @@ export default function FamilyTreeDemo() {
           {/* Connection Line to Children */}
           <FadeContent duration={800} delay={800} threshold={0.2}>
             <div className="flex justify-center mb-6">
-              <div className="w-0.5 h-10 bg-gradient-to-b from-orange/50 to-border" />
+              <div className="w-0.5 h-10 bg-gradient-to-b from-azure/50 to-border" />
             </div>
           </FadeContent>
 
@@ -192,15 +192,15 @@ export default function FamilyTreeDemo() {
             <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto mt-12">
               <div className="text-center p-4 rounded-xl bg-muted/50 border border-border">
                 <div className="text-sm text-muted-foreground mb-1">Тип связи</div>
-                <div className="text-orange font-semibold">Родители ↔ Дети</div>
+                <div className="text-azure font-semibold">Родители ↔ Дети</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-muted/50 border border-border">
                 <div className="text-sm text-muted-foreground mb-1">Тип связи</div>
-                <div className="text-orange font-semibold">Братья ↔ Сестры</div>
+                <div className="text-azure font-semibold">Братья ↔ Сестры</div>
               </div>
               <div className="text-center p-4 rounded-xl bg-muted/50 border border-border">
                 <div className="text-sm text-muted-foreground mb-1">Тип связи</div>
-                <div className="text-orange font-semibold">Супруги</div>
+                <div className="text-azure font-semibold">Супруги</div>
               </div>
             </div>
           </FadeContent>
@@ -211,7 +211,7 @@ export default function FamilyTreeDemo() {
           <div className="text-center mt-16">
             <p className="text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               В реальном приложении вы сможете создавать{' '}
-              <span className="text-orange font-semibold">50+ типов родственных связей</span>
+              <span className="text-azure font-semibold">50+ типов родственных связей</span>
               : родители, бабушки/дедушки, дяди/тети, двоюродные братья/сестры, племянники,
               прадедушки/прабабушки и многие другие. Система поддерживает сложные генеалогические
               структуры и автоматически определяет обратные связи.

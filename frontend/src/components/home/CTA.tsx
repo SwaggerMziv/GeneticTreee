@@ -12,12 +12,12 @@ export default function CTA() {
   return (
     <section className="relative py-24 lg:py-32 overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-orange/5 to-transparent" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-azure/5 to-transparent" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
         <FadeContent duration={1000} threshold={0.3}>
-          <div className="relative rounded-3xl bg-gradient-to-br from-orange to-orange-dark p-1 shadow-2xl">
+          <div className="relative rounded-3xl bg-gradient-to-br from-azure to-azure-dark p-1 shadow-2xl">
             <div className="rounded-3xl bg-background p-12 lg:p-20">
               <div className="max-w-3xl mx-auto text-center">
                 <h2 className="font-serif text-4xl lg:text-6xl font-bold mb-6">
@@ -29,7 +29,7 @@ export default function CTA() {
                 </p>
                 <Link href={authLink}>
                   <Button
-                    className="h-14 px-10 text-lg font-semibold bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange hover:scale-105 transition-all duration-300"
+                    className="h-14 px-10 text-lg font-semibold bg-gradient-to-r from-azure to-azure-dark text-white hover:shadow-glow-azure hover:scale-105 transition-all duration-300"
                   >
                     Начать бесплатно
                     <ArrowRight className="w-5 h-5 ml-2" />

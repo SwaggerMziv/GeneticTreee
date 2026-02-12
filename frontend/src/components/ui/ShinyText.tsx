@@ -24,7 +24,7 @@ export default function ShinyText({
       transition={{ duration: 0.5, delay: animationDelay }}
       style={
         {
-          background: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 50%, #ff6b35 100%)',
+          background: 'linear-gradient(135deg, #6BC4DD 0%, #4FABC8 50%, #6BC4DD 100%)',
           backgroundSize: '200% auto',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',

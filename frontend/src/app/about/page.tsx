@@ -93,7 +93,7 @@ export default function AboutPage() {
                 transition={{ duration: 0.6 }}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted/80 backdrop-blur-sm border border-border mb-8"
               >
-                <Heart className="w-4 h-4 text-orange" />
+                <Heart className="w-4 h-4 text-azure" />
                 <span className="text-sm text-muted-foreground font-medium">
                   О проекте GeneticTree
                 </span>
@@ -143,11 +143,11 @@ export default function AboutPage() {
               </div>
 
               <div className="relative">
-                <div className="relative rounded-3xl bg-gradient-to-br from-orange/20 to-orange-dark/20 p-8 border border-border">
+                <div className="relative rounded-3xl bg-gradient-to-br from-azure/20 to-azure-dark/20 p-8 border border-border">
                   <div className="space-y-6">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-orange/20 flex items-center justify-center flex-shrink-0">
-                        <Users className="w-6 h-6 text-orange" />
+                      <div className="w-12 h-12 rounded-xl bg-azure/20 flex items-center justify-center flex-shrink-0">
+                        <Users className="w-6 h-6 text-azure" />
                       </div>
                       <div>
                         <h3 className="text-xl font-semibold mb-2">Для всей семьи</h3>
@@ -159,8 +159,8 @@ export default function AboutPage() {
                     </div>
 
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-orange/20 flex items-center justify-center flex-shrink-0">
-                        <Heart className="w-6 h-6 text-orange" />
+                      <div className="w-12 h-12 rounded-xl bg-azure/20 flex items-center justify-center flex-shrink-0">
+                        <Heart className="w-6 h-6 text-azure" />
                       </div>
                       <div>
                         <h3 className="text-xl font-semibold mb-2">С любовью к деталям</h3>
@@ -172,8 +172,8 @@ export default function AboutPage() {
                     </div>
 
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-orange/20 flex items-center justify-center flex-shrink-0">
-                        <Lock className="w-6 h-6 text-orange" />
+                      <div className="w-12 h-12 rounded-xl bg-azure/20 flex items-center justify-center flex-shrink-0">
+                        <Lock className="w-6 h-6 text-azure" />
                       </div>
                       <div>
                         <h3 className="text-xl font-semibold mb-2">Безопасность превыше всего</h3>
@@ -213,9 +213,9 @@ export default function AboutPage() {
                 delay={index * 100}
                 threshold={0.1}
               >
-                <div className="p-6 rounded-2xl bg-muted/50 border border-border hover:border-orange/50 transition-all group">
-                  <div className="w-12 h-12 rounded-xl bg-orange/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <feature.icon className="w-6 h-6 text-orange" />
+                <div className="p-6 rounded-2xl bg-muted/50 border border-border shadow-pastel hover:border-azure/50 hover:shadow-candy transition-all group">
+                  <div className="w-12 h-12 rounded-xl bg-azure/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <feature.icon className="w-6 h-6 text-azure" />
                   </div>
                   <h3 className="text-lg font-semibold mb-3">{feature.title}</h3>
                   <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
@@ -251,11 +251,11 @@ export default function AboutPage() {
                 <div className="relative">
                   {/* Connection Line */}
                   {index < howItWorks.length - 1 && (
-                    <div className="hidden lg:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-orange/50 to-transparent" />
+                    <div className="hidden lg:block absolute top-12 left-full w-full h-0.5 bg-gradient-to-r from-azure/50 to-transparent" />
                   )}
 
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center mb-6 mx-auto shadow-glow-orange">
+                    <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-azure to-azure-dark flex items-center justify-center mb-6 mx-auto shadow-glow-azure">
                       <span className="font-serif text-4xl font-bold text-white">
                         {item.step}
                       </span>
@@ -274,7 +274,7 @@ export default function AboutPage() {
       <section className="relative py-20 lg:py-28 bg-background">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <FadeContent duration={1000} threshold={0.3}>
-            <div className="relative rounded-4xl bg-gradient-to-br from-orange to-orange-dark p-1">
+            <div className="relative rounded-4xl bg-gradient-to-br from-azure to-azure-dark p-1">
               <div className="rounded-4xl bg-background p-12 lg:p-16">
                 <div className="max-w-3xl mx-auto text-center">
                   <h2 className="font-serif text-4xl lg:text-5xl font-bold mb-6">
@@ -288,19 +288,19 @@ export default function AboutPage() {
                   <div className="flex flex-wrap items-center justify-center gap-4">
                     <a
                       href={authLink}
-                      className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-orange to-orange-dark text-white font-semibold hover:shadow-glow-orange transition-all"
+                      className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-gradient-to-r from-azure to-azure-dark text-white font-semibold hover:shadow-glow-azure transition-all"
                     >
                       Создать аккаунт бесплатно
                     </a>
                     <a
                       href="/"
-                      className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-muted border border-border text-foreground font-semibold hover:border-orange/50 transition-all"
+                      className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-muted border border-border text-foreground font-semibold hover:border-azure/50 transition-all"
                     >
                       Узнать больше
                     </a>
                   </div>
                   <p className="mt-6 text-sm text-muted-foreground">
-                    Регистрация занимает менее минуты. Никаких скрытых платежей.
+                    Регистрация занимает менее минуты. Сервис полностью бесплатен.
                   </p>
                 </div>
               </div>

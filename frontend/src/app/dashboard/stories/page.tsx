@@ -33,7 +33,7 @@ const StoryCard = ({ story }: { story: Story }) => {
   return (
     <>
       <Card
-        className="group cursor-pointer hover:border-orange/50 transition-all duration-300 overflow-hidden"
+        className="group cursor-pointer hover:border-azure/50 transition-all duration-300 overflow-hidden"
         onClick={() => setIsModalOpen(true)}
       >
         <CardContent className="p-0">
@@ -59,7 +59,7 @@ const StoryCard = ({ story }: { story: Story }) => {
           <div className="p-5 flex flex-col h-full">
             {/* Story Header */}
             <div className="flex items-start justify-between mb-4">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-orange to-orange-dark">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-azure to-azure-dark">
                 <BookOpen className="w-5 h-5 text-white" />
               </div>
               {photos.length > 0 && (
@@ -110,12 +110,12 @@ const StoryCard = ({ story }: { story: Story }) => {
       >
         <div className="p-8">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-orange to-orange-dark">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-azure to-azure-dark">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
               <h2 className="font-serif text-2xl font-bold leading-tight">{story.title}</h2>
-              <div className="flex items-center gap-2 text-orange text-sm mt-1">
+              <div className="flex items-center gap-2 text-azure text-sm mt-1">
                 <User className="w-3 h-3" />
                 <span>{story.relativeName}</span>
               </div>
@@ -249,8 +249,8 @@ export default function StoriesPage() {
     <div className="max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="mb-10">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border mb-4">
-          <BookOpen className="w-4 h-4 text-orange" />
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border shadow-sm mb-4">
+          <BookOpen className="w-4 h-4 text-azure" />
           <span className="text-sm text-muted-foreground font-medium">
             Семейная лента
           </span>
@@ -294,7 +294,7 @@ export default function StoriesPage() {
 
       {/* Stories Count */}
       <div className="mb-6 text-muted-foreground">
-        Найдено историй: <span className="text-orange font-bold">{filteredStories.length}</span>
+        Найдено историй: <span className="text-azure font-bold">{filteredStories.length}</span>
       </div>
 
       {/* Stories Grid */}

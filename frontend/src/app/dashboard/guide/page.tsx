@@ -53,8 +53,8 @@ export default function GuidePage() {
     <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
       {/* Page Header */}
       <div className="mb-12">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border mb-4">
-          <BookOpen className="w-4 h-4 text-orange" />
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border shadow-sm mb-4">
+          <BookOpen className="w-4 h-4 text-azure" />
           <span className="text-sm text-muted-foreground font-medium">
             Руководство
           </span>
@@ -97,8 +97,8 @@ export default function GuidePage() {
               <AccordionItem value="1">
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-orange/20">
-                      <UserPlus className="w-5 h-5 text-orange" />
+                    <div className="p-2 rounded-lg bg-azure/20">
+                      <UserPlus className="w-5 h-5 text-azure" />
                     </div>
                     <span className="font-medium text-foreground">Шаг 1: Добавление первого родственника</span>
                   </div>
@@ -108,7 +108,7 @@ export default function GuidePage() {
                     <p>
                       Начните с добавления себя или любого члена семьи, от которого будет строиться древо.
                     </p>
-                    <div className="p-4 rounded-xl bg-muted border border-border">
+                    <div className="p-4 rounded-xl bg-muted border border-border shadow-sm">
                       <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
                         <Info className="w-4 h-4 text-blue-400" />
                         Как добавить родственника:
@@ -137,8 +137,8 @@ export default function GuidePage() {
               <AccordionItem value="2">
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-orange/20">
-                      <Link2 className="w-5 h-5 text-orange" />
+                    <div className="p-2 rounded-lg bg-azure/20">
+                      <Link2 className="w-5 h-5 text-azure" />
                     </div>
                     <span className="font-medium text-foreground">Шаг 2: Создание связей между родственниками</span>
                   </div>
@@ -148,7 +148,7 @@ export default function GuidePage() {
                     <p>
                       После добавления нескольких родственников, необходимо указать их взаимоотношения.
                     </p>
-                    <div className="p-4 rounded-xl bg-muted border border-border">
+                    <div className="p-4 rounded-xl bg-muted border border-border shadow-sm">
                       <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
                         <Info className="w-4 h-4 text-blue-400" />
                         Типы связей:
@@ -164,7 +164,7 @@ export default function GuidePage() {
                         <div>• Кузен / Кузина</div>
                       </div>
                     </div>
-                    <div className="p-4 rounded-xl bg-muted border border-border">
+                    <div className="p-4 rounded-xl bg-muted border border-border shadow-sm">
                       <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
                         <Info className="w-4 h-4 text-blue-400" />
                         Как создать связь:
@@ -184,8 +184,8 @@ export default function GuidePage() {
               <AccordionItem value="3">
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-orange/20">
-                      <Edit className="w-5 h-5 text-orange" />
+                    <div className="p-2 rounded-lg bg-azure/20">
+                      <Edit className="w-5 h-5 text-azure" />
                     </div>
                     <span className="font-medium text-foreground">Шаг 3: Редактирование информации</span>
                   </div>
@@ -195,7 +195,7 @@ export default function GuidePage() {
                     <p>
                       Вы можете в любой момент изменить информацию о родственнике или связях.
                     </p>
-                    <div className="p-4 rounded-xl bg-muted border border-border">
+                    <div className="p-4 rounded-xl bg-muted border border-border shadow-sm">
                       <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
                         <Info className="w-4 h-4 text-blue-400" />
                         Что можно редактировать:
@@ -216,8 +216,8 @@ export default function GuidePage() {
               <AccordionItem value="4">
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-orange/20">
-                      <BookOpen className="w-5 h-5 text-orange" />
+                    <div className="p-2 rounded-lg bg-azure/20">
+                      <BookOpen className="w-5 h-5 text-azure" />
                     </div>
                     <span className="font-medium text-foreground">Шаг 4: Добавление семейных историй</span>
                   </div>
@@ -227,7 +227,7 @@ export default function GuidePage() {
                     <p>
                       Семейные истории — это уникальные воспоминания и факты о ваших родственниках.
                     </p>
-                    <div className="p-4 rounded-xl bg-muted border border-border">
+                    <div className="p-4 rounded-xl bg-muted border border-border shadow-sm">
                       <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
                         <Info className="w-4 h-4 text-blue-400" />
                         Примеры историй:
@@ -256,8 +256,8 @@ export default function GuidePage() {
               <AccordionItem value="5">
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-orange/20">
-                      <Search className="w-5 h-5 text-orange" />
+                    <div className="p-2 rounded-lg bg-azure/20">
+                      <Search className="w-5 h-5 text-azure" />
                     </div>
                     <span className="font-medium text-foreground">Шаг 5: Навигация по древу</span>
                   </div>
@@ -267,7 +267,7 @@ export default function GuidePage() {
                     <p>
                       Научитесь эффективно перемещаться по вашему семейному древу.
                     </p>
-                    <div className="p-4 rounded-xl bg-muted border border-border">
+                    <div className="p-4 rounded-xl bg-muted border border-border shadow-sm">
                       <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
                         <Info className="w-4 h-4 text-blue-400" />
                         Управление древом:
@@ -287,8 +287,8 @@ export default function GuidePage() {
               <AccordionItem value="6" className="border-b-0">
                 <AccordionTrigger className="hover:no-underline">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-orange/20">
-                      <Trash2 className="w-5 h-5 text-orange" />
+                    <div className="p-2 rounded-lg bg-azure/20">
+                      <Trash2 className="w-5 h-5 text-azure" />
                     </div>
                     <span className="font-medium text-foreground">Шаг 6: Удаление и восстановление</span>
                   </div>
@@ -298,7 +298,7 @@ export default function GuidePage() {
                     <p>
                       Удаление родственников и связей работает через &ldquo;мягкое удаление&rdquo; — данные можно восстановить.
                     </p>
-                    <div className="p-4 rounded-xl bg-muted border border-border">
+                    <div className="p-4 rounded-xl bg-muted border border-border shadow-sm">
                       <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
                         <Info className="w-4 h-4 text-blue-400" />
                         Важно знать:
@@ -333,7 +333,7 @@ export default function GuidePage() {
             <Button
               size="lg"
               onClick={() => router.push('/tree')}
-              className="shadow-glow-orange"
+              className="shadow-glow-azure"
             >
               Создать древо
               <ArrowRight className="w-5 h-5" />

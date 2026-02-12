@@ -39,7 +39,7 @@ export default function BlobCursor() {
         opacity: isVisible ? 1 : 0,
       }}
     >
-      <div className="w-full h-full rounded-full bg-orange blur-md animate-pulse" />
+      <div className="w-full h-full rounded-full bg-azure blur-md animate-pulse" />
     </motion.div>
   )
 }

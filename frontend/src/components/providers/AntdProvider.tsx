@@ -25,15 +25,15 @@ export default function AntdProvider({ children }: AntdProviderProps) {
         theme={{
           algorithm: isDark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
           token: {
-            colorPrimary: '#ff6b35',
-            colorBgContainer: isDark ? '#141414' : '#ffffff',
-            colorBgElevated: isDark ? '#0f0f0f' : '#fafafa',
+            colorPrimary: '#6BC4DD',
+            colorBgContainer: isDark ? '#141414' : '#F2ECE4',
+            colorBgElevated: isDark ? '#0f0f0f' : '#F7F2EC',
             colorBorder: isDark ? '#2a2a2a' : '#e5e0db',
             colorText: isDark ? '#f5f5f5' : '#1a1a1a',
             colorTextSecondary: isDark ? '#999' : '#666',
             borderRadius: 12,
             fontSize: 16,
-            fontFamily: 'var(--font-inter)',
+            fontFamily: 'var(--font-comfortaa)',
           },
           components: {
             Button: {
@@ -53,7 +53,7 @@ export default function AntdProvider({ children }: AntdProviderProps) {
               titleFontSize: 16,
             },
             Message: {
-              contentBg: isDark ? '#1a1a1a' : '#ffffff',
+              contentBg: isDark ? '#1a1a1a' : '#F2ECE4',
               contentPadding: '12px 16px',
             },
           },

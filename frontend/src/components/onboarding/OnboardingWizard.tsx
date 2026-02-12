@@ -83,9 +83,9 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
           className={cn(
             'h-2 rounded-full transition-all duration-300',
             i === current
-              ? 'w-8 bg-orange'
+              ? 'w-8 bg-azure'
               : i < current
-              ? 'w-2 bg-orange/50'
+              ? 'w-2 bg-azure/50'
               : 'w-2 bg-muted'
           )}
         />
@@ -125,7 +125,7 @@ function WelcomeInfoStep() {
       </p>
       <InfoItem
         icon={TreePine}
-        color="bg-orange/10 text-orange"
+        color="bg-azure/10 text-azure"
         text="Вы создаёте семейное древо — добавляете себя и родственников"
       />
       <InfoItem
@@ -388,7 +388,7 @@ function YourFamilyStep({
       ))}
 
       {showExtra ? (
-        <div className="p-3 rounded-xl border border-dashed border-orange/40 bg-orange/5 space-y-2">
+        <div className="p-3 rounded-xl border border-dashed border-azure/40 bg-azure/5 space-y-2">
           <p className="text-xs font-medium text-muted-foreground">Выберите родство:</p>
           <div className="flex flex-wrap gap-1.5">
             {EXTRA_RELATION_OPTIONS.map((opt) => (
@@ -683,7 +683,7 @@ export default function OnboardingWizard() {
   const steps = [
     {
       icon: (
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-azure to-azure-dark flex items-center justify-center">
           <Sparkles className="w-8 h-8 text-white" />
         </div>
       ),
@@ -727,7 +727,7 @@ export default function OnboardingWizard() {
     },
     {
       icon: (
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange to-orange-dark flex items-center justify-center">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-azure to-azure-dark flex items-center justify-center">
           <UserIcon className="w-8 h-8 text-white" />
         </div>
       ),
@@ -847,7 +847,7 @@ export default function OnboardingWizard() {
           <Button
             onClick={handleNext}
             disabled={loading || (step === ABOUT_YOU_STEP && !canProceedAboutYou)}
-            className="bg-gradient-to-r from-orange to-orange-dark text-white hover:shadow-glow-orange"
+            className="bg-gradient-to-r from-azure to-azure-dark text-white hover:shadow-glow-azure"
           >
             {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {isLastStep ? 'Готово' : 'Далее'}

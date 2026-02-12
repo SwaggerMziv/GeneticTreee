@@ -333,9 +333,9 @@ const ActionCard = ({
         }
       default:
         return {
-          icon: <Bot className="w-4 h-4 text-orange" />,
+          icon: <Bot className="w-4 h-4 text-azure" />,
           title: 'Действие выполнено',
-          color: 'border-orange/30 bg-orange/10',
+          color: 'border-azure/30 bg-azure/10',
           details: action_type
         }
     }
@@ -510,7 +510,7 @@ const MarkdownRenderer = ({ content }: { content: string }) => {
     return parts.map((part, index) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return (
-          <strong key={index} className="text-orange font-semibold">
+          <strong key={index} className="text-azure font-semibold">
             {part.slice(2, -2)}
           </strong>
         )
@@ -546,7 +546,7 @@ const MarkdownRenderer = ({ content }: { content: string }) => {
         if (line.trim().startsWith('- ')) {
           return (
             <div key={i} className="flex gap-2 ml-2">
-              <span className="text-orange mt-1">•</span>
+              <span className="text-azure mt-1">•</span>
               <span className="flex-1">{formatText(line.trim().slice(2))}</span>
             </div>
           )
@@ -556,7 +556,7 @@ const MarkdownRenderer = ({ content }: { content: string }) => {
         if (/^\d+\.\s/.test(line.trim())) {
           return (
             <div key={i} className="flex gap-2 ml-2">
-              <span className="text-orange font-mono font-medium">
+              <span className="text-azure font-mono font-medium">
                 {line.trim().split('.')[0]}.
               </span>
               <span className="flex-1">{formatText(line.trim().replace(/^\d+\.\s/, ''))}</span>
@@ -961,7 +961,7 @@ export default function AIAssistantPage() {
               <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_20%_20%,#a855f7_0,transparent_30%),radial-gradient(circle_at_80%_30%,#22d3ee_0,transparent_28%),radial-gradient(circle_at_40%_80%,#f97316_0,transparent_28%)]" />
               {heroContentVisible && (
                 <div className="relative h-full flex flex-col items-center justify-center text-center px-8 gap-3 animate-in fade-in duration-700">
-                  <div className="px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-orange/80 bg-white/10 rounded-full inline-flex items-center gap-2">
+                  <div className="px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-azure/80 bg-white/10 rounded-full inline-flex items-center gap-2">
                     <Sparkles className="w-3 h-3" />
                     ИИ-помощник
                   </div>
@@ -979,14 +979,14 @@ export default function AIAssistantPage() {
                   <div className="flex gap-2 justify-center">
                     <Button
                       onClick={handleQuickStart}
-                      className="pointer-events-auto bg-orange/80 border-orange/60 text-white hover:bg-orange shadow-lg shadow-orange/40"
+                      className="pointer-events-auto bg-azure/80 border-azure/60 text-white hover:bg-azure shadow-lg shadow-azure/40"
                       icon={<Sparkles className="w-4 h-4" />}
                     >
                       Быстрый старт
                     </Button>
                     <Button
                       onClick={handleAskAdvice}
-                      className="pointer-events-auto bg-white/10 border-white/10 text-foreground hover:border-orange backdrop-blur-md"
+                      className="pointer-events-auto bg-white/10 border-white/10 text-foreground hover:border-azure backdrop-blur-md"
                     >
                       Спросить совет
                     </Button>
@@ -1014,7 +1014,7 @@ export default function AIAssistantPage() {
                   <div
                     className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all ${
                       msg.type === 'user'
-                        ? 'bg-gradient-to-br from-orange to-orange-dark shadow-lg shadow-orange/30'
+                        ? 'bg-gradient-to-br from-azure to-azure-dark shadow-lg shadow-azure/30'
                         : msg.type === 'error'
                         ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-lg shadow-red-500/30'
                         : msg.type === 'warning'
@@ -1042,7 +1042,7 @@ export default function AIAssistantPage() {
                     <div
                       className={`p-3.5 rounded-2xl shadow-xl backdrop-blur-sm transition-all hover:shadow-2xl ${
                         msg.type === 'user'
-                          ? 'bg-orange/12 border border-orange/20 text-foreground rounded-tr-md'
+                          ? 'bg-azure/12 border border-azure/20 text-foreground rounded-tr-md'
                           : msg.type === 'warning'
                           ? 'bg-yellow-900/20 text-yellow-100 border border-yellow-700/50 rounded-tl-md'
                           : msg.type === 'error'
@@ -1155,7 +1155,7 @@ export default function AIAssistantPage() {
                 <div className="p-4 rounded-2xl rounded-tl-md bg-charcoal-800/50 border border-charcoal-700/50 text-foreground shadow-xl">
                   <div className="prose prose-invert prose-sm max-w-none">
                     <MarkdownRenderer content={streamingContent} />
-                    <span className="inline-block w-2 h-4 bg-orange ml-1 animate-pulse" />
+                    <span className="inline-block w-2 h-4 bg-azure ml-1 animate-pulse" />
                   </div>
 
                   {/* Current Actions being executed */}
@@ -1179,7 +1179,7 @@ export default function AIAssistantPage() {
           {isProcessing && !streamingContent && !streamingThinking && (
             <div className="flex justify-start">
               <div className="flex items-center gap-3 text-muted-foreground ml-14 bg-charcoal-900/50 px-4 py-2.5 rounded-full border border-charcoal-700/50 shadow-lg backdrop-blur-sm">
-                <RefreshCw className="w-4 h-4 animate-spin text-orange" />
+                <RefreshCw className="w-4 h-4 animate-spin text-azure" />
                 <span className="text-sm font-medium">ИИ думает...</span>
               </div>
             </div>
@@ -1213,8 +1213,8 @@ export default function AIAssistantPage() {
               disabled={!prompt.trim() || isProcessing}
               className={`relative w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
                 isProcessing
-                  ? 'bg-gradient-to-br from-orange/70 to-orange-dark/70'
-                  : 'bg-gradient-to-br from-orange to-orange-dark hover:scale-105 hover:shadow-lg hover:shadow-orange/50'
+                  ? 'bg-gradient-to-br from-azure/70 to-azure-dark/70'
+                  : 'bg-gradient-to-br from-azure to-azure-dark hover:scale-105 hover:shadow-lg hover:shadow-azure/50'
               } disabled:opacity-50`}
             >
               {isProcessing ? (
