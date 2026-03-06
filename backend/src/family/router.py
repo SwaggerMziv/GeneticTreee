@@ -18,6 +18,9 @@ from typing import List
 from fastapi import Depends
 from src.auth.dependencies import require_superuser
 from src.auth.dependencies import get_current_user_id
+from src.subscription.dependencies import get_quota_service
+from src.subscription.quota_service import QuotaService
+from src.subscription.enums import QuotaResource
 
 
 def get_story_service(
@@ -34,8 +37,10 @@ router = APIRouter(prefix="/api/v1/family", tags=["Family"])
 async def create_relative(
     user_id: int = Depends(get_current_user_id),
     relative_data: FamilyRelationCreateSchema = Body(...),
-    service: FamilyRelationService = Depends(get_family_relation_service)
+    service: FamilyRelationService = Depends(get_family_relation_service),
+    quota_service: QuotaService = Depends(get_quota_service),
 ):
+    await quota_service.enforce_quota(user_id, QuotaResource.RELATIVES)
     return await service.create_relative(user_id, relative_data)
 
 @router.patch("/{user_id}/relatives/{relative_id}/context", response_model=FamilyRelationContextOutputSchema)
@@ -164,9 +169,11 @@ async def delete_relative_by_id(
 async def generate_invitation_link(
     user_id: int = Depends(get_current_user_id),
     relative_id: int = Path(...),
-    service: FamilyRelationService = Depends(get_family_relation_service)
+    service: FamilyRelationService = Depends(get_family_relation_service),
+    quota_service: QuotaService = Depends(get_quota_service),
 ):
     """Генерировать ссылку-приглашение для родственника в Telegram бот"""
+    await quota_service.enforce_quota(user_id, QuotaResource.TELEGRAM_INVITATIONS)
     from src.config import settings
     return await service.generate_invitation(user_id, relative_id, settings.telegram_bot_username)
 
@@ -181,6 +188,15 @@ async def activate_invitation(
         telegram_user_id=request.telegram_user_id,
         telegram_username=request.telegram_username
     )
+
+@router.get("/relatives/{relative_id}/interview-messages")
+async def get_interview_messages(
+    relative_id: int = Path(...),
+    service: FamilyRelationService = Depends(get_family_relation_service)
+):
+    """Получить историю интервью родственника (публичный эндпоинт для Telegram бота и Mini App)"""
+    return await service.get_interview_messages(relative_id)
+
 
 @router.post("/relatives/{relative_id}/interview-message")
 async def save_interview_message(
@@ -227,6 +243,15 @@ async def upload_story_media_from_bot(
 
     story_service = StoryService(service, s3_manager)
     return await story_service.upload_media(relative.user_id, relative_id, story_key, file)
+
+
+@router.get("/relatives/{relative_id}/stories")
+async def get_stories_public(
+    relative_id: int = Path(...),
+    service: FamilyRelationService = Depends(get_family_relation_service)
+):
+    """Получить все истории родственника (публичный эндпоинт для бота и Mini App)"""
+    return await service.get_stories(relative_id)
 
 
 @router.get("/relatives/{relative_id}/stories-count", response_model=StoriesCountResponseSchema)

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Steps } from 'antd'
+import { useIsMobile } from '@/hooks/use-mobile'
 import {
   BookOpen,
   UserPlus,
@@ -24,6 +25,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 export default function GuidePage() {
   const router = useRouter()
   const { user } = useUser()
+  const isMobile = useIsMobile()
   const [currentStep, setCurrentStep] = useState(0)
 
   const steps = [
@@ -50,7 +52,7 @@ export default function GuidePage() {
   ]
 
   return (
-    <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
       {/* Page Header */}
       <div className="mb-12">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border shadow-sm mb-4">
@@ -76,6 +78,7 @@ export default function GuidePage() {
           <Steps
             current={currentStep}
             onChange={setCurrentStep}
+            direction={isMobile ? 'vertical' : 'horizontal'}
             items={steps.map((step) => ({
               title: step.title,
               description: step.description,

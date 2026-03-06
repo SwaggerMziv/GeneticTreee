@@ -286,6 +286,48 @@ class FamilyRelationService:
         }
 
     @log_service_operation
+    async def get_interview_messages(self, relative_id: int) -> list[dict]:
+        """Получить историю интервью родственника"""
+        relative = await self.repository.get_by_id_without_user(relative_id)
+        if not relative:
+            return []
+
+        context = relative.context or {}
+        return context.get('interview_messages', [])
+
+    @log_service_operation
+    async def get_stories(self, relative_id: int) -> list[dict]:
+        """Получить все истории родственника (без interview_messages)"""
+        relative = await self.repository.get_by_id_without_user(relative_id)
+        if not relative:
+            return []
+
+        context = relative.context or {}
+        stories = []
+        for key, value in context.items():
+            if key == 'interview_messages':
+                continue
+            if isinstance(value, str):
+                stories.append({
+                    "key": key,
+                    "title": key,
+                    "text": value,
+                    "media": [],
+                    "created_at": None,
+                    "updated_at": None,
+                })
+            elif isinstance(value, dict) and 'text' in value:
+                stories.append({
+                    "key": key,
+                    "title": key,
+                    "text": value["text"],
+                    "media": value.get("media", []),
+                    "created_at": value.get("created_at"),
+                    "updated_at": value.get("updated_at"),
+                })
+        return stories
+
+    @log_service_operation
     async def get_stories_count(self, relative_id: int) -> int:
         """Получить количество историй родственника"""
         relative = await self.repository.get_by_id_without_user(relative_id)

@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-"""AI сервис для работы с семейным деревом через GPT-4"""
+"""AI сервис для работы с семейным деревом через OpenRouter API"""
 
-from typing import AsyncGenerator, List, Dict, Any
+import logging
+from typing import AsyncGenerator, List, Dict, Any, Optional
 from openai import AsyncOpenAI
 import json
 
@@ -21,20 +22,55 @@ from src.ai.executor import TreeActionExecutor
 from src.ai.validator import ActionValidator
 from src.ai.tool_definitions import TOOL_DEFINITIONS
 
+logger = logging.getLogger(__name__)
+
+
+async def _save_ai_usage(
+    user_id: Optional[int],
+    model: str,
+    prompt_tokens: int,
+    completion_tokens: int,
+    total_tokens: int,
+    endpoint_type: str,
+    error_message: Optional[str] = None,
+) -> None:
+    """Сохранить лог использования AI в отдельной сессии (не зависит от транзакции роутера)"""
+    try:
+        from src.database.client import async_session
+        from src.admin.models import AIUsageLogModel
+
+        async with async_session() as session:
+            log_entry = AIUsageLogModel(
+                user_id=user_id,
+                model=model,
+                prompt_tokens=prompt_tokens,
+                completion_tokens=completion_tokens,
+                total_tokens=total_tokens,
+                endpoint_type=endpoint_type,
+                error_message=error_message[:512] if error_message else None,
+            )
+            session.add(log_entry)
+            await session.commit()
+    except Exception as e:
+        logger.error(f"Ошибка сохранения AI usage: {e}")
+
 
 class AIService:
-    """Сервис для взаимодействия с GPT-4 и управления семейным деревом"""
+    """Сервис для взаимодействия с AI через OpenRouter и управления семейным деревом"""
 
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        # Используем gpt-4o-mini для лучшего следования инструкциям
-        self.model = "gpt-4o-mini"  # Можно изменить на gpt-4o для еще лучшего качества
+        self.client = AsyncOpenAI(
+            api_key=settings.openrouter_api_key,
+            base_url="https://openrouter.ai/api/v1",
+        )
+        self.model = "openai/gpt-4o-mini"
 
     # ==================== ГЕНЕРАЦИЯ ДЕРЕВА ИЗ ТЕКСТА ====================
 
     async def generate_tree_stream(
         self,
-        request: AIGenerateRequestSchema
+        request: AIGenerateRequestSchema,
+        user_id: int | None = None,
     ) -> AsyncGenerator[str, None]:
         """
         Генерация семейного дерева из текстового описания (стриминг)
@@ -53,16 +89,31 @@ class AIService:
                 ],
                 temperature=0.8,
                 max_tokens=3000,
-                stream=True
+                stream=True,
+                stream_options={"include_usage": True},
             )
 
             # Собираем полный ответ
             full_response = ""
+            usage_data = None
             async for chunk in response:
-                if chunk.choices[0].delta.content:
+                if chunk.choices and chunk.choices[0].delta.content:
                     content = chunk.choices[0].delta.content
                     full_response += content
                     yield format_sse({"type": "text", "content": content})
+                if hasattr(chunk, 'usage') and chunk.usage:
+                    usage_data = chunk.usage
+
+            # Сохраняем usage
+            if usage_data:
+                await _save_ai_usage(
+                    user_id=user_id,
+                    model=self.model,
+                    prompt_tokens=usage_data.prompt_tokens or 0,
+                    completion_tokens=usage_data.completion_tokens or 0,
+                    total_tokens=usage_data.total_tokens or 0,
+                    endpoint_type="tree_generation",
+                )
 
             yield format_sse({"type": "status", "content": "Обрабатываю результат..."})
 
@@ -82,6 +133,11 @@ class AIService:
             yield format_sse({"type": "done", "content": ""})
 
         except Exception as e:
+            await _save_ai_usage(
+                user_id=user_id, model=self.model,
+                prompt_tokens=0, completion_tokens=0, total_tokens=0,
+                endpoint_type="tree_generation", error_message=str(e),
+            )
             yield format_sse({
                 "type": "error",
                 "content": f"Ошибка ИИ: {str(e)}"
@@ -122,7 +178,7 @@ class AIService:
         MAX_TURNS = 10
         turn_count = 0
 
-        model_to_use = "gpt-4o" if (mode == "smart") else self.model
+        model_to_use = "openai/gpt-4o" if (mode == "smart") else self.model
 
         while turn_count < MAX_TURNS:
             turn_count += 1
@@ -135,14 +191,18 @@ class AIService:
                     max_tokens=2000,
                     stream=True,
                     tools=TOOL_DEFINITIONS,
-                    tool_choice="auto"
+                    tool_choice="auto",
+                    stream_options={"include_usage": True},
                 )
 
                 tool_calls_buffer = {}
                 final_content = ""
                 has_tool_calls = False
+                usage_data = None
 
                 async for chunk in response:
+                    if hasattr(chunk, 'usage') and chunk.usage:
+                        usage_data = chunk.usage
                     if not chunk.choices:
                         continue
 
@@ -189,6 +249,17 @@ class AIService:
                 
                 messages.append(assistant_msg)
 
+                # Сохраняем usage для каждого вызова API
+                if usage_data:
+                    await _save_ai_usage(
+                        user_id=user_id,
+                        model=model_to_use,
+                        prompt_tokens=usage_data.prompt_tokens or 0,
+                        completion_tokens=usage_data.completion_tokens or 0,
+                        total_tokens=usage_data.total_tokens or 0,
+                        endpoint_type="ai_assistant",
+                    )
+
                 # Если нет вызовов инструментов, значит ИИ закончил мысль -> выходим из цикла
                 if not has_tool_calls:
                     break
@@ -232,23 +303,27 @@ class AIService:
                                 "message": "Ожидает подтверждения пользователя"
                             }
                         else:
-                            result = {"success": False, "error": "Validation failed"}
-                            if validation['valid']:
-                                result = await executor.execute_action(action_for_frontend)
-                        
-                        action_for_frontend['result'] = result
-                        
+                            # Выполняем действие — warnings не блокируют выполнение
+                            result = await executor.execute_action(action_for_frontend)
+
+                        # Для фронтенда — включаем warnings в карточку
+                        frontend_result = {**result}
+                        if validation['warnings']:
+                            frontend_result['warnings'] = validation['warnings']
+                        action_for_frontend['result'] = frontend_result
+
                         # Отправляем карточку на фронт
                         yield format_sse({
                             "type": "action",
                             "content": json.dumps(action_for_frontend, ensure_ascii=False)
                         })
 
-                        # Добавляем результат в историю сообщений (для следующего шага цикла)
+                        # Для AI модели — только success/error, без warnings (они сбивают модель)
+                        ai_result = {k: v for k, v in result.items() if k != 'warnings'}
                         messages.append({
                             "role": "tool",
                             "tool_call_id": call_id,
-                            "content": json.dumps(result, ensure_ascii=False)
+                            "content": json.dumps(ai_result, ensure_ascii=False)
                         })
 
                     except Exception as e:

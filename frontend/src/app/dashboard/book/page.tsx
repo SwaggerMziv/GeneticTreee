@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Checkbox } from 'antd'
 import {
   BookOpen,
@@ -14,6 +14,7 @@ import {
   Moon,
   Palette,
   Loader2,
+  XCircle,
 } from 'lucide-react'
 import {
   streamGenerateBook,
@@ -22,25 +23,94 @@ import {
   BookTheme,
 } from '@/lib/api/book'
 import { useUser } from '@/components/providers/UserProvider'
+import UpgradePrompt from '@/components/subscription/UpgradePrompt'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 
 type GenerationStatus = 'idle' | 'generating' | 'completed' | 'error'
 
+const BOOK_SESSION_KEY = 'book_generation_state'
+
+interface BookSessionState {
+  status: GenerationStatus
+  progress: number
+  statusMessage: string
+  currentChapter: string | null
+  pdfBase64: string | null
+  pdfFilename: string
+  errorMessage: string | null
+}
+
+function saveBookSession(state: BookSessionState) {
+  try {
+    sessionStorage.setItem(BOOK_SESSION_KEY, JSON.stringify(state))
+  } catch {
+    // sessionStorage full or unavailable — ignore
+  }
+}
+
+function loadBookSession(): BookSessionState | null {
+  try {
+    const raw = sessionStorage.getItem(BOOK_SESSION_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch {
+    // ignore
+  }
+  return null
+}
+
+function clearBookSession() {
+  sessionStorage.removeItem(BOOK_SESSION_KEY)
+}
+
 export default function BookGeneratorPage() {
-  const { user, stats } = useUser()
-  const [generationStatus, setGenerationStatus] = useState<GenerationStatus>('idle')
-  const [progress, setProgress] = useState(0)
-  const [statusMessage, setStatusMessage] = useState('')
+  const { user, stats, usage } = useUser()
+
+  // Restore from session on mount
+  const restored = useRef(false)
+  const [generationStatus, setGenerationStatus] = useState<GenerationStatus>(() => {
+    if (typeof window === 'undefined') return 'idle'
+    const saved = loadBookSession()
+    if (saved) {
+      if (saved.status === 'completed' && saved.pdfBase64) return 'completed'
+      if (saved.status === 'generating') return 'error' // generation interrupted
+    }
+    return 'idle'
+  })
+
+  const [progress, setProgress] = useState(() => {
+    if (typeof window === 'undefined') return 0
+    const saved = loadBookSession()
+    return saved?.progress ?? 0
+  })
+  const [statusMessage, setStatusMessage] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    const saved = loadBookSession()
+    if (saved?.status === 'generating') return 'Генерация была прервана. Попробуйте снова.'
+    if (saved?.status === 'completed') return 'Книга успешно сгенерирована!'
+    return saved?.statusMessage ?? ''
+  })
   const [currentChapter, setCurrentChapter] = useState<string | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    const saved = loadBookSession()
+    if (saved?.status === 'generating') return 'Генерация была прервана при переходе со страницы'
+    return saved?.errorMessage ?? null
+  })
 
   // PDF result
-  const [pdfBase64, setPdfBase64] = useState<string | null>(null)
-  const [pdfFilename, setPdfFilename] = useState<string>('family_book.pdf')
+  const [pdfBase64, setPdfBase64] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null
+    const saved = loadBookSession()
+    return saved?.pdfBase64 ?? null
+  })
+  const [pdfFilename, setPdfFilename] = useState<string>(() => {
+    if (typeof window === 'undefined') return 'family_book.pdf'
+    const saved = loadBookSession()
+    return saved?.pdfFilename ?? 'family_book.pdf'
+  })
 
   // Book options
   const [bookStyle, setBookStyle] = useState<BookStyle>('classic')
@@ -53,11 +123,26 @@ export default function BookGeneratorPage() {
   // Abort controller for cancellation
   const abortControllerRef = useRef<AbortController | null>(null)
 
+  // Warn on page leave during generation
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (generationStatus === 'generating') {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [generationStatus])
+
   const handleGenerateBook = async () => {
     if (!stats || stats.total_relatives === 0) {
       toast.warning('Добавьте родственников для создания книги')
       return
     }
+
+    // Create AbortController
+    const controller = new AbortController()
+    abortControllerRef.current = controller
 
     setGenerationStatus('generating')
     setProgress(0)
@@ -66,16 +151,31 @@ export default function BookGeneratorPage() {
     setErrorMessage(null)
     setPdfBase64(null)
 
+    saveBookSession({
+      status: 'generating',
+      progress: 0,
+      statusMessage: 'Начинаем генерацию...',
+      currentChapter: null,
+      pdfBase64: null,
+      pdfFilename: 'family_book.pdf',
+      errorMessage: null,
+    })
+
+    let resultPdfBase64: string | null = null
+
     try {
-      const generator = streamGenerateBook({
-        style: bookStyle,
-        theme: bookTheme,
-        custom_style_description: bookStyle === 'custom' ? customStyleDescription : undefined,
-        include_photos: includePhotos,
-        include_stories: includeStories,
-        include_timeline: includeTimeline,
-        language: 'ru',
-      })
+      const generator = streamGenerateBook(
+        {
+          style: bookStyle,
+          theme: bookTheme,
+          custom_style_description: bookStyle === 'custom' ? customStyleDescription : undefined,
+          include_photos: includePhotos,
+          include_stories: includeStories,
+          include_timeline: includeTimeline,
+          language: 'ru',
+        },
+        controller.signal
+      )
 
       for await (const chunk of generator) {
         if (chunk.type === 'progress') {
@@ -84,32 +184,71 @@ export default function BookGeneratorPage() {
           if (chunk.current_chapter) {
             setCurrentChapter(chunk.current_chapter)
           }
+          saveBookSession({
+            status: 'generating',
+            progress: chunk.progress,
+            statusMessage: chunk.message,
+            currentChapter: chunk.current_chapter || null,
+            pdfBase64: null,
+            pdfFilename: 'family_book.pdf',
+            errorMessage: null,
+          })
         } else if (chunk.type === 'result') {
+          resultPdfBase64 = chunk.pdf_base64
           setPdfBase64(chunk.pdf_base64)
           setPdfFilename(chunk.filename)
           setGenerationStatus('completed')
           setStatusMessage('Книга успешно сгенерирована!')
           toast.success('Книга готова к скачиванию!')
+          saveBookSession({
+            status: 'completed',
+            progress: 100,
+            statusMessage: 'Книга успешно сгенерирована!',
+            currentChapter: null,
+            pdfBase64: chunk.pdf_base64,
+            pdfFilename: chunk.filename,
+            errorMessage: null,
+          })
         } else if (chunk.type === 'error') {
           setErrorMessage(chunk.message)
           setGenerationStatus('error')
           toast.error(chunk.message)
+          saveBookSession({
+            status: 'error',
+            progress: 0,
+            statusMessage: '',
+            currentChapter: null,
+            pdfBase64: null,
+            pdfFilename: 'family_book.pdf',
+            errorMessage: chunk.message,
+          })
         } else if (chunk.type === 'done') {
-          if (generationStatus === 'generating') {
-            // If we're still generating when done arrives, something went wrong
-            if (!pdfBase64) {
-              setGenerationStatus('error')
-              setErrorMessage('Генерация завершилась без результата')
-            }
+          if (!resultPdfBase64) {
+            setGenerationStatus('error')
+            setErrorMessage('Генерация завершилась без результата')
           }
         }
       }
     } catch (error) {
+      if (controller.signal.aborted) {
+        setGenerationStatus('idle')
+        setProgress(0)
+        setStatusMessage('')
+        clearBookSession()
+        toast.info('Генерация отменена')
+        return
+      }
       console.error('Book generation error:', error)
       setGenerationStatus('error')
       setErrorMessage(error instanceof Error ? error.message : 'Ошибка генерации')
       toast.error('Произошла ошибка при генерации книги')
+    } finally {
+      abortControllerRef.current = null
     }
+  }
+
+  const handleCancelGeneration = () => {
+    abortControllerRef.current?.abort()
   }
 
   const handleDownloadPdf = () => {
@@ -126,6 +265,7 @@ export default function BookGeneratorPage() {
     setCurrentChapter(null)
     setErrorMessage(null)
     setPdfBase64(null)
+    clearBookSession()
   }
 
   const bookStyles = [
@@ -135,8 +275,17 @@ export default function BookGeneratorPage() {
     { value: 'custom' as BookStyle, label: 'Свой стиль', description: 'Опишите желаемый стиль повествования' },
   ]
 
+  const bookQuota = usage?.quotas.find(q => q.resource === 'book_generations')
+  const bookBlocked = bookQuota && !bookQuota.is_unlimited && bookQuota.limit === 0
+
   return (
-    <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      {/* Quota block for FREE users */}
+      {bookBlocked && (
+        <div className="mb-6">
+          <UpgradePrompt feature="PDF-книги" message="Генерация PDF-книг доступна на тарифе Pro и выше" />
+        </div>
+      )}
       {/* Page Header */}
       <div className="mb-12">
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted border border-border shadow-sm mb-4">
@@ -145,7 +294,7 @@ export default function BookGeneratorPage() {
             AI Генерация
           </span>
         </div>
-        <h1 className="font-serif text-4xl lg:text-5xl font-bold mb-4">
+        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
           Семейная <span className="gradient-text">книга</span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl">
@@ -209,7 +358,7 @@ export default function BookGeneratorPage() {
                 <Palette className="w-5 h-5 text-azure" />
                 Тема оформления
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div
                   onClick={() => generationStatus === 'idle' && setBookTheme('light')}
                   className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
@@ -313,12 +462,25 @@ export default function BookGeneratorPage() {
                   )}
                 </div>
 
+                {generationStatus === 'generating' && (
+                  <div className="mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelGeneration}
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Отменить генерацию
+                    </Button>
+                  </div>
+                )}
+
                 {generationStatus === 'completed' && pdfBase64 && (
                   <div className="mt-6 p-4 rounded-xl bg-green-900/20 border border-green-700/30">
                     <p className="text-muted-foreground mb-4">
                       Ваша семейная книга готова! Нажмите кнопку ниже, чтобы скачать PDF.
                     </p>
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-3">
                       <Button
                         onClick={handleDownloadPdf}
                         className="shadow-glow-azure"

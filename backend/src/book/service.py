@@ -6,11 +6,13 @@ from typing import AsyncGenerator, List, Dict, Any, Optional
 from openai import AsyncOpenAI
 import json
 import base64
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
 from src.config import settings
 from src.ai.utils import format_sse, extract_json_from_response
+from src.ai.service import _save_ai_usage
 from src.book.schemas import BookGenerateRequestSchema, BookStyle
 from src.book.prompts import (
     BOOK_OUTLINE_PROMPT,
@@ -30,8 +32,11 @@ class BookService:
     """Сервис для генерации семейных книг с использованием AI"""
 
     def __init__(self):
-        self.client = AsyncOpenAI(api_key=settings.openai_api_key)
-        self.model = "gpt-4o"  # Используем более мощную модель для творческого письма
+        self.client = AsyncOpenAI(
+            api_key=settings.openrouter_api_key,
+            base_url="https://openrouter.ai/api/v1",
+        )
+        self.model = "openai/gpt-4o"
 
     def _get_style_instructions(self, style: BookStyle, custom_description: Optional[str] = None) -> str:
         """Получение инструкций стиля для промптов"""
@@ -142,12 +147,30 @@ class BookService:
         request: BookGenerateRequestSchema,
         family_service: FamilyRelationService,
         relationship_service: FamilyRelationshipService,
+        s3_manager=None,
+        session=None,
     ) -> AsyncGenerator[str, None]:
         """
         Генерация семейной книги с потоковыми обновлениями прогресса.
         Возвращает SSE события с прогрессом и в конце PDF в base64.
         """
+        book_record_id = None
         try:
+            # Создаём запись трекинга если есть сессия
+            if session:
+                try:
+                    from src.admin.models import BookGenerationModel
+                    book_record = BookGenerationModel(
+                        user_id=user_id,
+                        status="generating",
+                        filename=f"family_book_{user_id}.pdf",
+                    )
+                    session.add(book_record)
+                    await session.flush()
+                    book_record_id = book_record.id
+                except Exception as e:
+                    logger.error(f"Ошибка создания записи книги: {e}")
+
             # Этап 1: Загрузка данных семьи (0-10%)
             yield format_sse({
                 "type": "progress",
@@ -191,7 +214,7 @@ class BookService:
                 "message": "Создание структуры книги..."
             })
 
-            outline = await self._generate_outline(family_context, request.language, request.style, style_instructions)
+            outline = await self._generate_outline(family_context, request.language, request.style, style_instructions, user_id=user_id)
 
             chapters_count = len(outline.get('chapters', []))
             yield format_sse({
@@ -210,7 +233,7 @@ class BookService:
                     "progress": 27,
                     "message": "Создание хронологии событий..."
                 })
-                timeline = await self._generate_timeline(family_context, request.language)
+                timeline = await self._generate_timeline(family_context, request.language, user_id=user_id)
                 yield format_sse({
                     "type": "progress",
                     "stage": "generating_timeline",
@@ -244,6 +267,7 @@ class BookService:
                     style_instructions,
                     photo_catalog,
                     used_photo_keys,
+                    user_id=user_id,
                 )
 
                 # Собираем фото-ключи, которые AI вставил в эту главу
@@ -300,6 +324,7 @@ class BookService:
                 request.language,
                 request.style,
                 style_instructions,
+                user_id=user_id,
             )
 
             yield format_sse({
@@ -349,17 +374,65 @@ class BookService:
                 "message": "Книга готова!"
             })
 
+            # Загрузка в S3 если доступен
+            s3_url = None
+            s3_key = None
+            filename = f"family_book_{user_id}.pdf"
+            if s3_manager:
+                try:
+                    s3_key, s3_url, _ = await s3_manager.upload_bytes(
+                        pdf_bytes, filename, 'application/pdf'
+                    )
+                except Exception as e:
+                    logger.error(f"Ошибка загрузки книги в S3: {e}")
+
+            # Обновляем запись книги
+            if session and book_record_id:
+                try:
+                    from src.admin.models import BookGenerationModel
+                    from sqlalchemy import select
+                    result = await session.execute(
+                        select(BookGenerationModel).where(BookGenerationModel.id == book_record_id)
+                    )
+                    book_record = result.scalar_one_or_none()
+                    if book_record:
+                        book_record.status = "completed"
+                        book_record.s3_key = s3_key
+                        book_record.s3_url = s3_url
+                        book_record.file_size_bytes = len(pdf_bytes)
+                        book_record.completed_at = datetime.now(timezone.utc)
+                        await session.flush()
+                except Exception as e:
+                    logger.error(f"Ошибка обновления записи книги: {e}")
+
             # Отправка PDF в base64
             pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
             yield format_sse({
                 "type": "result",
                 "pdf_base64": pdf_base64,
-                "filename": f"family_book_{user_id}.pdf"
+                "filename": filename,
+                **({"s3_url": s3_url} if s3_url else {}),
             })
 
             yield format_sse({"type": "done"})
 
         except Exception as e:
+            # Обновляем запись при ошибке
+            if session and book_record_id:
+                try:
+                    from src.admin.models import BookGenerationModel
+                    from sqlalchemy import select
+                    result = await session.execute(
+                        select(BookGenerationModel).where(BookGenerationModel.id == book_record_id)
+                    )
+                    book_record = result.scalar_one_or_none()
+                    if book_record:
+                        book_record.status = "failed"
+                        book_record.error_message = str(e)[:512]
+                        await session.flush()
+                except Exception as inner_e:
+                    logger.error(f"Ошибка обновления записи при ошибке: {inner_e}")
+
             yield format_sse({
                 "type": "error",
                 "message": f"Ошибка генерации: {str(e)}"
@@ -411,7 +484,7 @@ class BookService:
 
         return "\n".join(lines)
 
-    async def _generate_outline(self, family_context: str, language: str, style: BookStyle, style_instructions: str) -> Dict[str, Any]:
+    async def _generate_outline(self, family_context: str, language: str, style: BookStyle, style_instructions: str, user_id: int | None = None) -> Dict[str, Any]:
         """Генерация структуры книги через AI"""
         prompt = BOOK_OUTLINE_PROMPT.format(
             family_context=family_context,
@@ -428,6 +501,9 @@ class BookService:
             temperature=temperature,
             max_tokens=2500,
         )
+
+        if response.usage:
+            await _save_ai_usage(user_id, self.model, response.usage.prompt_tokens or 0, response.usage.completion_tokens or 0, response.usage.total_tokens or 0, "book")
 
         try:
             return extract_json_from_response(response.choices[0].message.content)
@@ -455,7 +531,7 @@ class BookService:
                 "conclusion_theme": "Наследие и будущее семьи"
             }
 
-    async def _generate_timeline(self, family_context: str, language: str) -> List[Dict]:
+    async def _generate_timeline(self, family_context: str, language: str, user_id: int | None = None) -> List[Dict]:
         """Генерация хронологии семейных событий"""
         prompt = TIMELINE_PROMPT.format(
             family_context=family_context,
@@ -469,6 +545,9 @@ class BookService:
             temperature=0.3,
             max_tokens=1500,
         )
+
+        if response.usage:
+            await _save_ai_usage(user_id, self.model, response.usage.prompt_tokens or 0, response.usage.completion_tokens or 0, response.usage.total_tokens or 0, "book")
 
         try:
             result = extract_json_from_response(response.choices[0].message.content)
@@ -490,6 +569,7 @@ class BookService:
         style_instructions: str,
         photo_catalog: Dict,
         used_photo_keys: set = None,
+        user_id: int | None = None,
     ) -> str:
         """Написание одной главы"""
         if used_photo_keys is None:
@@ -560,6 +640,9 @@ class BookService:
             max_tokens=2000,
         )
 
+        if response.usage:
+            await _save_ai_usage(user_id, self.model, response.usage.prompt_tokens or 0, response.usage.completion_tokens or 0, response.usage.total_tokens or 0, "book")
+
         chapter_text = response.choices[0].message.content
 
         # Логирование маркеров фото в ответе AI
@@ -581,6 +664,7 @@ class BookService:
         language: str,
         style: BookStyle,
         style_instructions: str,
+        user_id: int | None = None,
     ) -> str:
         """Написание заключения книги"""
         temperature = self._get_temperature(style)
@@ -599,5 +683,8 @@ class BookService:
             temperature=temperature,
             max_tokens=600,
         )
+
+        if response.usage:
+            await _save_ai_usage(user_id, self.model, response.usage.prompt_tokens or 0, response.usage.completion_tokens or 0, response.usage.total_tokens or 0, "book")
 
         return response.choices[0].message.content

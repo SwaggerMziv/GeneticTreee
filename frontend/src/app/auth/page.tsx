@@ -11,23 +11,18 @@ import TelegramLoginButton from '@/components/auth/TelegramLoginButton'
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>('login')
 
-  const handleRegisterSuccess = () => {
-    // Switch to login tab after successful registration
-    setActiveTab('login')
-  }
-
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12 relative overflow-hidden">
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-1/4 w-96 h-96 bg-azure/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-1/4 w-96 h-96 bg-azure-dark/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-azure/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-azure-dark/10 rounded-full blur-3xl" />
       </div>
 
       {/* Back to Home */}
       <Link
         href="/"
-        className="absolute top-6 left-6 flex items-center gap-2 text-muted-foreground hover:text-azure transition-colors group"
+        className="absolute top-4 left-4 sm:top-6 sm:left-6 flex items-center gap-2 text-muted-foreground hover:text-azure transition-colors group"
       >
         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
         <span className="text-sm font-medium">На главную</span>
@@ -41,17 +36,17 @@ export default function AuthPage() {
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-azure to-azure-dark flex items-center justify-center transition-transform group-hover:scale-105">
               <TreePine className="w-7 h-7 text-white" strokeWidth={2.5} />
             </div>
-            <span className="font-serif text-3xl font-bold">
+            <span className="font-serif text-2xl sm:text-3xl font-bold">
               <span className="text-foreground">Genetic</span><span className="gradient-text">Tree</span>
             </span>
           </Link>
         </div>
 
         {/* Card */}
-        <div className="rounded-3xl bg-card border border-border p-8 shadow-candy">
+        <div className="rounded-3xl bg-card border border-border p-5 sm:p-8 shadow-candy">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="font-serif text-3xl font-bold mb-2">
+            <h1 className="font-serif text-2xl sm:text-3xl font-bold mb-2">
               {activeTab === 'login' ? 'Добро пожаловать' : 'Создайте аккаунт'}
             </h1>
             <p className="text-muted-foreground text-base">
@@ -71,7 +66,7 @@ export default function AuthPage() {
               <LoginForm />
             </TabsContent>
             <TabsContent value="register">
-              <RegisterForm onSuccess={handleRegisterSuccess} />
+              <RegisterForm />
             </TabsContent>
           </Tabs>
 

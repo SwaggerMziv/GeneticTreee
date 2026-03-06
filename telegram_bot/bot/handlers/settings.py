@@ -20,7 +20,7 @@ async def cmd_settings(message: Message):
     if not user_data:
         await message.answer(
             "Вы ещё не активированы. Используйте ссылку-приглашение от родственника.",
-            reply_markup=get_main_menu_keyboard(),
+            reply_markup=get_main_menu_keyboard(message.from_user.id),
         )
         return
 
@@ -60,9 +60,9 @@ async def noop_callback(callback: CallbackQuery):
 
 @router.callback_query(F.data == "start_interview_from_broadcast")
 async def start_interview_from_broadcast(callback: CallbackQuery):
-    """Handle interview start from broadcast message."""
-    await callback.answer("Отправьте /interview чтобы начать!")
+    """Handle interview start from broadcast message — redirect to mini app."""
+    await callback.answer("Откройте приложение через меню!")
     await callback.message.answer(
-        "Отлично! Нажмите кнопку ниже или отправьте /interview чтобы начать интервью.",
-        reply_markup=get_main_menu_keyboard(),
+        "Нажмите «🌳 Открыть приложение» в меню, чтобы начать интервью.",
+        reply_markup=get_main_menu_keyboard(callback.from_user.id),
     )

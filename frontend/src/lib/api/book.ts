@@ -42,7 +42,8 @@ export type BookStreamChunk = BookProgressChunk | BookResultChunk | BookErrorChu
 
 // Streaming API for book generation
 export async function* streamGenerateBook(
-  options: BookGenerateRequest = {}
+  options: BookGenerateRequest = {},
+  signal?: AbortSignal
 ): AsyncGenerator<BookStreamChunk> {
   const token = getAccessToken()
 
@@ -67,6 +68,7 @@ export async function* streamGenerateBook(
     },
     credentials: 'include',
     body: JSON.stringify(payload),
+    signal,
   })
 
   if (!response.ok) {

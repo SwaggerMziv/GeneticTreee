@@ -14,12 +14,17 @@ class Settings(BaseSettings):
     endpoint_url: str = Field(..., env='ENDPOINT_URL')
     region_name: str = Field(..., env='REGION_NAME')
 
-    openai_api_key: str = Field(..., env='OPENAI_API_KEY')
+    openrouter_api_key: str = Field(..., env='OPENROUTER_API_KEY')
     
     jwt_secret_key: str = Field(..., env='JWT_SECRET_KEY')
     telegram_bot_token: str | None = Field(default=None, env='TELEGRAM_BOT_TOKEN')
     telegram_bot_username: str = Field(default="genetic_tree_bot", env='TELEGRAM_BOT_USERNAME')
     allow_origins: str | None = Field(default=None, env='ALLOW_ORIGINS')
+
+    # ЮKassa
+    yookassa_shop_id: str | None = Field(default=None, env='YOOKASSA_SHOP_ID')
+    yookassa_secret_key: str | None = Field(default=None, env='YOOKASSA_SECRET_KEY')
+    yookassa_webhook_secret: str | None = Field(default=None, env='YOOKASSA_WEBHOOK_SECRET')
 
     model_config = SettingsConfigDict(
         env_file=".env",

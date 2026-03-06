@@ -17,6 +17,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useUser } from '@/components/providers/UserProvider'
 import { toast } from 'sonner'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 interface Story {
   title: string
@@ -28,6 +29,7 @@ interface Story {
 
 const StoryCard = ({ story }: { story: Story }) => {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const isMobile = useIsMobile()
   const photos = story.media?.filter((m) => m.type === 'image') || []
 
   return (
@@ -94,7 +96,7 @@ const StoryCard = ({ story }: { story: Story }) => {
         open={isModalOpen}
         onCancel={(e) => { e.stopPropagation(); setIsModalOpen(false); }}
         footer={null}
-        width={700}
+        width={isMobile ? '95vw' : 700}
         centered
         styles={{
           content: {
@@ -108,7 +110,7 @@ const StoryCard = ({ story }: { story: Story }) => {
         }}
         closeIcon={<span className="text-muted-foreground hover:text-foreground transition-colors">&times;</span>}
       >
-        <div className="p-8">
+        <div className="p-4 sm:p-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 rounded-xl bg-gradient-to-br from-azure to-azure-dark">
               <BookOpen className="w-6 h-6 text-white" />
@@ -125,7 +127,7 @@ const StoryCard = ({ story }: { story: Story }) => {
           {/* Photo Gallery */}
           {photos.length > 0 && (
             <div className="mb-6">
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {photos.map((photo, idx) => (
                   <div key={idx} className="aspect-square rounded-lg overflow-hidden relative">
                     <Image
@@ -255,7 +257,7 @@ export default function StoriesPage() {
             Семейная лента
           </span>
         </div>
-        <h1 className="font-serif text-4xl lg:text-5xl font-bold mb-4">
+        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
           Семейные <span className="gradient-text">истории</span>
         </h1>
         <p className="text-lg text-muted-foreground max-w-2xl">
@@ -265,7 +267,7 @@ export default function StoriesPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-8">
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-[160px] sm:min-w-[200px]">
           <Input
             placeholder="Поиск по историям..."
             prefix={<Search className="w-4 h-4 text-muted-foreground" />}
@@ -273,7 +275,7 @@ export default function StoriesPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="min-w-[250px]">
+        <div className="min-w-[180px] sm:min-w-[250px]">
           <Select
             placeholder="Фильтр по родственнику"
             allowClear

@@ -7,11 +7,14 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from aiogram.types import BotCommand
+import uvicorn
+from aiogram.types import BotCommand, MenuButtonWebApp, WebAppInfo
 
 from bot.instance import bot, dp
 from bot.handlers import setup_routers
 from bot.scheduler import BroadcastScheduler
+from webapp.server import create_webapp
+from webapp.config import webapp_config
 
 # Configure logging
 logging.basicConfig(
@@ -25,13 +28,24 @@ async def set_bot_commands():
     """Set bot commands for menu."""
     commands = [
         BotCommand(command="start", description="Начать / Перезапустить бота"),
-        BotCommand(command="interview", description="Начать или продолжить интервью"),
         BotCommand(command="stats", description="Статистика ваших историй"),
         BotCommand(command="settings", description="Настройки уведомлений"),
         BotCommand(command="help", description="Помощь и инструкции"),
-        BotCommand(command="stop", description="Остановить интервью"),
     ]
     await bot.set_my_commands(commands)
+
+
+async def run_webapp():
+    """Запуск FastAPI сервера для Mini App."""
+    webapp = create_webapp()
+    uvi_config = uvicorn.Config(
+        webapp,
+        host="0.0.0.0",
+        port=webapp_config.WEBAPP_PORT,
+        log_level="info",
+    )
+    server = uvicorn.Server(uvi_config)
+    await server.serve()
 
 
 async def main():
@@ -44,6 +58,19 @@ async def main():
 
     # Set bot commands
     await set_bot_commands()
+
+    # Set Mini App menu button (left of input field)
+    if webapp_config.WEBAPP_URL:
+        try:
+            await bot.set_chat_menu_button(
+                menu_button=MenuButtonWebApp(
+                    text="Приложение",
+                    web_app=WebAppInfo(url=webapp_config.WEBAPP_URL),
+                )
+            )
+            logger.info(f"Menu button set: {webapp_config.WEBAPP_URL}")
+        except Exception as e:
+            logger.warning(f"Failed to set menu button: {e}")
 
     # Check and reset webhook before starting polling
     try:
@@ -66,8 +93,11 @@ async def main():
     await scheduler.start()
 
     try:
-        logger.info("Starting polling...")
-        await dp.start_polling(bot, drop_pending_updates=True)
+        logger.info("Starting polling + WebApp server...")
+        await asyncio.gather(
+            dp.start_polling(bot, drop_pending_updates=True),
+            run_webapp(),
+        )
     finally:
         await scheduler.stop()
         await bot.session.close()

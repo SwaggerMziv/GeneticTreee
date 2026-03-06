@@ -38,6 +38,7 @@ import type { FamilyRelative, Gender, RelationshipType } from '@/types'
 interface SelfFormData {
   first_name: string
   last_name: string
+  middle_name: string
   birth_date: string
   gender: Gender
 }
@@ -46,6 +47,7 @@ interface FamilyMember {
   id: string
   first_name: string
   last_name: string
+  middle_name: string
   relationLabel: string
   relationshipType: RelationshipType
   fromIsSelf: boolean
@@ -254,6 +256,15 @@ function AboutYouStep({
       </div>
 
       <div className="space-y-1.5">
+        <label className="text-sm font-medium">Отчество</label>
+        <Input
+          placeholder="Иванович"
+          value={form.middle_name}
+          onChange={(e) => setForm((f) => ({ ...f, middle_name: e.target.value }))}
+        />
+      </div>
+
+      <div className="space-y-1.5">
         <label className="text-sm font-medium">Дата рождения</label>
         <Input
           type="date"
@@ -321,6 +332,7 @@ function YourFamilyStep({
         id: `extra_${Date.now()}`,
         first_name: '',
         last_name: '',
+        middle_name: '',
         relationLabel: option.label,
         relationshipType: option.type,
         fromIsSelf: option.fromIsSelf,
@@ -344,7 +356,7 @@ function YourFamilyStep({
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold">{member.relationLabel}</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Input
               placeholder="Имя"
               value={member.first_name}
@@ -354,6 +366,11 @@ function YourFamilyStep({
               placeholder="Фамилия"
               value={member.last_name}
               onChange={(e) => updateMember(member.id, 'last_name', e.target.value)}
+            />
+            <Input
+              placeholder="Отчество"
+              value={member.middle_name}
+              onChange={(e) => updateMember(member.id, 'middle_name', e.target.value)}
             />
           </div>
         </div>
@@ -372,7 +389,7 @@ function YourFamilyStep({
               <Trash2 className="w-3.5 h-3.5" />
             </Button>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Input
               placeholder="Имя"
               value={member.first_name}
@@ -382,6 +399,11 @@ function YourFamilyStep({
               placeholder="Фамилия"
               value={member.last_name}
               onChange={(e) => updateMember(member.id, 'last_name', e.target.value)}
+            />
+            <Input
+              placeholder="Отчество"
+              value={member.middle_name}
+              onChange={(e) => updateMember(member.id, 'middle_name', e.target.value)}
             />
           </div>
         </div>
@@ -542,6 +564,7 @@ export default function OnboardingWizard() {
   const [selfForm, setSelfForm] = useState<SelfFormData>({
     first_name: '',
     last_name: '',
+    middle_name: '',
     birth_date: '',
     gender: 'male',
   })
@@ -552,6 +575,7 @@ export default function OnboardingWizard() {
       id: 'mom',
       first_name: '',
       last_name: '',
+      middle_name: '',
       relationLabel: 'Мама',
       relationshipType: 'mother',
       fromIsSelf: false,
@@ -561,6 +585,7 @@ export default function OnboardingWizard() {
       id: 'dad',
       first_name: '',
       last_name: '',
+      middle_name: '',
       relationLabel: 'Папа',
       relationshipType: 'father',
       fromIsSelf: false,
@@ -584,6 +609,7 @@ export default function OnboardingWizard() {
       const relative = await familyApi.createRelative(user.id, {
         first_name: selfForm.first_name.trim(),
         last_name: selfForm.last_name.trim(),
+        middle_name: selfForm.middle_name.trim() || undefined,
         birth_date: selfForm.birth_date || undefined,
         gender: selfForm.gender,
         generation: 0,
@@ -614,6 +640,7 @@ export default function OnboardingWizard() {
         const created = await familyApi.createRelative(user.id, {
           first_name: member.first_name.trim(),
           last_name: member.last_name.trim() || undefined,
+          middle_name: member.middle_name.trim() || undefined,
           gender: member.gender,
           generation:
             member.relationshipType === 'mother' || member.relationshipType === 'father'

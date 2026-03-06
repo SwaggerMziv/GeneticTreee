@@ -1,5 +1,8 @@
-from pydantic import BaseModel, Field, EmailStr
+import re
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from datetime import datetime, timezone
+
+PASSWORD_PATTERN = re.compile(r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?`~ ]+$')
 
 
 # Пользователь
@@ -8,6 +11,13 @@ class UserCreateSchema(BaseModel):
     telegram_id: str | None = Field(default=None)
     email: EmailStr | None = Field(default=None)
     password: str | None = Field(min_length=8, max_length=32)
+
+    @field_validator('password')
+    @classmethod
+    def password_must_be_ascii(cls, v: str | None) -> str | None:
+        if v is not None and not PASSWORD_PATTERN.match(v):
+            raise ValueError('Пароль может содержать только латинские буквы, цифры и спецсимволы')
+        return v
 
 class UserReadSchema(BaseModel):
     id: int
@@ -24,6 +34,13 @@ class UserUpdateSchema(BaseModel):
     password: str | None = Field(..., min_length=8, max_length=32)
     is_active: bool = Field(default=True)
 
+    @field_validator('password')
+    @classmethod
+    def password_must_be_ascii(cls, v: str | None) -> str | None:
+        if v is not None and not PASSWORD_PATTERN.match(v):
+            raise ValueError('Пароль может содержать только латинские буквы, цифры и спецсимволы')
+        return v
+
 class UserDeleteSchema(BaseModel):
     id: int
     is_active: bool = Field(default=False)
@@ -34,5 +51,6 @@ class UserOutputSchema(BaseModel):
     telegram_id: str | None = Field(default=None)
     email: EmailStr | None = Field(default=None)
     is_active: bool
+    is_superuser: bool = Field(default=False)
     created_at: datetime
     updated_at: datetime = Field(default=datetime.now(timezone.utc))

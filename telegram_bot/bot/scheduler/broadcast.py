@@ -4,10 +4,11 @@ import logging
 import random
 from datetime import datetime, timedelta
 from aiogram import Bot
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 from config import config, BROADCAST_QUESTIONS
 from services.storage import user_storage
+from webapp.config import webapp_config
 
 logger = logging.getLogger(__name__)
 
@@ -107,25 +108,34 @@ class BroadcastScheduler:
                     f"{greeting}{name_part}! 📬\n\n"
                     f"У меня есть для вас вопрос:\n\n"
                     f"💭 *{question}*\n\n"
-                    f"Нажмите кнопку ниже, чтобы поделиться историей!"
+                    f"Откройте приложение, чтобы поделиться историей!"
                 )
 
-                keyboard = InlineKeyboardMarkup(
-                    inline_keyboard=[
-                        [
-                            InlineKeyboardButton(
-                                text="📖 Рассказать историю",
-                                callback_data="start_interview_from_broadcast",
-                            )
-                        ],
-                        [
-                            InlineKeyboardButton(
-                                text="🔕 Отключить напоминания",
-                                callback_data="broadcast_toggle_False",
-                            )
-                        ],
-                    ]
-                )
+                inline_buttons = []
+
+                if webapp_config.WEBAPP_URL:
+                    inline_buttons.append([
+                        InlineKeyboardButton(
+                            text="🌳 Открыть приложение",
+                            web_app=WebAppInfo(url=webapp_config.WEBAPP_URL),
+                        )
+                    ])
+                else:
+                    inline_buttons.append([
+                        InlineKeyboardButton(
+                            text="📖 Рассказать историю",
+                            callback_data="start_interview_from_broadcast",
+                        )
+                    ])
+
+                inline_buttons.append([
+                    InlineKeyboardButton(
+                        text="🔕 Отключить напоминания",
+                        callback_data="broadcast_toggle_False",
+                    )
+                ])
+
+                keyboard = InlineKeyboardMarkup(inline_keyboard=inline_buttons)
 
                 await self.bot.send_message(
                     chat_id=user["telegram_id"],

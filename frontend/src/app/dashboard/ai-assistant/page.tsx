@@ -27,10 +27,14 @@ import {
 import { toast } from 'sonner'
 import { familyApi, relationshipApi } from '@/lib/api/family'
 import { useUser } from '@/components/providers/UserProvider'
+import UpgradePrompt from '@/components/subscription/UpgradePrompt'
 import {
   streamUnified,
   AIStreamChunk,
   ChatMessage,
+  getChatHistory,
+  saveChatHistory,
+  clearChatHistory,
 } from '@/lib/api/ai'
 
 const { TextArea } = Input
@@ -576,7 +580,7 @@ const MarkdownRenderer = ({ content }: { content: string }) => {
 
 // ==================== ОСНОВНОЙ КОМПОНЕНТ ====================
 export default function AIAssistantPage() {
-  const { user } = useUser()
+  const { user, usage } = useUser()
 
   // Состояние чата
   const [prompt, setPrompt] = useState('')
@@ -593,6 +597,57 @@ export default function AIAssistantPage() {
 
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [historyLoaded, setHistoryLoaded] = useState(false)
+
+  // Загрузка истории чата при монтировании
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const saved = await getChatHistory()
+        if (saved.length > 0) {
+          setHistory(saved)
+          // Восстанавливаем DisplayMessage[] из ChatMessage[]
+          const restored: DisplayMessage[] = saved.map((msg, i) => ({
+            id: `restored-${i}`,
+            type: msg.role === 'user' ? 'user' as const : 'assistant' as const,
+            content: msg.content,
+            timestamp: new Date(),
+          }))
+          setMessages(restored)
+          setShowHero(false)
+          setHeroContentVisible(false)
+        }
+      } catch (e) {
+        console.error('Failed to load chat history:', e)
+      } finally {
+        setHistoryLoaded(true)
+      }
+    }
+    loadHistory()
+  }, [])
+
+  // Сохранение истории при изменении (fire-and-forget)
+  const saveHistoryRef = useRef(history)
+  saveHistoryRef.current = history
+  useEffect(() => {
+    if (!historyLoaded || history.length === 0) return
+    const timeout = setTimeout(() => {
+      saveChatHistory(saveHistoryRef.current).catch(console.error)
+    }, 500)
+    return () => clearTimeout(timeout)
+  }, [history, historyLoaded])
+
+  // Очистка чата
+  const handleClearChat = useCallback(() => {
+    setMessages([])
+    setHistory([])
+    setShowHero(true)
+    setHeroContentVisible(true)
+    setStreamingContent('')
+    setStreamingThinking('')
+    setCurrentActions([])
+    clearChatHistory().catch(console.error)
+  }, [])
   const compactPrompts = useMemo(() => {
     const first = pickRandom(quickStartPrompts)
     let second = pickRandom(quickStartPrompts)
@@ -947,9 +1002,17 @@ export default function AIAssistantPage() {
   }, [prompt, history, isProcessing, autoAccept, mode, normalizeAction])
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden -m-6 lg:-m-8">
+    <div className="h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden -m-4 sm:-m-6 lg:-m-8">
       {/* Main Content */}
       <main className="flex-1 min-h-0 max-w-6xl mx-auto w-full px-4 py-4 flex flex-col">
+        {/* Quota warning */}
+        {usage && (() => {
+          const aiQuota = usage.quotas.find(q => q.resource === 'ai_requests')
+          if (aiQuota && !aiQuota.is_unlimited && aiQuota.limit > 0 && aiQuota.used >= aiQuota.limit) {
+            return <div className="mb-3"><UpgradePrompt feature="AI-запросов" /></div>
+          }
+          return null
+        })()}
         {/* Chat Area */}
         <div
           ref={chatContainerRef}
@@ -1224,8 +1287,8 @@ export default function AIAssistantPage() {
               )}
             </button>
           </div>
-          <div className="px-3 pb-1 pt-2 flex items-center justify-between text-xs text-muted-foreground gap-3">
-            <div className="flex items-center gap-4 flex-wrap">
+          <div className="px-3 pb-1 pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-muted-foreground gap-2 sm:gap-3">
+            <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
               <Tooltip title="Автоматически применять действия ИИ без запроса подтверждения" placement="top">
                 <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/8 border border-white/15 min-h-[44px]">
                   <span className="text-foreground text-[13px]">Автопринятие</span>
@@ -1245,6 +1308,18 @@ export default function AIAssistantPage() {
                   </span>
                 </div>
               </Tooltip>
+              {messages.length > 0 && (
+                <Tooltip title="Начать новый чат (очистить историю)" placement="top">
+                  <button
+                    onClick={handleClearChat}
+                    disabled={isProcessing}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/8 border border-white/15 min-h-[44px] hover:bg-white/15 transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-foreground text-[13px]">Новый чат</span>
+                  </button>
+                </Tooltip>
+              )}
             </div>
             <span className="text-foreground">{prompt.length} / 5000</span>
           </div>

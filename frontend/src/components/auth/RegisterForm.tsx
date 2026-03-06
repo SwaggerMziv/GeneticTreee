@@ -6,14 +6,11 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { User, Mail, Lock } from 'lucide-react'
 import { usersApi } from '@/lib/api/users'
+import { authApi } from '@/lib/api/auth'
 import { RegisterFormData, ApiError } from '@/types'
 import { validatePassword, validateUsername, getErrorMessage } from '@/lib/utils'
 
-interface RegisterFormProps {
-  onSuccess?: () => void
-}
-
-export default function RegisterForm({ onSuccess }: RegisterFormProps) {
+export default function RegisterForm() {
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
 
@@ -51,13 +48,15 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         password: values.password,
       })
 
-      toast.success('Аккаунт успешно создан! Теперь войдите.')
-      form.resetFields()
+      // Auto-login after registration
+      await authApi.login({
+        username: values.username,
+        email: null,
+        password: values.password,
+      })
 
-      // Call success callback or redirect
-      if (onSuccess) {
-        onSuccess()
-      }
+      toast.success('Аккаунт успешно создан!')
+      window.location.href = '/dashboard'
     } catch (error) {
       const apiError = error as ApiError
       const errorMessage = getErrorMessage(apiError)
@@ -145,6 +144,10 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
           {
             max: 32,
             message: 'Максимум 32 символа',
+          },
+          {
+            pattern: /^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~ ]+$/,
+            message: 'Только латинские буквы, цифры и спецсимволы',
           },
         ]}
       >

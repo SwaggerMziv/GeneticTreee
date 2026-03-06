@@ -4,15 +4,18 @@ import { createContext, useContext, useEffect, useState, useRef, type ReactNode 
 import { useRouter } from 'next/navigation'
 import { authApi } from '@/lib/api/auth'
 import { statisticsApi } from '@/lib/api/family'
-import { User, FamilyStatistics, ApiError } from '@/types'
+import { subscriptionApi } from '@/lib/api/subscription'
+import { User, FamilyStatistics, UsageSummary, ApiError } from '@/types'
 import { getErrorMessage } from '@/lib/utils'
 import { toast } from 'sonner'
 
 interface UserContextType {
   user: User | null
   stats: FamilyStatistics | null
+  usage: UsageSummary | null
   loading: boolean
   refreshStats: () => Promise<void>
+  refreshUsage: () => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -41,6 +44,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState<FamilyStatistics | null>(null)
+  const [usage, setUsage] = useState<UsageSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const mounted = useRef(false)
 
@@ -51,6 +55,15 @@ export default function UserProvider({ children }: { children: ReactNode }) {
       setStats(data)
     } catch {
       setStats(defaultStats)
+    }
+  }
+
+  const refreshUsage = async () => {
+    try {
+      const data = await subscriptionApi.getUsage()
+      setUsage(data)
+    } catch {
+      // Не критично — квоты загрузятся при следующем обращении
     }
   }
 
@@ -83,6 +96,13 @@ export default function UserProvider({ children }: { children: ReactNode }) {
         } catch {
           setStats(defaultStats)
         }
+
+        try {
+          const usageData = await subscriptionApi.getUsage()
+          setUsage(usageData)
+        } catch {
+          // Не критично
+        }
       } catch (error) {
         const apiError = error as ApiError
         if (apiError.status === 401) {
@@ -99,7 +119,7 @@ export default function UserProvider({ children }: { children: ReactNode }) {
   }, [router])
 
   return (
-    <UserContext.Provider value={{ user, stats, loading, refreshStats, logout }}>
+    <UserContext.Provider value={{ user, stats, usage, loading, refreshStats, refreshUsage, logout }}>
       {children}
     </UserContext.Provider>
   )

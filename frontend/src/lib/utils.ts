@@ -26,11 +26,15 @@ export function validatePassword(password: string): {
   const errors: string[] = []
 
   if (password.length < 8) {
-    errors.push('Password must be at least 8 characters long')
+    errors.push('Пароль должен быть не менее 8 символов')
   }
 
   if (password.length > 32) {
-    errors.push('Password must not exceed 32 characters')
+    errors.push('Пароль должен быть не более 32 символов')
+  }
+
+  if (!/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~ ]+$/.test(password)) {
+    errors.push('Пароль может содержать только латинские буквы, цифры и спецсимволы')
   }
 
   return {

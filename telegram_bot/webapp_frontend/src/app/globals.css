@@ -1,0 +1,327 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 97%;
+    --foreground: 215 20% 18%;
+    --card: 210 35% 95%;
+    --card-foreground: 215 20% 18%;
+    --primary: 195 60% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 25% 92%;
+    --secondary-foreground: 215 20% 18%;
+    --muted: 210 20% 93%;
+    --muted-foreground: 215 10% 45%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 18% 87%;
+    --input: 210 18% 87%;
+    --ring: 195 60% 58%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 215 15% 6%;
+    --foreground: 0 0% 96%;
+    --card: 215 15% 8%;
+    --card-foreground: 0 0% 96%;
+    --primary: 195 60% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 10% 12%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 215 10% 12%;
+    --muted-foreground: 0 0% 60%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 215 8% 16%;
+    --input: 215 8% 16%;
+    --ring: 195 60% 55%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Comfortaa", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Prevent overscroll on iOS */
+    overscroll-behavior: none;
+  }
+}
+
+/* Telegram WebApp viewport fix */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+}
+
+#__next {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Smooth scrolling for chat */
+.chat-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Recording pulse animation */
+@keyframes pulse-record {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.animate-pulse-record {
+  animation: pulse-record 1.2s ease-in-out infinite;
+}
+
+/* Typing indicator animation */
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-4px);
+  }
+}
+
+.typing-dot:nth-child(1) {
+  animation: typing-dot 1.4s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) {
+  animation: typing-dot 1.4s ease-in-out 0.2s infinite;
+}
+.typing-dot:nth-child(3) {
+  animation: typing-dot 1.4s ease-in-out 0.4s infinite;
+}
+
+/* Voice mode animations */
+@keyframes ping-slow {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 hsl(var(--destructive) / 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 12px hsl(var(--destructive) / 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 hsl(var(--destructive) / 0);
+  }
+}
+
+.animate-ping-slow {
+  animation: ping-slow 1.5s ease-in-out infinite;
+}
+
+@keyframes glow-speak {
+  0%,
+  100% {
+    box-shadow: 0 0 8px hsl(var(--primary) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.5);
+  }
+}
+
+.animate-glow-speak {
+  animation: glow-speak 1.5s ease-in-out infinite;
+}
+
+@keyframes voice-mode-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.voice-mode-enter {
+  animation: voice-mode-enter 0.4s ease-out;
+}
+
+/* Live subtitle fade-in */
+@keyframes subtitle-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-subtitle-in {
+  animation: subtitle-fade 0.3s ease-out;
+}
+
+/* Idle mic pulse */
+@keyframes mic-idle-pulse {
+  0%,
+  100% {
+    box-shadow: 0 4px 12px hsl(var(--primary) / 0.25);
+  }
+  50% {
+    box-shadow: 0 4px 24px hsl(var(--primary) / 0.4);
+  }
+}
+
+.animate-mic-idle {
+  animation: mic-idle-pulse 2.5s ease-in-out infinite;
+}
+
+/* ═══ Voice Immersive Mode ═══ */
+
+/* Safe area utilities */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Voice immersive viewport */
+.voice-immersive {
+  height: var(--tg-viewport-stable-height, 100vh);
+  height: var(--tg-viewport-stable-height, 100dvh);
+}
+
+/* ── AI Orb ── */
+@keyframes orb-breathe {
+  0%, 100% {
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* Pulsing ring around orb in idle state */
+@keyframes orb-ring-pulse {
+  0% {
+    border-color: hsl(195 60% 58% / 0.5);
+    transform: scale(0.98);
+  }
+  50% {
+    border-color: hsl(195 60% 58% / 0.15);
+    transform: scale(1.06);
+  }
+  100% {
+    border-color: hsl(195 60% 58% / 0.5);
+    transform: scale(0.98);
+  }
+}
+
+.orb-ring-pulse {
+  border: 2px solid hsl(195 60% 58% / 0.4);
+  animation: orb-ring-pulse 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes orb-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes orb-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.orb-idle {
+  animation: orb-breathe 4s ease-in-out infinite;
+}
+
+.orb-processing {
+  animation: orb-rotate 12s linear infinite;
+  opacity: 0.8;
+}
+
+/* Audio-reactive orb: modulates scale + box-shadow via --audio-level */
+.orb-reactive {
+  --al: var(--audio-level, 0);
+  transform: scale(calc(1 + var(--al) * 0.15));
+  box-shadow:
+    0 0 calc(20px + var(--al) * 40px) hsl(195 60% 58% / calc(0.3 + var(--al) * 0.4)),
+    0 0 calc(40px + var(--al) * 60px) hsl(195 60% 58% / calc(0.1 + var(--al) * 0.2));
+  transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+}
+
+/* ── Aurora background ── */
+@keyframes aurora-drift {
+  0%, 100% {
+    transform: translate(-20%, -20%) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translate(10%, -10%) rotate(45deg) scale(1.1);
+  }
+  50% {
+    transform: translate(-10%, 10%) rotate(90deg) scale(0.95);
+  }
+  75% {
+    transform: translate(15%, 5%) rotate(135deg) scale(1.05);
+  }
+}
+
+.aurora-blob {
+  animation: aurora-drift 30s ease-in-out infinite;
+  will-change: transform;
+}
+
+.aurora-blob-alt {
+  animation: aurora-drift 25s ease-in-out infinite reverse;
+  will-change: transform;
+}
+
+/* ── Flowing subtitles ── */
+@keyframes word-appear {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.word-reveal {
+  opacity: 0;
+  animation: word-appear 0.3s ease-out forwards;
+}
+
+.word-revealed {
+  opacity: 1;
+}

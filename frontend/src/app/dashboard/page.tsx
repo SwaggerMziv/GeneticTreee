@@ -9,6 +9,7 @@ import {
   Send,
   ArrowRight,
   Users,
+  Pencil,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -100,116 +101,133 @@ export default function DashboardPage() {
 
       {/* Statistics — only when there's data */}
       {stats && stats.total_relatives > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
-          {/* Family Overview */}
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="font-serif text-lg font-bold mb-5">Обзор семьи</h3>
-
-              {/* Gender bars */}
-              <div className="space-y-3 mb-5">
-                {[
-                  { label: 'Мужчины', value: stats.gender_distribution.male, color: 'bg-[#7BAEC8]' },
-                  { label: 'Женщины', value: stats.gender_distribution.female, color: 'bg-[#D4607E]' },
-                  ...(stats.gender_distribution.other > 0
-                    ? [{ label: 'Другие', value: stats.gender_distribution.other, color: 'bg-[#B0A898]' }]
-                    : []),
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex items-center gap-3 mb-1.5">
-                      <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
-                      <span className="text-sm text-muted-foreground">{item.label}</span>
-                      <span className="ml-auto text-sm font-bold">{item.value}</span>
-                    </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${item.color} rounded-full transition-all duration-500`}
-                        style={{
-                          width: `${(item.value / stats.total_relatives) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Summary counters */}
-              <div className="pt-4 border-t">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="w-9 h-9 rounded-lg bg-azure/10 flex items-center justify-center">
-                      <Users className="w-4.5 h-4.5 text-azure" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold">{stats.total_relatives}</div>
-                      <div className="text-xs text-muted-foreground">Всего в древе</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="w-9 h-9 rounded-lg bg-[#6BA5CA]/10 flex items-center justify-center">
-                      <Send className="w-4 h-4 text-[#6BA5CA]" />
-                    </div>
-                    <div>
-                      <div className="text-lg font-bold">{stats.activated_relatives}</div>
-                      <div className="text-xs text-muted-foreground">В Telegram</div>
-                    </div>
-                  </div>
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+            {/* Life Status — first */}
+            <Link href="/dashboard/relatives">
+              <Card className="group cursor-pointer hover:border-azure/50 hover:shadow-candy transition-all duration-300 h-full relative">
+                <div className="absolute top-4 right-4 flex items-center gap-1.5 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Управление</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+                <CardContent className="p-6">
+                  <h3 className="font-serif text-lg font-bold mb-5">Статус</h3>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Живые', value: stats.alive_relatives, color: 'bg-[#7EBB9E]' },
+                      { label: 'Ушедшие', value: stats.deceased_relatives, color: 'bg-[#9A9098]' },
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
+                          <span className="text-sm text-muted-foreground">{item.label}</span>
+                          <span className="ml-auto text-sm font-bold">{item.value}</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${item.color} rounded-full transition-all duration-500`}
+                            style={{
+                              width: `${(item.value / stats.total_relatives) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
 
-          {/* Life Status */}
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="font-serif text-lg font-bold mb-5">Статус</h3>
-              <div className="space-y-3">
-                {[
-                  { label: 'Живые', value: stats.alive_relatives, color: 'bg-[#7EBB9E]' },
-                  { label: 'Ушедшие', value: stats.deceased_relatives, color: 'bg-[#9A9098]' },
-                ].map((item) => (
-                  <div key={item.label}>
-                    <div className="flex items-center gap-3 mb-1.5">
-                      <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
-                      <span className="text-sm text-muted-foreground">{item.label}</span>
-                      <span className="ml-auto text-sm font-bold">{item.value}</span>
-                    </div>
-                    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${item.color} rounded-full transition-all duration-500`}
-                        style={{
-                          width: `${(item.value / stats.total_relatives) * 100}%`,
-                        }}
-                      />
+                  {/* Generations & Types */}
+                  <div className="mt-5 pt-4 border-t">
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <div className="text-xl font-bold text-azure">{stats.generations_count}</div>
+                        <div className="text-xs text-muted-foreground">Поколений</div>
+                      </div>
+                      <div>
+                        <div className="text-xl font-bold text-azure">{stats.relationship_types_count}</div>
+                        <div className="text-xs text-muted-foreground">Типов связей</div>
+                      </div>
+                      <div>
+                        <div className="text-xl font-bold text-azure">
+                          {stats.relationship_types
+                            .filter(r => ['husband', 'wife', 'partner', 'spouse'].includes(r.type))
+                            .reduce((acc, curr) => acc + curr.count, 0)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">В браке</div>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                </CardContent>
+              </Card>
+            </Link>
 
-              {/* Generations & Types */}
-              <div className="mt-5 pt-4 border-t">
-                <div className="grid grid-cols-3 gap-3 text-center">
-                  <div>
-                    <div className="text-xl font-bold text-azure">{stats.generations_count}</div>
-                    <div className="text-xs text-muted-foreground">Поколений</div>
-                  </div>
-                  <div>
-                    <div className="text-xl font-bold text-azure">{stats.relationship_types_count}</div>
-                    <div className="text-xs text-muted-foreground">Типов связей</div>
-                  </div>
-                  <div>
-                    <div className="text-xl font-bold text-azure">
-                      {stats.relationship_types
-                        .filter(r => ['husband', 'wife', 'partner', 'spouse'].includes(r.type))
-                        .reduce((acc, curr) => acc + curr.count, 0)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">В браке</div>
-                  </div>
+            {/* Family Overview — second */}
+            <Link href="/dashboard/relatives">
+              <Card className="group cursor-pointer hover:border-azure/50 hover:shadow-candy transition-all duration-300 h-full relative">
+                <div className="absolute top-4 right-4 flex items-center gap-1.5 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Pencil className="w-3.5 h-3.5" />
+                  <span>Управление</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                <CardContent className="p-6">
+                  <h3 className="font-serif text-lg font-bold mb-5">Обзор семьи</h3>
+
+                  {/* Gender bars */}
+                  <div className="space-y-3 mb-5">
+                    {[
+                      { label: 'Мужчины', value: stats.gender_distribution.male, color: 'bg-[#7BAEC8]' },
+                      { label: 'Женщины', value: stats.gender_distribution.female, color: 'bg-[#D4607E]' },
+                      ...(stats.gender_distribution.other > 0
+                        ? [{ label: 'Другие', value: stats.gender_distribution.other, color: 'bg-[#B0A898]' }]
+                        : []),
+                    ].map((item) => (
+                      <div key={item.label}>
+                        <div className="flex items-center gap-3 mb-1.5">
+                          <div className={`w-2.5 h-2.5 rounded-full ${item.color}`} />
+                          <span className="text-sm text-muted-foreground">{item.label}</span>
+                          <span className="ml-auto text-sm font-bold">{item.value}</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${item.color} rounded-full transition-all duration-500`}
+                            style={{
+                              width: `${(item.value / stats.total_relatives) * 100}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Summary counters */}
+                  <div className="pt-4 border-t">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                        <div className="w-9 h-9 rounded-lg bg-azure/10 flex items-center justify-center">
+                          <Users className="w-4.5 h-4.5 text-azure" />
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold">{stats.total_relatives}</div>
+                          <div className="text-xs text-muted-foreground">Всего в древе</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                        <div className="w-9 h-9 rounded-lg bg-[#6BA5CA]/10 flex items-center justify-center">
+                          <Send className="w-4 h-4 text-[#6BA5CA]" />
+                        </div>
+                        <div>
+                          <div className="text-lg font-bold">{stats.activated_relatives}</div>
+                          <div className="text-xs text-muted-foreground">В Telegram</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+          <p className="text-xs text-muted-foreground text-center mb-10">
+            Нажмите для управления родственниками →
+          </p>
+        </>
       )}
 
       {/* Empty state */}
@@ -223,7 +241,7 @@ export default function DashboardPage() {
             <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
               Всего 4 шага до вашей семейной книги с историями и воспоминаниями.
             </p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 max-w-3xl mx-auto mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-3xl mx-auto mb-8">
               {[
                 { step: '1', title: 'Создайте древо', desc: 'Добавьте родственников', icon: TreePine },
                 { step: '2', title: 'Пригласите', desc: 'Отправьте ссылки', icon: Send },

@@ -52,15 +52,15 @@ async def cmd_start(message: Message, state: FSMContext):
 
             await message.answer(
                 f"Здравствуйте, {relative_data.get('first_name', '')}! 👋\n\n"
-                f"Я — бот-интервьюер семейного архива *GeneticTree*. "
+                f"Я — бот семейного архива *GeneticTree*. "
                 f"Моя задача — помочь вам сохранить воспоминания, истории и события вашей жизни для семьи.\n\n"
-                f"*Как проходит интервью:*\n"
-                f"• Я задаю вопросы — вы отвечаете *текстом*, *голосовым* 🎤 или отправляете *фото* 📸\n"
-                f"• После 3+ ответов можно создать готовую историю\n"
-                f"• Фотографии можно присылать в любой момент — они прикрепятся к истории\n\n"
-                f"💡 *Подсказка:* чем подробнее ваши ответы (имена, даты, места, детали), тем интереснее и полнее получится история.\n\n"
-                f"Готовы начать? Нажмите *«Начать интервью»* 👇",
-                reply_markup=get_main_menu_keyboard(),
+                f"*Как это работает:*\n"
+                f"• Откройте приложение — я задам вопросы, а вы отвечаете *текстом* или *голосом* 🎤\n"
+                f"• Можно прикрепить *фото* 📸 к историям\n"
+                f"• После нескольких ответов создаётся готовая история\n\n"
+                f"💡 *Подсказка:* чем подробнее ваши ответы (имена, даты, места, детали), тем интереснее получится история.\n\n"
+                f"Нажмите *«🌳 Открыть приложение»* чтобы начать 👇",
+                reply_markup=get_main_menu_keyboard(message.from_user.id),
                 parse_mode="Markdown",
             )
 
@@ -80,20 +80,20 @@ async def cmd_start(message: Message, state: FSMContext):
                         await message.answer(
                             "Этот Telegram аккаунт уже привязан к другому профилю.\n\n"
                             "Один Telegram аккаунт = один родственник в архиве.\n"
-                            "Используйте /interview для продолжения интервью.",
-                            reply_markup=get_main_menu_keyboard(),
+                            "Откройте приложение через меню для продолжения.",
+                            reply_markup=get_main_menu_keyboard(message.from_user.id),
                         )
                     else:
                         await message.answer(
                             "Этот профиль уже активирован!\n\n"
-                            "Используйте меню ниже или /interview для интервью.",
-                            reply_markup=get_main_menu_keyboard(),
+                            "Откройте приложение через меню ниже.",
+                            reply_markup=get_main_menu_keyboard(message.from_user.id),
                         )
                 except:
                     await message.answer(
                         "Этот профиль уже активирован!\n\n"
-                        "Используйте меню ниже или /interview для интервью.",
-                        reply_markup=get_main_menu_keyboard(),
+                        "Откройте приложение через меню ниже.",
+                        reply_markup=get_main_menu_keyboard(message.from_user.id),
                     )
             else:
                 await message.answer("Произошла ошибка. Попробуйте позже.")
@@ -104,7 +104,25 @@ async def cmd_start(message: Message, state: FSMContext):
         # Regular start without token - check if already activated
         user_data = user_storage.get_user(message.from_user.id)
         if user_data:
-            # User exists in storage, restore FSM state
+            # Проверяем, существует ли родственник в БД (защита от рассинхрона после сброса БД)
+            relative = await backend_api.get_relative_by_telegram_id(message.from_user.id)
+            if not relative:
+                # Родственник был в users.json, но не в БД — удаляем устаревшие данные
+                logger.warning(
+                    f"Stale user in storage: telegram_id={message.from_user.id}, "
+                    f"relative_id={user_data['relative_id']} — not found in DB, removing"
+                )
+                user_storage.remove_user(message.from_user.id)
+                await state.clear()
+                await message.answer(
+                    "Ваш профиль больше не активен.\n\n"
+                    "Попросите родственника отправить вам новую ссылку-приглашение "
+                    "и перейдите по ней для повторной активации.",
+                    parse_mode="Markdown",
+                )
+                return
+
+            # User exists in storage and DB, restore FSM state
             await state.update_data(
                 relative_id=user_data["relative_id"],
                 relative_name=user_data.get("name", ""),
@@ -115,9 +133,9 @@ async def cmd_start(message: Message, state: FSMContext):
             greeting = f", {name_part}" if name_part else ""
             await message.answer(
                 f"С возвращением{greeting}! 👋\n\n"
-                "Расскажите ещё одну историю — отвечайте текстом, голосовым 🎤 или отправляйте фото 📸.\n\n"
-                "Нажмите *«Начать интервью»* чтобы продолжить.",
-                reply_markup=get_main_menu_keyboard(),
+                "Откройте приложение, чтобы продолжить — отвечайте текстом или голосом 🎤, прикрепляйте фото 📸.\n\n"
+                "Нажмите *«🌳 Открыть приложение»* 👇",
+                reply_markup=get_main_menu_keyboard(message.from_user.id),
                 parse_mode="Markdown",
             )
         else:
@@ -127,7 +145,6 @@ async def cmd_start(message: Message, state: FSMContext):
                 "Провожу интервью, принимаю фотографии и создаю красивые истории из ваших ответов.\n\n"
                 "*Для начала работы:*\n"
                 "Перейдите по персональной ссылке-приглашению от вашего родственника — "
-                "она выглядит так: `t.me/...?start=...`\n\n"
-                "Если вы уже активированы, нажмите /interview",
+                "она выглядит так: `t.me/...?start=...`",
                 parse_mode="Markdown",
             )

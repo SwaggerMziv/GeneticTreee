@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useRef, useCallback, useMemo, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -12,7 +12,7 @@ import {
   Form,
   Input,
   Select,
-  DatePicker,
+
   Upload,
   Empty,
   Tooltip,
@@ -43,6 +43,7 @@ import {
 } from 'lucide-react'
 import { authApi } from '@/lib/api/auth'
 import { familyApi, relationshipApi, storiesApi } from '@/lib/api/family'
+import { adminApi } from '@/lib/api/admin'
 import {
   User as UserType,
   ApiError,
@@ -53,11 +54,12 @@ import {
   StoryMedia,
 } from '@/types'
 import { isAuthenticated, clearAuthTokens, getErrorMessage, getProxiedImageUrl } from '@/lib/utils'
-import dayjs from 'dayjs'
+
 import RelativeCard from '@/components/tree/RelativeCard'
 import { RELATIONSHIP_LABELS, RELATIONSHIP_OPTIONS } from '@/components/tree/ConnectionLine'
 import InvitationModal from '@/components/family/InvitationModal'
 import { hierarchy, tree as d3Tree } from 'd3-hierarchy'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 // Gender labels
 const GENDER_LABELS: Record<string, string> = {
@@ -66,12 +68,15 @@ const GENDER_LABELS: Record<string, string> = {
   other: 'Другой',
 }
 
-// Card dimensions for positioning (must match RelativeCard sizes)
-const CARD_WIDTH = 208  // w-52 = 13rem = 208px
-const CARD_HEIGHT = 280 // Fixed height for medium cards
-const HORIZONTAL_GAP = 60  // Reduced spacing
-const VERTICAL_GAP = 100    // Reduced vertical spacing
-const EDGE_PAD = 6
+// Card dimensions: desktop defaults (overridden per-device inside component)
+const DESKTOP_CARD_WIDTH = 208  // w-52 = 13rem = 208px
+const DESKTOP_CARD_HEIGHT = 280 // Fixed height for medium cards
+const DESKTOP_HORIZONTAL_GAP = 60
+const DESKTOP_VERTICAL_GAP = 100
+const MOBILE_CARD_WIDTH = 156
+const MOBILE_CARD_HEIGHT = 220
+const MOBILE_HORIZONTAL_GAP = 30
+const MOBILE_VERTICAL_GAP = 60
 
 // Relationship colors - warm pastel palette, soft and muted
 const RELATIONSHIP_COLORS: Record<string, string> = {
@@ -148,7 +153,7 @@ interface NodePosition {
   y: number
 }
 
-const applyCollisionSpacing = (nodes: NodePosition[]) => {
+const applyCollisionSpacing = (nodes: NodePosition[], cardWidth: number) => {
   if (nodes.length === 0) return nodes
   const byGen = new Map<number, NodePosition[]>()
   nodes.forEach((n) => {
@@ -163,7 +168,7 @@ const applyCollisionSpacing = (nodes: NodePosition[]) => {
     sorted.forEach((node) => {
       let x = node.x
       if (x < cursor) x = cursor
-      cursor = x + CARD_WIDTH + MIN_NODE_GAP
+      cursor = x + cardWidth + MIN_NODE_GAP
       adjusted.set(node.relative.id, { ...node, x })
     })
   })
@@ -183,10 +188,22 @@ function calculateAge(birthDate: string, deathDate?: string | null): number | nu
   return age
 }
 
-export default function TreePage() {
+function TreePageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { message, modal } = App.useApp()
   const containerRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
+
+  // Admin read-only mode
+  const adminUserId = searchParams.get('admin_user_id')
+  const isAdminView = !!adminUserId
+
+  // Responsive card dimensions
+  const CARD_WIDTH = isMobile ? MOBILE_CARD_WIDTH : DESKTOP_CARD_WIDTH
+  const CARD_HEIGHT = isMobile ? MOBILE_CARD_HEIGHT : DESKTOP_CARD_HEIGHT
+  const HORIZONTAL_GAP = isMobile ? MOBILE_HORIZONTAL_GAP : DESKTOP_HORIZONTAL_GAP
+  const VERTICAL_GAP = isMobile ? MOBILE_VERTICAL_GAP : DESKTOP_VERTICAL_GAP
 
   const [user, setUser] = useState<UserType | null>(null)
   const [loading, setLoading] = useState(true)
@@ -204,6 +221,18 @@ export default function TreePage() {
   const [dragStartOffset, setDragStartOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const hasUserPanned = useRef(false)
   const autoCentered = useRef(false)
+
+  // Mobile card touch gesture state machine
+  const LONG_PRESS_MS = 300
+  const MOVE_THRESHOLD = 10
+  const cardTouchRef = useRef<{
+    nodeId: number
+    startX: number
+    startY: number
+    startTime: number
+    mode: 'pending' | 'panning' | 'dragging'
+  } | null>(null)
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Modal state
   const [addRelativeModal, setAddRelativeModal] = useState(false)
@@ -228,7 +257,16 @@ export default function TreePage() {
   const [filterHasStories, setFilterHasStories] = useState<boolean | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showConnections, setShowConnections] = useState(true)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  // Open sidebar by default on desktop only
+  const sidebarInitialized = useRef(false)
+  useEffect(() => {
+    if (!sidebarInitialized.current) {
+      sidebarInitialized.current = true
+      setIsSidebarOpen(!isMobile)
+    }
+  }, [isMobile])
 
   const [form] = Form.useForm()
   const [editForm] = Form.useForm()
@@ -293,7 +331,7 @@ export default function TreePage() {
       contentMinY: minY,
       contentMaxY: maxY,
     }
-  }, [nodePositions])
+  }, [nodePositions, CARD_WIDTH, CARD_HEIGHT])
 
   const toCanvasX = useCallback((x: number) => x - canvasMetrics.originX, [canvasMetrics.originX])
   const toCanvasY = useCallback((y: number) => y - canvasMetrics.originY, [canvasMetrics.originY])
@@ -322,13 +360,19 @@ export default function TreePage() {
         const userData = await authApi.me()
         setUser(userData)
 
-        const [relativesData, relationshipsData] = await Promise.all([
-          familyApi.getRelatives(userData.id),
-          relationshipApi.getRelationships(userData.id, true),
-        ])
-
-        setRelatives(relativesData)
-        setRelationships(relationshipsData)
+        if (isAdminView) {
+          // Загружаем дерево другого пользователя через admin API
+          const treeData = await adminApi.getUserTree(parseInt(adminUserId!))
+          setRelatives(treeData.relatives as unknown as FamilyRelative[])
+          setRelationships(treeData.relationships as unknown as FamilyRelationship[])
+        } else {
+          const [relativesData, relationshipsData] = await Promise.all([
+            familyApi.getRelatives(userData.id),
+            relationshipApi.getRelationships(userData.id, true),
+          ])
+          setRelatives(relativesData)
+          setRelationships(relationshipsData)
+        }
       } catch (error) {
         const apiError = error as ApiError
         const errorMessage = getErrorMessage(apiError)
@@ -503,9 +547,9 @@ export default function TreePage() {
       orphanX += CARD_WIDTH + HORIZONTAL_GAP
     })
 
-    const spaced = applyCollisionSpacing(positions)
+    const spaced = applyCollisionSpacing(positions, CARD_WIDTH)
     setNodePositions(spaced)
-  }, [relatives, relationships, filterGender, filterGeneration, filterAlive, filterHasStories, searchTerm, manualPositions])
+  }, [relatives, relationships, filterGender, filterGeneration, filterAlive, filterHasStories, searchTerm, manualPositions, CARD_WIDTH, CARD_HEIGHT, HORIZONTAL_GAP, VERTICAL_GAP])
 
   // Mouse handlers for panning
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -526,22 +570,121 @@ export default function TreePage() {
     setDraggingNodeId(null)
   }
 
+  // Touch handlers for canvas panning & pinch-to-zoom
+  const lastTouchRef = useRef<{ x: number; y: number } | null>(null)
+  const pinchStartDistRef = useRef<number | null>(null)
+  const pinchStartScaleRef = useRef<number>(1)
+  const pinchMidpointRef = useRef<{ x: number; y: number } | null>(null)
+  const pinchStartOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('.relative-card, .control-panel, button, .ant-modal')) return
+    if (e.touches.length === 1) {
+      const t = e.touches[0]
+      lastTouchRef.current = { x: t.clientX, y: t.clientY }
+      hasUserPanned.current = true
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      pinchStartDistRef.current = Math.sqrt(dx * dx + dy * dy)
+      pinchStartScaleRef.current = scale
+      // Store midpoint relative to container and current offset for stable zoom
+      const rect = containerRef.current?.getBoundingClientRect()
+      if (rect) {
+        pinchMidpointRef.current = {
+          x: (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left,
+          y: (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top,
+        }
+      }
+      pinchStartOffsetRef.current = { ...offset }
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest('.relative-card, .control-panel, button')) return
+    if (draggingNodeId !== null) return
+    if (e.touches.length === 1 && lastTouchRef.current && pinchStartDistRef.current === null) {
+      const t = e.touches[0]
+      const dx = t.clientX - lastTouchRef.current.x
+      const dy = t.clientY - lastTouchRef.current.y
+      setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }))
+      lastTouchRef.current = { x: t.clientX, y: t.clientY }
+    } else if (e.touches.length === 2 && pinchStartDistRef.current !== null) {
+      e.preventDefault()
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const newScale = Math.min(Math.max(pinchStartScaleRef.current * (dist / pinchStartDistRef.current), 0.15), 3)
+      setScale(newScale)
+      // Adjust offset to keep midpoint stable
+      if (pinchMidpointRef.current) {
+        const mid = pinchMidpointRef.current
+        const startOff = pinchStartOffsetRef.current
+        const startScale = pinchStartScaleRef.current
+        setOffset({
+          x: mid.x - (mid.x - startOff.x) * (newScale / startScale),
+          y: mid.y - (mid.y - startOff.y) * (newScale / startScale),
+        })
+      }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    lastTouchRef.current = null
+    pinchStartDistRef.current = null
+    pinchMidpointRef.current = null
+  }
+
   // Auto-center after layout (once, unless пользователь панил)
   useEffect(() => {
     if (autoCentered.current || hasUserPanned.current) return
     if (!containerRef.current || nodePositions.length === 0) return
     const rect = containerRef.current.getBoundingClientRect()
+    const padding = 40
     const minX = canvasMetrics.contentMinX - canvasMetrics.originX
     const maxX = canvasMetrics.contentMaxX - canvasMetrics.originX
     const minY = canvasMetrics.contentMinY - canvasMetrics.originY
     const maxY = canvasMetrics.contentMaxY - canvasMetrics.originY
     const contentW = maxX - minX
     const contentH = maxY - minY
-    const ox = (rect.width - contentW) / 2 - minX
-    const oy = (rect.height - contentH) / 2 - minY
-    setOffset({ x: ox, y: oy })
+
+    if (isMobile) {
+      // On mobile: compute fit-to-view scale so all cards are visible
+      const scaleX = rect.width / (contentW + padding * 2)
+      const scaleY = rect.height / (contentH + padding * 2)
+      const fitScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.2), 1.0)
+      const canvasMinX = minX - padding
+      const canvasMinY = minY - padding
+      const ox = (rect.width - (contentW + padding * 2) * fitScale) / 2 - canvasMinX * fitScale
+      const oy = (rect.height - (contentH + padding * 2) * fitScale) / 2 - canvasMinY * fitScale
+      setScale(fitScale)
+      setOffset({ x: ox, y: oy })
+    } else {
+      const ox = (rect.width - contentW) / 2 - minX
+      const oy = (rect.height - contentH) / 2 - minY
+      setOffset({ x: ox, y: oy })
+    }
     autoCentered.current = true
-  }, [nodePositions, canvasMetrics])
+  }, [nodePositions, canvasMetrics, isMobile])
+
+  // Zoom towards a specific point (defaults to viewport center)
+  const zoomToPoint = useCallback((factor: number, pointX?: number, pointY?: number) => {
+    const container = containerRef.current
+    if (!container) return
+    const rect = container.getBoundingClientRect()
+    const px = pointX ?? rect.width / 2
+    const py = pointY ?? rect.height / 2
+
+    setScale((prevScale) => {
+      const newScale = Math.min(Math.max(prevScale * factor, 0.15), 3)
+      setOffset((prevOffset) => ({
+        x: px - (px - prevOffset.x) * (newScale / prevScale),
+        y: py - (py - prevOffset.y) * (newScale / prevScale),
+      }))
+      hasUserPanned.current = true
+      return newScale
+    })
+  }, [])
 
   const handleWheel = useCallback((e: WheelEvent) => {
     // Prevent default scrolling behavior
@@ -558,20 +701,8 @@ export default function TreePage() {
 
     // Calculate zoom factor (smoother zooming)
     const zoomFactor = e.deltaY > 0 ? 0.92 : 1.08
-
-    setScale((prevScale) => {
-      const newScale = Math.min(Math.max(prevScale * zoomFactor, 0.15), 3)
-
-      // Adjust offset to zoom towards mouse position
-      setOffset((prevOffset) => ({
-        x: mouseX - (mouseX - prevOffset.x) * (newScale / prevScale),
-        y: mouseY - (mouseY - prevOffset.y) * (newScale / prevScale),
-      }))
-
-      hasUserPanned.current = true
-      return newScale
-    })
-  }, [])
+    zoomToPoint(zoomFactor, mouseX, mouseY)
+  }, [zoomToPoint])
 
   useEffect(() => {
     const container = containerRef.current
@@ -603,7 +734,82 @@ export default function TreePage() {
     const touch = e.touches[0]
     if (!touch) return
     e.stopPropagation()
-    beginNodeDrag(touch.clientX, touch.clientY, nodeId)
+
+    if (!isMobile) {
+      // Desktop: immediate drag (unchanged behavior)
+      beginNodeDrag(touch.clientX, touch.clientY, nodeId)
+      return
+    }
+
+    // Mobile: start gesture state machine
+    cardTouchRef.current = {
+      nodeId,
+      startX: touch.clientX,
+      startY: touch.clientY,
+      startTime: Date.now(),
+      mode: 'pending',
+    }
+    // Init lastTouchRef for potential panning
+    lastTouchRef.current = { x: touch.clientX, y: touch.clientY }
+    hasUserPanned.current = true
+
+    // Start long-press timer
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
+    longPressTimerRef.current = setTimeout(() => {
+      const ct = cardTouchRef.current
+      if (ct && ct.mode === 'pending') {
+        ct.mode = 'dragging'
+        beginNodeDrag(ct.startX, ct.startY, ct.nodeId)
+        // Haptic feedback
+        if (navigator.vibrate) navigator.vibrate(30)
+      }
+    }, LONG_PRESS_MS)
+  }
+
+  const handleNodeTouchMove = (e: React.TouchEvent) => {
+    const ct = cardTouchRef.current
+    if (!ct || !isMobile) return
+    const touch = e.touches[0]
+    if (!touch) return
+
+    if (ct.mode === 'pending') {
+      const dx = touch.clientX - ct.startX
+      const dy = touch.clientY - ct.startY
+      if (Math.sqrt(dx * dx + dy * dy) > MOVE_THRESHOLD) {
+        // Moved beyond threshold before long press → switch to panning
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current)
+          longPressTimerRef.current = null
+        }
+        ct.mode = 'panning'
+      }
+    }
+
+    if (ct.mode === 'panning' && lastTouchRef.current) {
+      const dx = touch.clientX - lastTouchRef.current.x
+      const dy = touch.clientY - lastTouchRef.current.y
+      setOffset((prev) => ({ x: prev.x + dx, y: prev.y + dy }))
+      lastTouchRef.current = { x: touch.clientX, y: touch.clientY }
+    }
+    // 'dragging' mode is handled by the global window listeners in the existing useEffect
+  }
+
+  const handleNodeTouchEnd = () => {
+    const ct = cardTouchRef.current
+    if (ct && ct.mode === 'pending' && isMobile) {
+      // Quick tap → select
+      const elapsed = Date.now() - ct.startTime
+      if (elapsed < 300) {
+        const node = nodePositions.find((n) => n.relative.id === ct.nodeId)
+        if (node) setSelectedRelative(node.relative)
+      }
+    }
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current)
+      longPressTimerRef.current = null
+    }
+    cardTouchRef.current = null
+    lastTouchRef.current = null
   }
 
   useEffect(() => {
@@ -643,14 +849,14 @@ export default function TreePage() {
   }, [draggingNodeId, dragStartOffset, clientToWorld])
 
   // Form handlers
-  const handleAddRelative = async (values: FamilyRelativeCreate & { birth_date?: dayjs.Dayjs; death_date?: dayjs.Dayjs }) => {
+  const handleAddRelative = async (values: FamilyRelativeCreate & { birth_date?: string; death_date?: string }) => {
     if (!user) return
 
     try {
       const data: FamilyRelativeCreate = {
         ...values,
-        birth_date: values.birth_date?.toISOString() || null,
-        death_date: values.death_date?.toISOString() || null,
+        birth_date: values.birth_date || null,
+        death_date: values.death_date || null,
         image_url: fileList[0]?.response?.url || fileList[0]?.url || null,
       }
       const newRelative = await familyApi.createRelative(user.id, data)
@@ -665,14 +871,14 @@ export default function TreePage() {
     }
   }
 
-  const handleEditRelative = async (values: FamilyRelativeCreate & { birth_date?: dayjs.Dayjs; death_date?: dayjs.Dayjs }) => {
+  const handleEditRelative = async (values: FamilyRelativeCreate & { birth_date?: string; death_date?: string }) => {
     if (!user || !selectedRelative) return
 
     try {
       const data = {
         ...values,
-        birth_date: values.birth_date?.toISOString() || null,
-        death_date: values.death_date?.toISOString() || null,
+        birth_date: values.birth_date || null,
+        death_date: values.death_date || null,
         image_url: fileList[0]?.response?.url || fileList[0]?.url || selectedRelative.image_url || null,
       }
       const updated = await familyApi.updateRelative(user.id, selectedRelative.id, data)
@@ -775,8 +981,8 @@ export default function TreePage() {
       last_name: selectedRelative.last_name,
       middle_name: selectedRelative.middle_name,
       gender: selectedRelative.gender,
-      birth_date: selectedRelative.birth_date ? dayjs(selectedRelative.birth_date) : null,
-      death_date: selectedRelative.death_date ? dayjs(selectedRelative.death_date) : null,
+      birth_date: selectedRelative.birth_date ? selectedRelative.birth_date.split('T')[0] : null,
+      death_date: selectedRelative.death_date ? selectedRelative.death_date.split('T')[0] : null,
       generation: selectedRelative.generation,
       contact_info: selectedRelative.contact_info,
     })
@@ -1012,7 +1218,7 @@ export default function TreePage() {
     setScale(newScale)
     setOffset({ x: ox, y: oy })
     hasUserPanned.current = true
-  }, [nodePositions, canvasMetrics])
+  }, [nodePositions, canvasMetrics, CARD_WIDTH, CARD_HEIGHT])
 
   // Center view on all nodes
   const centerView = useCallback(() => {
@@ -1052,9 +1258,9 @@ export default function TreePage() {
   return (
     <div className="h-[calc(100vh-3.5rem)] flex flex-col bg-background overflow-hidden">
       {/* Floating Toolbar */}
-      <div className="sticky top-0 z-30 flex items-center gap-3 px-4 py-3 bg-card/90 backdrop-blur-sm border-b border-border">
+      <div className="sticky top-0 z-30 flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 bg-card/90 backdrop-blur-sm border-b border-border">
         {/* Search */}
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1 max-w-[160px] sm:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Поиск родственников..."
@@ -1072,13 +1278,13 @@ export default function TreePage() {
               type="text"
               size="small"
               icon={<ZoomOut className="w-4 h-4" />}
-              onClick={() => setScale((s) => Math.max(s * 0.85, 0.15))}
+              onClick={() => zoomToPoint(0.85)}
             />
           </Tooltip>
           <Tooltip title="Сбросить к 100%">
             <button
-              className="text-xs text-muted-foreground hover:text-foreground w-12 text-center transition-colors"
-              onClick={() => setScale(1)}
+              className="hidden sm:block text-xs text-muted-foreground hover:text-foreground w-12 text-center transition-colors"
+              onClick={() => zoomToPoint(1 / scale)}
             >
               {Math.round(scale * 100)}%
             </button>
@@ -1088,31 +1294,51 @@ export default function TreePage() {
               type="text"
               size="small"
               icon={<ZoomIn className="w-4 h-4" />}
-              onClick={() => setScale((s) => Math.min(s * 1.15, 3))}
+              onClick={() => zoomToPoint(1.15)}
             />
           </Tooltip>
         </div>
       </div>
+
+      {/* Admin read-only banner */}
+      {isAdminView && (
+        <div className="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 border-b border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 text-sm text-center font-medium">
+          Просмотр дерева пользователя #{adminUserId} (администратор, только чтение)
+        </div>
+      )}
 
       {/* Main Area */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar Toggle Button */}
         <button
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className={`absolute top-4 z-20 p-2 rounded-r-xl bg-card border border-border text-muted-foreground hover:text-foreground transition-all duration-300 ${
-            isSidebarOpen ? 'left-56' : 'left-0 rounded-l-none border-l-0'
+          className={`absolute top-4 z-20 rounded-r-xl border border-border hover:text-foreground transition-all duration-300 ${
+            isSidebarOpen
+              ? 'left-56 p-2 bg-card text-muted-foreground'
+              : 'left-0 rounded-l-none border-l-0 p-2.5 sm:p-2 bg-azure text-white shadow-lg shadow-azure/30'
           }`}
         >
-          {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Filter className="w-4 h-4" />}
+          {isSidebarOpen ? <ChevronLeft className="w-4 h-4" /> : <Filter className="w-5 h-5 sm:w-4 sm:h-4" />}
         </button>
 
+        {/* Mobile sidebar backdrop */}
+        {isMobile && isSidebarOpen && (
+          <div
+            className="fixed inset-0 z-[19] bg-black/40 transition-opacity"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
         {/* Filter Sidebar */}
-        <div 
+        <div
           className={`flex-shrink-0 border-r border-border bg-card/50 p-4 overflow-y-auto control-panel transition-all duration-300 ${
+            isMobile ? 'absolute top-0 left-0 z-20 h-full shadow-xl' : ''
+          } ${
             isSidebarOpen ? 'w-56 translate-x-0' : 'w-0 -translate-x-full px-0 border-none opacity-0'
           }`}
         >
           {/* Action buttons */}
+          {!isAdminView && (
           <div className="mb-6 space-y-2">
             <Button
               type="primary"
@@ -1133,6 +1359,7 @@ export default function TreePage() {
               Связь
             </Button>
           </div>
+          )}
 
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium text-sm flex items-center gap-2">
@@ -1279,21 +1506,25 @@ export default function TreePage() {
         {/* Tree Canvas Area */}
         <div
           ref={containerRef}
-          className="flex-1 relative overflow-hidden cursor-grab active:cursor-grabbing bg-background"
+          className="flex-1 relative overflow-hidden cursor-grab active:cursor-grabbing bg-background touch-none"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
           {relatives.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <Empty
                 description={
                   <span className="text-muted-foreground">
-                    У вас пока нет родственников в древе
+                    {isAdminView ? `Дерево пользователя #${adminUserId} пусто` : 'У вас пока нет родственников в древе'}
                   </span>
                 }
               >
+                {!isAdminView && (
                 <Button
                   type="primary"
                   icon={<Plus className="w-4 h-4" />}
@@ -1302,6 +1533,7 @@ export default function TreePage() {
                 >
                   Добавить первого родственника
                 </Button>
+                )}
               </Empty>
             </div>
           ) : (
@@ -1551,18 +1783,15 @@ export default function TreePage() {
                       e.preventDefault()
                       beginNodeDrag(e.clientX, e.clientY, node.relative.id)
                     }}
-                    onTouchStart={(e) => {
-                      const t = e.touches[0]
-                      if (!t) return
-                      e.stopPropagation()
-                      beginNodeDrag(t.clientX, t.clientY, node.relative.id)
-                    }}
+                    onTouchStart={(e) => handleNodeTouchStart(e, node.relative.id)}
+                    onTouchMove={handleNodeTouchMove}
+                    onTouchEnd={handleNodeTouchEnd}
                   >
                     <RelativeCard
                       relative={node.relative}
                       isSelected={selectedRelative?.id === node.relative.id}
-                      onClick={() => setSelectedRelative(node.relative)}
-                      size="medium"
+                      onClick={isMobile ? undefined : () => setSelectedRelative(node.relative)}
+                      size={isMobile ? "small" : "medium"}
                     />
                   </div>
                 )
@@ -1572,7 +1801,7 @@ export default function TreePage() {
           )}
 
           {/* Control buttons - правый нижний угол */}
-          <div className="absolute bottom-4 right-4 control-panel flex flex-col gap-2">
+          <div className="absolute bottom-14 sm:bottom-4 right-4 control-panel flex flex-col gap-2">
             <Tooltip title="Показать всё" placement="left">
               <Button
                 className="bg-muted border-border"
@@ -1598,10 +1827,10 @@ export default function TreePage() {
 
           {/* Hint about dragging */}
           {nodePositions.length > 0 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 control-panel">
+            <div className="absolute bottom-14 sm:bottom-4 left-1/2 -translate-x-1/2 control-panel">
               <div className="px-3 py-1.5 rounded-full bg-card/80 border border-border text-xs text-muted-foreground flex items-center gap-2">
                 <Move className="w-3 h-3" />
-                <span>Перетащите карточки для изменения позиции</span>
+                <span>{isMobile ? 'Удержите карточку для перетаскивания' : 'Перетащите карточки для изменения позиции'}</span>
               </div>
             </div>
           )}
@@ -1609,17 +1838,17 @@ export default function TreePage() {
 
         {/* Selected Relative Panel */}
         {selectedRelative && (
-          <div className="w-72 flex-shrink-0 border-l border-border bg-card overflow-y-auto control-panel">
+          <div className={`${isMobile ? 'absolute inset-0 z-30 w-full' : 'w-72'} flex-shrink-0 border-l border-border bg-card overflow-y-auto control-panel`}>
             <div className="p-4">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <h3 className="font-bold text-lg">Информация</h3>
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<X className="w-4 h-4" />}
+                <button
+                  className="w-10 h-10 rounded-xl bg-muted border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:border-destructive/30 transition-all"
                   onClick={() => setSelectedRelative(null)}
-                />
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
               {/* Photo */}
@@ -1798,6 +2027,7 @@ export default function TreePage() {
               </div>
 
               {/* Actions */}
+              {!isAdminView && (
               <div className="space-y-2">
                 <Button
                   block
@@ -1840,6 +2070,7 @@ export default function TreePage() {
                   Удалить родственника
                 </Button>
               </div>
+              )}
             </div>
           </div>
         )}
@@ -1855,7 +2086,7 @@ export default function TreePage() {
           setFileList([])
         }}
         footer={null}
-        width={500}
+        width={isMobile ? '95vw' : 500}
       >
         <Form form={form} layout="vertical" onFinish={handleAddRelative} className="mt-4">
           {/* Photo upload */}
@@ -1870,7 +2101,7 @@ export default function TreePage() {
             </Upload>
           </Form.Item>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Form.Item
               name="first_name"
               label="Имя"
@@ -1889,7 +2120,7 @@ export default function TreePage() {
             <Input placeholder="Отчество" />
           </Form.Item>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Form.Item name="gender" label="Пол">
               <Select placeholder="Выберите пол">
                 <Select.Option value="male">Мужской</Select.Option>
@@ -1909,12 +2140,12 @@ export default function TreePage() {
             </Form.Item>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Form.Item name="birth_date" label="Дата рождения">
-              <DatePicker className="w-full" placeholder="Выберите дату" />
+              <Input type="date" className="w-full" />
             </Form.Item>
             <Form.Item name="death_date" label="Дата смерти">
-              <DatePicker className="w-full" placeholder="Если применимо" />
+              <Input type="date" className="w-full" />
             </Form.Item>
           </div>
 
@@ -1945,7 +2176,7 @@ export default function TreePage() {
           setFileList([])
         }}
         footer={null}
-        width={500}
+        width={isMobile ? '95vw' : 500}
       >
         <Form form={editForm} layout="vertical" onFinish={handleEditRelative} className="mt-4">
           {/* Photo upload */}
@@ -1960,7 +2191,7 @@ export default function TreePage() {
             </Upload>
           </Form.Item>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Form.Item
               name="first_name"
               label="Имя"
@@ -1979,7 +2210,7 @@ export default function TreePage() {
             <Input placeholder="Отчество" />
           </Form.Item>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Form.Item name="gender" label="Пол">
               <Select placeholder="Выберите пол">
                 <Select.Option value="male">Мужской</Select.Option>
@@ -1999,12 +2230,12 @@ export default function TreePage() {
             </Form.Item>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Form.Item name="birth_date" label="Дата рождения">
-              <DatePicker className="w-full" placeholder="Выберите дату" />
+              <Input type="date" className="w-full" />
             </Form.Item>
             <Form.Item name="death_date" label="Дата смерти">
-              <DatePicker className="w-full" placeholder="Если применимо" />
+              <Input type="date" className="w-full" />
             </Form.Item>
           </div>
 
@@ -2030,7 +2261,7 @@ export default function TreePage() {
           relationshipForm.resetFields()
         }}
         footer={null}
-        width={500}
+        width={isMobile ? '95vw' : 500}
       >
         <Form form={relationshipForm} layout="vertical" onFinish={handleAddRelationship} className="mt-4">
           <Form.Item
@@ -2100,7 +2331,7 @@ export default function TreePage() {
           setViewingStory(null)
         }}
         footer={null}
-        width={600}
+        width={isMobile ? '95vw' : 600}
       >
         <div className="mt-4">
           {/* Viewing single story */}
@@ -2276,5 +2507,17 @@ export default function TreePage() {
         />
       )}
     </div>
+  )
+}
+
+export default function TreePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Spin size="large" />
+      </div>
+    }>
+      <TreePageInner />
+    </Suspense>
   )
 }

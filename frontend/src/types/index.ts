@@ -5,6 +5,7 @@ export interface User {
   email?: string | null
   telegram_id?: string | null
   is_active: boolean
+  is_superuser: boolean
   created_at: string
   updated_at: string
 }
@@ -259,4 +260,85 @@ export interface InvitationResponse {
   token: string
   relative_id: number
   relative_name: string
+}
+
+// === Subscription / Payment types ===
+
+export type PlanType = 'free' | 'pro' | 'premium'
+export type SubscriptionStatus = 'active' | 'cancelled' | 'expired' | 'past_due'
+export type PaymentStatus = 'pending' | 'succeeded' | 'cancelled' | 'refunded'
+export type BillingPeriod = 'monthly' | 'yearly'
+
+export interface PlanLimits {
+  max_relatives: number
+  max_ai_requests_month: number
+  max_ai_smart_requests_month: number
+  max_tree_generations_month: number
+  max_book_generations_month: number
+  max_telegram_invitations: number
+  max_telegram_sessions_month: number
+  max_storage_mb: number
+  max_tts_month: number
+  has_gedcom_export: boolean
+  has_priority_support: boolean
+}
+
+export interface SubscriptionPlan {
+  id: number
+  name: PlanType
+  display_name: string
+  description?: string | null
+  price_monthly_kop: number
+  price_yearly_kop: number
+  limits: PlanLimits
+  sort_order: number
+}
+
+export interface UserSubscription {
+  id: number
+  plan: SubscriptionPlan
+  status: SubscriptionStatus
+  billing_period?: BillingPeriod | null
+  started_at: string
+  expires_at?: string | null
+  cancelled_at?: string | null
+  auto_renew: boolean
+}
+
+export interface QuotaItem {
+  resource: string
+  display_name: string
+  used: number
+  limit: number
+  is_unlimited: boolean
+}
+
+export interface UsageSummary {
+  plan: SubscriptionPlan
+  quotas: QuotaItem[]
+  period_start: string
+  period_end: string
+}
+
+export interface CheckoutRequest {
+  plan_name: PlanType
+  billing_period: BillingPeriod
+  return_url: string
+}
+
+export interface CheckoutResponse {
+  payment_id: string
+  confirmation_url: string
+  amount_kop: number
+}
+
+export interface PaymentRecord {
+  id: number
+  amount_kop: number
+  currency: string
+  status: PaymentStatus
+  payment_method_type?: string | null
+  description?: string | null
+  paid_at?: string | null
+  created_at: string
 }

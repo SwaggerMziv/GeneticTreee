@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Body, Response
+from fastapi import APIRouter, Depends, Request, status, Body, Response
 from typing import List
 from src.users.schemas import (
     UserCreateSchema,
@@ -10,12 +10,15 @@ from src.users.service import UserService
 from src.auth.dependencies import require_superuser
 from src.auth.dependencies import get_current_user_id
 from src.auth.security import security
+from src.core.middleware import limiter
 
 router = APIRouter(prefix="/api/v1/users", tags=["Users"])
 
 # Users endpoints
 @router.post("/", response_model=UserOutputSchema, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 async def create_user(
+    request: Request,
     user: UserCreateSchema,
     service: UserService = Depends(get_user_service)
 ):

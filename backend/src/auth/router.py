@@ -26,6 +26,7 @@ from src.auth.dependencies import get_current_user, get_access_token, get_curren
 from src.users.security import verify_hash_password
 from src.users.models import UserModel
 from src.users.schemas import UserOutputSchema
+from src.core.middleware import limiter
 
 router = APIRouter(prefix='/api/v1/auth', tags=['Auth'])
 
@@ -36,7 +37,8 @@ router = APIRouter(prefix='/api/v1/auth', tags=['Auth'])
     response_description='Токены доступа и обновления',
     summary='Вход пользователя и выдача токенов',
 )
-async def login(payload: LoginSchema, user_service: UserService = Depends(get_user_service)) -> JSONResponse:
+@limiter.limit("10/minute")
+async def login(request: Request, payload: LoginSchema, user_service: UserService = Depends(get_user_service)) -> JSONResponse:
     user = None
     try:
         if payload.username is not None:
@@ -124,7 +126,9 @@ async def me_sub(user_id: int = Depends(get_current_user_id)) -> MeResponseSchem
     response_description='Токены доступа и обновления',
     summary='Вход через Telegram Login Widget',
 )
+@limiter.limit("10/minute")
 async def telegram_auth(
+    request: Request,
     payload: TelegramAuthSchema,
     user_service: UserService = Depends(get_user_service)
 ) -> JSONResponse:

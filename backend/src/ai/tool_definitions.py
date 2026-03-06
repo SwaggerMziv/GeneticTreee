@@ -162,22 +162,22 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "create_relationship",
-            "description": "Создать связь между двумя родственниками",
+            "description": "Создать связь между двумя родственниками. relationship_type описывает КЕМ ЯВЛЯЕТСЯ to_relative для from_relative. Пример: 'Максим — мой брат' → from=я, to=Максим, type=brother.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "from_relative_id": {
                         "type": ["integer", "string"],
-                        "description": "ID или имя родственника (источник связи)"
+                        "description": "ID или имя родственника, ДЛЯ КОГО создаётся связь (например, пользователь)"
                     },
                     "to_relative_id": {
                         "type": ["integer", "string"],
-                        "description": "ID или имя родственника (цель связи)"
+                        "description": "ID или имя родственника, КЕМ ОН ЯВЛЯЕТСЯ (например, брат)"
                     },
                     "relationship_type": {
                         "type": "string",
                         "enum": RELATIONSHIP_TYPES,
-                        "description": "Тип связи"
+                        "description": "Кем является to_relative для from_relative (brother, mother, father и т.д.)"
                     }
                 },
                 "required": ["from_relative_id", "to_relative_id", "relationship_type"]

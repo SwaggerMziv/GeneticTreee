@@ -11,6 +11,9 @@ import {
   BookMarked,
   HelpCircle,
   Send,
+  Users,
+  Shield,
+  CreditCard,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -25,14 +28,18 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
+import { useUser } from '@/components/providers/UserProvider'
+import UsageIndicator from '@/components/subscription/UsageIndicator'
 
 const navItems = [
   { href: '/dashboard', label: 'Обзор', icon: LayoutDashboard },
+  { href: '/dashboard/relatives', label: 'Родственники', icon: Users },
   { href: '/tree', label: 'Семейное древо', icon: TreePine },
   { href: '/dashboard/ai-assistant', label: 'ИИ Ассистент', icon: Sparkles },
   { href: '/dashboard/stories', label: 'Истории', icon: BookOpen },
   { href: '/dashboard/book', label: 'Книга', icon: FileText },
   { href: '/dashboard/telegram', label: 'Telegram', icon: Send },
+  { href: '/dashboard/subscription', label: 'Подписка', icon: CreditCard },
 ]
 
 const helpItems = [
@@ -42,6 +49,7 @@ const helpItems = [
 
 export default function DashboardSidebar() {
   const pathname = usePathname()
+  const { user } = useUser()
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -117,9 +125,34 @@ export default function DashboardSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {user?.is_superuser && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Администрирование</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/admin')}
+                    size="lg"
+                    tooltip="Админ-панель"
+                  >
+                    <Link href="/admin" className={cn(
+                      !pathname.startsWith('/admin') && 'text-sidebar-foreground'
+                    )}>
+                      <Shield className="w-5 h-5" />
+                      <span className="text-base">Админ-панель</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
-      <SidebarFooter className="p-2">
+      <SidebarFooter className="p-2 space-y-2">
+        <UsageIndicator />
         <div className="text-xs text-muted-foreground text-center group-data-[collapsible=icon]:hidden">
           GeneticTree v1.0
         </div>

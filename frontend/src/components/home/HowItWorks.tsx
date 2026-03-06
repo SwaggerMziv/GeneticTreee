@@ -46,14 +46,14 @@ export default function HowItWorks() {
   return (
     <section className="relative py-24 lg:py-32 bg-background overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-[#8ECAE6]/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/3 left-1/4 w-96 h-96 bg-[#F2BDD4]/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-[#8ECAE6]/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/3 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-[#F2BDD4]/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
         <FadeContent duration={800} threshold={0.2}>
           <div className="text-center max-w-3xl mx-auto mb-20">
-            <h2 className="font-serif text-5xl lg:text-6xl font-bold mb-6">
+            <h2 className="font-serif text-3xl sm:text-5xl lg:text-6xl font-bold mb-6">
               Как это{' '}
               <span className="gradient-text">работает</span>
             </h2>
@@ -75,10 +75,10 @@ export default function HowItWorks() {
                 <div className="text-center">
                   {/* Step number + icon */}
                   <div className="relative inline-flex mb-6">
-                    <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm`}>
-                      <item.icon className="w-10 h-10 text-white" strokeWidth={1.5} />
+                    <div className={`w-14 h-14 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br ${item.color} flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm`}>
+                      <item.icon className="w-7 h-7 sm:w-10 sm:h-10 text-white" strokeWidth={1.5} />
                     </div>
-                    <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full bg-background border-2 border-current ${item.accent} font-bold text-sm flex items-center justify-center`}>
+                    <div className={`absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-background border-2 border-current ${item.accent} font-bold text-xs sm:text-sm flex items-center justify-center`}>
                       {item.step}
                     </div>
                   </div>

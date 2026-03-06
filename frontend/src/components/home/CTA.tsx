@@ -15,21 +15,21 @@ export default function CTA() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-azure/5 to-transparent" />
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <FadeContent duration={1000} threshold={0.3}>
           <div className="relative rounded-3xl bg-gradient-to-br from-azure to-azure-dark p-1 shadow-2xl">
-            <div className="rounded-3xl bg-background p-12 lg:p-20">
+            <div className="rounded-3xl bg-background p-6 sm:p-12 lg:p-20">
               <div className="max-w-3xl mx-auto text-center">
-                <h2 className="font-serif text-4xl lg:text-6xl font-bold mb-6">
+                <h2 className="font-serif text-3xl sm:text-4xl lg:text-6xl font-bold mb-4 sm:mb-6">
                   Начните создавать семейную книгу{' '}
                   <span className="gradient-text">прямо сейчас</span>
                 </h2>
-                <p className="text-xl text-muted-foreground leading-relaxed mb-10">
+                <p className="text-base sm:text-xl text-muted-foreground leading-relaxed mb-6 sm:mb-10">
                   Соберите истории вашей семьи, пока они ещё живы в памяти.
                 </p>
                 <Link href={authLink}>
                   <Button
-                    className="h-14 px-10 text-lg font-semibold bg-gradient-to-r from-azure to-azure-dark text-white hover:shadow-glow-azure hover:scale-105 transition-all duration-300"
+                    className="h-12 sm:h-14 px-6 sm:px-10 text-base sm:text-lg font-semibold bg-gradient-to-r from-azure to-azure-dark text-white hover:shadow-glow-azure hover:scale-105 transition-all duration-300"
                   >
                     Начать бесплатно
                     <ArrowRight className="w-5 h-5 ml-2" />

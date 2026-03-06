@@ -7,6 +7,7 @@ import HowItWorks from '@/components/home/HowItWorks'
 import FamilyTimeline from '@/components/home/FamilyTimeline'
 import Features from '@/components/home/Features'
 import CTA from '@/components/home/CTA'
+import Pricing from '@/components/home/Pricing'
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
       <HowItWorks />
       <Features />
       <FamilyTimeline />
+      <Pricing />
       <CTA />
       <Footer />
     </main>

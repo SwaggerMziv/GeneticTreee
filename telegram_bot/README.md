@@ -5,7 +5,7 @@
 ## Что умеет бот
 
 - **Проводит интервью** — задаёт вопросы о жизни, детстве, семье, работе
-- **Расшифровывает голосовые** — можно просто наговорить историю, бот сам переведёт в текст
+- **Расшифровывает голосовые** — можно просто наговорить историю, бот сам переведёт в текст (локальная модель faster-whisper, без внешних API)
 - **Создаёт истории** — из диалога автоматически формируется связный рассказ от первого лица
 - **Напоминает о себе** — раз в 12 часов присылает интересный вопрос, чтобы родственник не забывал делиться воспоминаниями
 - **Использует семейный контекст** — при генерации вопросов учитывает истории других родственников
@@ -391,7 +391,10 @@ pip install -r requirements.txt
 ```env
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrsTUVwxyz
 BACKEND_URL=http://localhost:8000
-OPENAI_API_KEY=sk-...
+OPENROUTER_API_KEY=sk-or-v1-...
+
+# Whisper (локальная модель, размеры: tiny, base, small, medium, large-v3)
+WHISPER_MODEL_SIZE=small
 
 # Опционально
 BROADCAST_ENABLED=true
@@ -399,7 +402,7 @@ BROADCAST_ENABLED=true
 
 **Где взять токены:**
 - `TELEGRAM_BOT_TOKEN` — создай бота через [@BotFather](https://t.me/BotFather), он выдаст токен
-- `OPENAI_API_KEY` — в личном кабинете [OpenAI](https://platform.openai.com/api-keys)
+- `OPENROUTER_API_KEY` — в личном кабинете [OpenRouter](https://openrouter.ai/keys)
 
 ### 3. Запуск
 
@@ -433,7 +436,8 @@ INFO - Starting polling...
 ```
 Пользователь ─────► Telegram API ─────► Бот (aiogram)
                                             │
-                                            ├──► OpenAI (интервью + Whisper)
+                                            ├──► OpenRouter (GPT-4o для интервью)
+                                            ├──► faster-whisper (локальное распознавание голоса)
                                             │
                                             └──► Backend API (сохранение историй)
                                                       │
@@ -527,7 +531,7 @@ class InterviewStates(StatesGroup):
 
 ### Голосовые сообщения
 
-Бот принимает голосовые и расшифровывает их через Whisper API:
+Бот принимает голосовые и расшифровывает их локально через faster-whisper (без обращения к внешним API):
 
 ```
 🎧 Расшифровываю голосовое сообщение...
@@ -774,7 +778,9 @@ BROADCAST_QUESTIONS = [
 
 ### Голосовые не расшифровываются
 
-Whisper API тоже платный. Проверь баланс OpenAI.
+1. Проверь, установлен ли `ffmpeg` (нужен faster-whisper для декодирования аудио)
+2. Проверь, что модель скачалась (первый запуск скачивает ~461 MB для модели `small`)
+3. Проверь RAM — модель `small` требует ~2 GB
 
 ### "Неверная или устаревшая ссылка"
 
@@ -802,5 +808,6 @@ logging.basicConfig(
 
 - **aiogram 3.x** — асинхронная работа с Telegram API
 - **httpx** — HTTP-клиент для запросов к бэкенду
-- **openai** — SDK для OpenAI (GPT + Whisper)
+- **openai** — SDK для OpenRouter (GPT-4o)
+- **faster-whisper** — локальное распознавание голоса (CTranslate2)
 - **python-dotenv** — загрузка переменных окружения

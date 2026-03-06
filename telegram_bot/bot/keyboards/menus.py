@@ -4,51 +4,42 @@ from aiogram.types import (
     KeyboardButton,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
+    WebAppInfo,
 )
 
-
-def get_main_menu_keyboard() -> ReplyKeyboardMarkup:
-    """Get main menu keyboard."""
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="📖 Начать интервью")],
-            [KeyboardButton(text="📊 Мои истории"), KeyboardButton(text="❓ Помощь")],
-            [KeyboardButton(text="⚙️ Настройки")],
-        ],
-        resize_keyboard=True,
-    )
+from webapp.config import webapp_config
 
 
-def get_interview_keyboard(question_num: int = 0, min_questions: int = 3) -> ReplyKeyboardMarkup:
-    """Get keyboard during interview with progress info.
+def get_main_menu_keyboard(telegram_user_id: int = None) -> ReplyKeyboardMarkup:
+    """Get main menu keyboard.
 
     Args:
-        question_num: Current question number (1-based)
-        min_questions: Minimum questions before story can be created
+        telegram_user_id: если передан, добавляется в URL webapp как fallback
+                          для авторизации (нужно при ngrok free tier, где initData пустой)
     """
     buttons = []
 
-    # Show "Create story" button only after minimum questions
-    if question_num >= min_questions:
-        buttons.append([KeyboardButton(text="✨ Создать историю")])
+    # Кнопка Mini App — первая
+    if webapp_config.WEBAPP_URL:
+        url = webapp_config.WEBAPP_URL
+        if telegram_user_id:
+            sep = "&" if "?" in url else "?"
+            url = f"{url}{sep}tg_id={telegram_user_id}"
+        buttons.append([
+            KeyboardButton(
+                text="🌳 Открыть приложение",
+                web_app=WebAppInfo(url=url),
+            )
+        ])
 
-    buttons.append([KeyboardButton(text="⏸ Пауза"), KeyboardButton(text="🛑 Завершить")])
+    buttons.extend([
+        [KeyboardButton(text="📊 Мои истории"), KeyboardButton(text="❓ Помощь")],
+        [KeyboardButton(text="⚙️ Настройки")],
+    ])
 
-    return ReplyKeyboardMarkup(keyboard=buttons, resize_keyboard=True)
-
-
-def get_story_confirmation_keyboard() -> InlineKeyboardMarkup:
-    """Get inline keyboard for story confirmation."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="✅ Сохранить", callback_data="story_save"),
-                InlineKeyboardButton(text="❌ Отклонить", callback_data="story_discard"),
-            ],
-            [
-                InlineKeyboardButton(text="✏️ Продолжить интервью", callback_data="story_continue"),
-            ],
-        ]
+    return ReplyKeyboardMarkup(
+        keyboard=buttons,
+        resize_keyboard=True,
     )
 
 
@@ -66,65 +57,4 @@ def get_broadcast_settings_keyboard(enabled: bool) -> InlineKeyboardMarkup:
                 )
             ],
         ]
-    )
-
-
-def get_relationship_keyboard() -> InlineKeyboardMarkup:
-    """Get inline keyboard for selecting relationship type."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="👩 Мать", callback_data="rel_mother"),
-                InlineKeyboardButton(text="👨 Отец", callback_data="rel_father"),
-            ],
-            [
-                InlineKeyboardButton(text="👫 Брат", callback_data="rel_brother"),
-                InlineKeyboardButton(text="👭 Сестра", callback_data="rel_sister"),
-            ],
-            [
-                InlineKeyboardButton(text="👴 Дедушка", callback_data="rel_grandfather"),
-                InlineKeyboardButton(text="👵 Бабушка", callback_data="rel_grandmother"),
-            ],
-            [
-                InlineKeyboardButton(text="👤 Дядя", callback_data="rel_uncle"),
-                InlineKeyboardButton(text="👤 Тётя", callback_data="rel_aunt"),
-            ],
-            [
-                InlineKeyboardButton(text="👦 Сын", callback_data="rel_son"),
-                InlineKeyboardButton(text="👧 Дочь", callback_data="rel_daughter"),
-            ],
-            [
-                InlineKeyboardButton(text="💑 Супруг(а)", callback_data="rel_spouse"),
-            ],
-            [
-                InlineKeyboardButton(text="❌ Пропустить", callback_data="rel_skip"),
-            ],
-        ]
-    )
-
-
-def get_relative_confirmation_keyboard() -> InlineKeyboardMarkup:
-    """Get inline keyboard for confirming relative creation."""
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="✅ Создать профиль", callback_data="rel_confirm"),
-                InlineKeyboardButton(text="❌ Отмена", callback_data="rel_cancel"),
-            ],
-        ]
-    )
-
-
-def get_photo_collection_keyboard(photo_count: int = 0) -> ReplyKeyboardMarkup:
-    """Get keyboard for collecting story photos.
-
-    Args:
-        photo_count: Current number of photos uploaded
-    """
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text="✅ Готово, сохранить историю")],
-            [KeyboardButton(text="⏭ Пропустить фото")],
-        ],
-        resize_keyboard=True,
     )

@@ -172,8 +172,8 @@ export default function TelegramPage() {
                       className="font-mono text-xs"
                     />
                     <Button onClick={handleCopyLink} className="shrink-0">
-                      <Copy className="w-4 h-4 mr-2" />
-                      Копировать
+                      <Copy className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-2">Копировать</span>
                     </Button>
                   </div>
                 </div>

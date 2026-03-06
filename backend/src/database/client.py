@@ -29,6 +29,11 @@ async def get_session():
 async def setup_db():
     from src.users.models import UserModel  # noqa: F401
     from src.family.models import FamilyRelationModel, FamilyRelationshipModel  # noqa: F401
+    from src.admin.models import AdminAuditLogModel, AIUsageLogModel, BookGenerationModel  # noqa: F401
+    from src.ai.models import AIChatSessionModel  # noqa: F401
+    from src.subscription.models import (  # noqa: F401
+        SubscriptionPlanModel, UserSubscriptionModel, PaymentModel, UsageQuotaModel
+    )
     
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)

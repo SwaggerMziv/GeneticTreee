@@ -65,6 +65,21 @@ class S3Manager:
 
         return key, self._get_public_url(key), content_type
 
+    async def upload_bytes(self, data: bytes, filename: str, content_type: str) -> tuple[str, str, str]:
+        """Upload raw bytes and return (key, url, content_type)"""
+        key = self._generate_key(filename, content_type)
+
+        async with self._client() as client:
+            await client.put_object(
+                Bucket=self.bucket_name,
+                Key=key,
+                Body=data,
+                ContentType=content_type,
+                ACL="public-read",
+            )
+
+        return key, self._get_public_url(key), content_type
+
     async def delete(self, url: str) -> None:
         """Delete object by its public URL"""
         async with self._client() as client:

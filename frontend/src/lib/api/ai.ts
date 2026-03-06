@@ -272,10 +272,48 @@ export async function validateTree(userId: number): Promise<ValidationConflict[]
   return response.json()
 }
 
+// ==================== ИСТОРИЯ ЧАТА ====================
+
+export async function getChatHistory(): Promise<ChatMessage[]> {
+  const token = getAccessToken()
+  const response = await fetch(`${API_URL}/api/v1/ai/chat-history`, {
+    headers: { 'Authorization': token ? `Bearer ${token}` : '' },
+    credentials: 'include',
+  })
+  if (!response.ok) return []
+  const data = await response.json()
+  return data.messages || []
+}
+
+export async function saveChatHistory(messages: ChatMessage[]): Promise<void> {
+  const token = getAccessToken()
+  await fetch(`${API_URL}/api/v1/ai/chat-history`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : '',
+    },
+    credentials: 'include',
+    body: JSON.stringify({ messages }),
+  })
+}
+
+export async function clearChatHistory(): Promise<void> {
+  const token = getAccessToken()
+  await fetch(`${API_URL}/api/v1/ai/chat-history`, {
+    method: 'DELETE',
+    headers: { 'Authorization': token ? `Bearer ${token}` : '' },
+    credentials: 'include',
+  })
+}
+
 export const aiApi = {
   streamGenerateTree,
   streamEditTree,
   streamUnified,
   applyGenerationResult,
   validateTree,
+  getChatHistory,
+  saveChatHistory,
+  clearChatHistory,
 }

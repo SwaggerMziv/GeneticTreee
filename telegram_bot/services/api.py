@@ -204,5 +204,79 @@ class BackendAPI:
                 return None
 
 
+    async def get_interview_messages(self, relative_id: int) -> list[dict]:
+        """Get interview messages history for a relative."""
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.base_url}/api/v1/family/relatives/{relative_id}/interview-messages",
+                    timeout=10.0,
+                )
+                if response.status_code == 200:
+                    return response.json()
+                return []
+            except Exception as e:
+                logger.error(f"Error getting interview messages: {e}")
+                return []
+
+    async def save_interview_message_pair(
+        self, relative_id: int, user_message: str, ai_response: str
+    ) -> bool:
+        """Save an interview message pair (question + answer) to backend."""
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.post(
+                    f"{self.base_url}/api/v1/family/relatives/{relative_id}/interview-message",
+                    json={
+                        "user_message": user_message,
+                        "ai_response": ai_response,
+                    },
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+                return True
+            except Exception as e:
+                logger.error(f"Error saving interview message pair: {e}")
+                return False
+
+    async def get_stories(self, relative_id: int) -> list[dict]:
+        """Get all stories for a relative (public bot endpoint)."""
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.base_url}/api/v1/family/relatives/{relative_id}/stories",
+                    timeout=10.0,
+                )
+                if response.status_code == 200:
+                    return response.json()
+                return []
+            except Exception as e:
+                logger.error(f"Error getting stories: {e}")
+                return []
+
+
+    async def check_quota(
+        self, telegram_user_id: int, resource: str
+    ) -> dict:
+        """
+        Check quota for a resource by telegram_user_id.
+        Returns {"allowed": bool, "resource": str, "used": int, "limit": int, "message": str|None}
+        """
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.base_url}/api/v1/subscription/check-bot-quota/{telegram_user_id}",
+                    params={"resource": resource},
+                    timeout=10.0,
+                )
+                if response.status_code == 200:
+                    return response.json()
+                return {"allowed": True, "resource": resource, "used": 0, "limit": -1, "message": None}
+            except Exception as e:
+                logger.error(f"Error checking quota: {e}")
+                # При ошибке разрешаем (fail open)
+                return {"allowed": True, "resource": resource, "used": 0, "limit": -1, "message": None}
+
+
 # Singleton instance
 backend_api = BackendAPI()

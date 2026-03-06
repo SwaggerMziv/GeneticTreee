@@ -89,13 +89,8 @@ class ActionValidator:
         return warnings
 
     def _validate_relative(self, data: Dict[str, Any]) -> List[str]:
-        """Валидировать создание родственника"""
-        warnings = []
-
-        if not data.get('first_name') or not data.get('last_name'):
-            warnings.append("Имя и фамилия обязательны")
-
-        return warnings
+        """Валидировать создание родственника — все поля опциональны"""
+        return []
 
     def _check_gender_relationship(self, gender: str, relationship_type: str) -> str:
         """Проверить соответствие пола и типа связи"""

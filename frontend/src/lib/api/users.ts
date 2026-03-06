@@ -82,6 +82,15 @@ export const usersApi = {
     })
   },
 
+  // Set superuser status (superuser only)
+  setSuperuser: async (userId: number, isSuperuser: boolean): Promise<User> => {
+    return apiRequest<User>({
+      method: 'PATCH',
+      url: `/api/v1/users/${userId}/superuser`,
+      params: { is_superuser: isSuperuser },
+    })
+  },
+
   // Search users
   search: async (
     searchTerm: string,
