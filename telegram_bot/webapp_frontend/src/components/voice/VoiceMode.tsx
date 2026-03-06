@@ -81,14 +81,6 @@ export function VoiceMode({
     }
   }, []);
 
-  // Показать последний AI-вопрос при входе в voice mode с историей
-  useEffect(() => {
-    if (hasStarted && lastAiMessage && !displayText && phase === "idle") {
-      setDisplayText(lastAiMessage);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasStarted, lastAiMessage]);
-
   useEffect(() => {
     autoListenRef.current = autoListenEnabled;
   }, [autoListenEnabled]);
