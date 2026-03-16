@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        WHISPER_MODEL_SIZE: ${WHISPER_MODEL_SIZE:-tiny}
     container_name: genetic_tree_bot
     restart: unless-stopped
     env_file:
