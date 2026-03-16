@@ -11,6 +11,76 @@ import { subscriptionApi } from '@/lib/api/subscription'
 import { SubscriptionPlan, PlanType, BillingPeriod, UsageSummary } from '@/types'
 import { toast } from 'sonner'
 
+// Статические тарифы — показываются при недоступности API
+const STATIC_PLANS: SubscriptionPlan[] = [
+  {
+    id: 1,
+    name: 'free',
+    display_name: 'Бесплатный',
+    description: 'Базовый доступ для знакомства с платформой',
+    price_monthly_kop: 0,
+    price_yearly_kop: 0,
+    limits: {
+      max_relatives: 15,
+      max_ai_requests_month: 10,
+      max_ai_smart_requests_month: 0,
+      max_tree_generations_month: 2,
+      max_book_generations_month: 0,
+      max_telegram_invitations: 3,
+      max_telegram_sessions_month: 5,
+      max_storage_mb: 50,
+      max_tts_month: 0,
+      has_gedcom_export: false,
+      has_priority_support: false,
+    },
+    sort_order: 0,
+  },
+  {
+    id: 2,
+    name: 'pro',
+    display_name: 'Pro',
+    description: 'Для активного сбора семейной истории',
+    price_monthly_kop: 29900,
+    price_yearly_kop: 299000,
+    limits: {
+      max_relatives: 100,
+      max_ai_requests_month: 100,
+      max_ai_smart_requests_month: 10,
+      max_tree_generations_month: 20,
+      max_book_generations_month: 3,
+      max_telegram_invitations: 20,
+      max_telegram_sessions_month: 50,
+      max_storage_mb: 500,
+      max_tts_month: 5,
+      has_gedcom_export: true,
+      has_priority_support: false,
+    },
+    sort_order: 1,
+  },
+  {
+    id: 3,
+    name: 'premium',
+    display_name: 'Premium',
+    description: 'Максимум возможностей для всей семьи',
+    price_monthly_kop: 59900,
+    price_yearly_kop: 599000,
+    limits: {
+      max_relatives: -1,
+      max_ai_requests_month: -1,
+      max_ai_smart_requests_month: 50,
+      max_tree_generations_month: -1,
+      max_book_generations_month: 10,
+      max_telegram_invitations: -1,
+      max_telegram_sessions_month: -1,
+      max_storage_mb: 5120,
+      max_tts_month: 30,
+      has_gedcom_export: true,
+      has_priority_support: true,
+    },
+    sort_order: 2,
+  },
+]
+
 interface PricingCardsProps {
   currentPlan?: PlanType
   usage?: UsageSummary | null
@@ -56,7 +126,7 @@ export default function PricingCards({ currentPlan, usage, onCheckout, isLoading
   useEffect(() => {
     subscriptionApi.getPlans()
       .then(setPlans)
-      .catch(() => toast.error('Не удалось загрузить тарифы'))
+      .catch(() => setPlans(STATIC_PLANS))
       .finally(() => setLoading(false))
   }, [])
 
