@@ -218,7 +218,7 @@ class FamilyRelationService:
     async def save_interview_message(self, relative_id: int, user_message: str, ai_response: str) -> bool:
         """Сохранить сообщения из интервью в контекст родственника"""
         import json
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         # Get current context
         relative = await self.repository.get_by_id_without_user(relative_id)
@@ -233,7 +233,7 @@ class FamilyRelationService:
 
         # Add new message pair
         context['interview_messages'].append({
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(timezone.utc).isoformat(),
             'user': user_message,
             'ai': ai_response
         })

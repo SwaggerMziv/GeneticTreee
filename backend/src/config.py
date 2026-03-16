@@ -2,29 +2,29 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    database_host: str = Field(..., env='DATABASE_HOST')
-    database_port: int = Field(..., env='DATABASE_PORT')
-    database_username: str = Field(..., env='DATABASE_USERNAME')
-    database_password: str = Field(..., env='DATABASE_PASSWORD')
-    database_name: str = Field(..., env='DATABASE_NAME')
+    database_host: str = Field(...)
+    database_port: int = Field(...)
+    database_username: str = Field(...)
+    database_password: str = Field(...)
+    database_name: str = Field(...)
 
-    bucket_name: str = Field(..., env='BUCKET_NAME')
-    access_key_id: str = Field(..., env='ACCESS_KEY_ID')
-    secret_access_key: str = Field(..., env='SECRET_ACCESS_KEY')
-    endpoint_url: str = Field(..., env='ENDPOINT_URL')
-    region_name: str = Field(..., env='REGION_NAME')
+    bucket_name: str = Field(...)
+    access_key_id: str = Field(...)
+    secret_access_key: str = Field(...)
+    endpoint_url: str = Field(...)
+    region_name: str = Field(...)
 
-    openrouter_api_key: str = Field(..., env='OPENROUTER_API_KEY')
+    openrouter_api_key: str = Field(...)
     
-    jwt_secret_key: str = Field(..., env='JWT_SECRET_KEY')
-    telegram_bot_token: str | None = Field(default=None, env='TELEGRAM_BOT_TOKEN')
-    telegram_bot_username: str = Field(default="genetic_tree_bot", env='TELEGRAM_BOT_USERNAME')
-    allow_origins: str | None = Field(default=None, env='ALLOW_ORIGINS')
+    jwt_secret_key: str = Field(...)
+    telegram_bot_token: str | None = Field(default=None)
+    telegram_bot_username: str = Field(default="genetic_tree_bot")
+    allow_origins: str | None = Field(default=None)
 
     # ЮKassa
-    yookassa_shop_id: str | None = Field(default=None, env='YOOKASSA_SHOP_ID')
-    yookassa_secret_key: str | None = Field(default=None, env='YOOKASSA_SECRET_KEY')
-    yookassa_webhook_secret: str | None = Field(default=None, env='YOOKASSA_WEBHOOK_SECRET')
+    yookassa_shop_id: str | None = Field(default=None)
+    yookassa_secret_key: str | None = Field(default=None)
+    yookassa_webhook_secret: str | None = Field(default=None)
 
     model_config = SettingsConfigDict(
         env_file=".env",

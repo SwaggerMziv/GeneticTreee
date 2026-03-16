@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field, EmailStr, field_validator
 from datetime import datetime, timezone
 
 PASSWORD_PATTERN = re.compile(r'^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?`~ ]+$')
+USERNAME_PATTERN = re.compile(r"^[\w-]{3,20}$", re.UNICODE)
 
 
 # Пользователь
@@ -17,6 +18,13 @@ class UserCreateSchema(BaseModel):
     def password_must_be_ascii(cls, v: str | None) -> str | None:
         if v is not None and not PASSWORD_PATTERN.match(v):
             raise ValueError('Пароль может содержать только латинские буквы, цифры и спецсимволы')
+        return v
+
+    @field_validator('username')
+    @classmethod
+    def username_must_be_safe(cls, v: str) -> str:
+        if not USERNAME_PATTERN.match(v):
+            raise ValueError("Username может содержать только буквы/цифры, '_' или '-'")
         return v
 
 class UserReadSchema(BaseModel):
@@ -39,6 +47,13 @@ class UserUpdateSchema(BaseModel):
     def password_must_be_ascii(cls, v: str | None) -> str | None:
         if v is not None and not PASSWORD_PATTERN.match(v):
             raise ValueError('Пароль может содержать только латинские буквы, цифры и спецсимволы')
+        return v
+
+    @field_validator('username')
+    @classmethod
+    def username_must_be_safe(cls, v: str) -> str:
+        if not USERNAME_PATTERN.match(v):
+            raise ValueError("Username может содержать только буквы/цифры, '_' или '-'")
         return v
 
 class UserDeleteSchema(BaseModel):

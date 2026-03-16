@@ -1,6 +1,7 @@
 """API роутер подписок и платежей"""
 
 from fastapi import APIRouter, Depends, Body, Request, Query
+from fastapi import HTTPException
 from typing import List
 
 from src.auth.dependencies import get_current_user_id
@@ -102,7 +103,10 @@ async def yookassa_webhook(
         raise InvalidWebhookError("Неверная подпись")
 
     import json
-    data = json.loads(body)
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Malformed JSON")
     event_type = data.get("event", "")
     event_object = data.get("object", {})
 

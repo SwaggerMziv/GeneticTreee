@@ -82,3 +82,36 @@ export interface PendingStory {
   title: string;
   text: string;
 }
+
+// ─── Realtime WebSocket Types ───
+
+export type RealtimePhase = "idle" | "connecting" | "listening" | "speaking";
+
+export interface RealtimeState {
+  phase: RealtimePhase;
+  isConnected: boolean;
+  userTranscript: string;
+  aiTranscript: string;
+  questionCount: number;
+  canCreateStory: boolean;
+  error: string | null;
+}
+
+/** Messages sent from frontend → backend WS */
+export type WSOutgoingMessage =
+  | { type: "audio"; data: string }
+  | { type: "text"; text: string }
+  | { type: "control"; action: "start" | "stop" | "interrupt" }
+  | { type: "story_action"; action: "save" | "discard" | "continue" };
+
+/** Messages received from backend → frontend WS */
+export type WSIncomingMessage =
+  | { type: "audio"; data: string }
+  | { type: "user_transcript"; text: string; final: boolean }
+  | { type: "ai_transcript"; text: string; final: boolean }
+  | { type: "status"; phase: RealtimePhase }
+  | { type: "relative_detected"; name: string; probable_role: string; context: string }
+  | { type: "story_preview"; title: string; text: string }
+  | { type: "question_count"; count: number; can_create_story: boolean }
+  | { type: "error"; content: string }
+  | { type: "connected"; session_restored: boolean };

@@ -43,42 +43,73 @@ export default function HomePage() {
   useEffect(() => {
     if (!ready) return;
 
+    /** Получить telegram_user_id из SDK или URL-параметра */
+    const getTelegramUserId = (): number | null => {
+      if (user?.id) return user.id;
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get("tg_id");
+        return id ? Number(id) : null;
+      }
+      return null;
+    };
+
+    /** Попытка авторизации через initData (HMAC) */
+    const tryInitDataAuth = async (): Promise<AuthResponse | null> => {
+      if (!initData) return null;
+      try {
+        return await authenticate(initData);
+      } catch (e) {
+        console.warn("[Auth] initData auth failed:", e instanceof Error ? e.message : e);
+        return null;
+      }
+    };
+
+    /** Попытка авторизации по telegram_user_id (fallback) */
+    const tryFallbackAuth = async (): Promise<AuthResponse | null> => {
+      const tgUserId = getTelegramUserId();
+      if (!tgUserId) return null;
+      try {
+        return await authenticateByTelegramId(tgUserId);
+      } catch (e) {
+        console.warn("[Auth] Fallback auth failed:", e instanceof Error ? e.message : e);
+        return null;
+      }
+    };
+
     const doAuth = async () => {
       const hasTelegramSDK = !!webApp;
       const hasInitData = !!initData;
-      const hasStoredToken = !!getToken();
 
       const apiUrl = getApiBaseUrl();
       const info = [
         `SDK: ${hasTelegramSDK ? "да" : "нет"}`,
         `initData: ${hasInitData ? "да" : "нет"}`,
-        `token (session): ${hasStoredToken ? "да" : "нет"}`,
+        `user.id: ${user?.id || "нет"}`,
         `API: ${apiUrl}`,
       ].join(", ");
       setDebugInfo(info);
-
       console.log("[Auth]", info);
 
-      const errors: string[] = [];
-
       try {
-        // 1. Если есть initData от Telegram — авторизуемся через неё
-        if (initData) {
-          console.log("[Auth] Авторизация через initData...");
-          try {
-            const result = await authenticate(initData);
-            setAuth(result);
-            setLoading(false);
-            return;
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.warn("[Auth] initData auth failed:", msg);
-            errors.push(`initData: ${msg}`);
-          }
+        // 1. initData (HMAC-подпись от Telegram) — самый надёжный способ
+        const initDataResult = await tryInitDataAuth();
+        if (initDataResult) {
+          setAuth(initDataResult);
+          setLoading(false);
+          return;
         }
 
-        // 2. Если есть сохранённый токен в sessionStorage — пробуем его
-        if (hasStoredToken) {
+        // 2. Fallback по telegram_user_id (из SDK или URL ?tg_id=)
+        const fallbackResult = await tryFallbackAuth();
+        if (fallbackResult) {
+          setAuth(fallbackResult);
+          setLoading(false);
+          return;
+        }
+
+        // 3. Сохранённый токен — последний шанс (без верификации на сервере)
+        if (getToken()) {
           console.log("[Auth] Используем сохранённый токен...");
           setAuth({
             token: getToken()!,
@@ -92,9 +123,8 @@ export default function HomePage() {
           return;
         }
 
-        // 3. Нет initData и нет токена
+        // 4. Dev mode — вне Telegram
         if (!hasTelegramSDK) {
-          // Вне Telegram — dev mode
           console.log("[Auth] Dev mode (нет Telegram SDK)");
           setAuth({
             token: "dev",
@@ -108,47 +138,16 @@ export default function HomePage() {
           return;
         }
 
-        // 4. Fallback через user.id из SDK (работает когда initData пуст, но SDK есть)
-        const tgUserId = user?.id || (() => {
-          // Fallback: читаем tg_id из URL-параметра (бот передаёт при ngrok/dev)
-          if (typeof window !== "undefined") {
-            const params = new URLSearchParams(window.location.search);
-            const id = params.get("tg_id");
-            return id ? Number(id) : null;
-          }
-          return null;
-        })();
-
-        if (tgUserId) {
-          console.log("[Auth] Fallback: авторизация по telegram_user_id...", tgUserId);
-          try {
-            const result = await authenticateByTelegramId(tgUserId);
-            setAuth(result);
-            setLoading(false);
-            return;
-          } catch (e) {
-            const msg = e instanceof Error ? e.message : String(e);
-            console.error("[Auth] Fallback auth failed:", msg);
-            errors.push(`fallback (tg_id=${tgUserId}): ${msg}`);
-          }
-        }
-
-        // 5. Совсем ничего не сработало — показываем ошибку
+        // 5. Все методы исчерпаны
         console.error("[Auth] Все методы авторизации исчерпаны");
-        const errorDetail = errors.length > 0
-          ? `\n\nОшибки:\n${errors.join("\n")}`
-          : "";
         setAuthError(
           "Не удалось авторизоваться.\n\n" +
-          "Попробуйте закрыть приложение и открыть заново через кнопку «🌳 Открыть приложение» в боте." +
-          errorDetail
+          "Попробуйте закрыть приложение и открыть заново через кнопку «🌳 Открыть приложение» в боте."
         );
       } catch (err) {
         console.error("[Auth] Ошибка:", err);
         setAuthError(
-          err instanceof Error
-            ? err.message
-            : "Ошибка авторизации"
+          err instanceof Error ? err.message : "Ошибка авторизации"
         );
       } finally {
         setLoading(false);
@@ -157,20 +156,17 @@ export default function HomePage() {
 
     doAuth();
 
-    // Set re-auth handler
+    // Re-auth handler: пробуем initData, затем fallback
     setOnAuthRequired(async () => {
-      if (initData) {
-        try {
-          const result = await authenticate(initData);
-          setAuth(result);
-        } catch (e) {
-          console.error("[Auth] Re-auth failed:", e);
-          clearToken();
-          setAuthError("Сессия истекла. Закройте и откройте приложение заново.");
-        }
+      const result = await tryInitDataAuth() || await tryFallbackAuth();
+      if (result) {
+        setAuth(result);
+      } else {
+        clearToken();
+        setAuthError("Сессия истекла. Закройте и откройте приложение заново.");
       }
     });
-  }, [ready, initData, webApp]);
+  }, [ready, initData, webApp, user]);
 
   if (loading) {
     return (

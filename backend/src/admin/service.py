@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, and_, cast, Date
+from sqlalchemy import select, func, or_, and_
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
@@ -934,12 +934,12 @@ class AdminService:
         # Регистрации по дням
         reg_q = await self.session.execute(
             select(
-                cast(UserModel.created_at, Date).label('day'),
+                func.date(UserModel.created_at).label('day'),
                 func.count().label('cnt')
             )
             .where(UserModel.created_at >= thirty_days_ago)
-            .group_by(cast(UserModel.created_at, Date))
-            .order_by(cast(UserModel.created_at, Date))
+            .group_by(func.date(UserModel.created_at))
+            .order_by(func.date(UserModel.created_at))
         )
         registrations = [
             DayDataPointSchema(date=str(day), count=cnt)
@@ -949,15 +949,15 @@ class AdminService:
         # Активные юзеры по дням (по updated_at родственников)
         active_q = await self.session.execute(
             select(
-                cast(FamilyRelationModel.updated_at, Date).label('day'),
+                func.date(FamilyRelationModel.updated_at).label('day'),
                 func.count(func.distinct(FamilyRelationModel.user_id)).label('cnt')
             )
             .where(
                 FamilyRelationModel.updated_at >= thirty_days_ago,
                 FamilyRelationModel.is_active == True
             )
-            .group_by(cast(FamilyRelationModel.updated_at, Date))
-            .order_by(cast(FamilyRelationModel.updated_at, Date))
+            .group_by(func.date(FamilyRelationModel.updated_at))
+            .order_by(func.date(FamilyRelationModel.updated_at))
         )
         active_users = [
             DayDataPointSchema(date=str(day), count=cnt)

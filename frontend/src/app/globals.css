@@ -263,6 +263,60 @@ html {
   box-shadow: 0 2px 10px rgba(107, 196, 221, 0.05), 0 1px 4px rgba(180, 170, 200, 0.03);
 }
 
+/* Legal page typography */
+.legal-content h2 {
+  @apply text-2xl font-bold text-foreground mt-10 mb-4;
+}
+
+.legal-content h3 {
+  @apply text-lg font-semibold text-foreground mt-6 mb-3;
+}
+
+.legal-content p {
+  @apply text-base text-muted-foreground leading-relaxed mb-4;
+}
+
+.legal-content ul,
+.legal-content ol {
+  @apply text-base text-muted-foreground leading-relaxed mb-4 pl-6;
+}
+
+.legal-content ul {
+  @apply list-disc;
+}
+
+.legal-content ol {
+  @apply list-decimal;
+}
+
+.legal-content li {
+  @apply mb-2;
+}
+
+.legal-content a {
+  @apply text-azure hover:text-azure-dark underline transition-colors;
+}
+
+.legal-content strong {
+  @apply text-foreground font-semibold;
+}
+
+.legal-content table {
+  @apply w-full border-collapse mb-6 text-sm;
+}
+
+.legal-content th {
+  @apply bg-muted text-foreground font-semibold text-left px-4 py-3 border border-border;
+}
+
+.legal-content td {
+  @apply text-muted-foreground px-4 py-3 border border-border;
+}
+
+.legal-content blockquote {
+  @apply border-l-4 border-azure pl-4 my-4 italic text-muted-foreground;
+}
+
 /* Mobile: Ant Design Modal max-width override */
 @media (max-width: 767px) {
   .ant-modal {

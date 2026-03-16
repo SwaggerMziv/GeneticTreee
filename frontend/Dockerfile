@@ -8,7 +8,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ARG NEXT_PUBLIC_API_URL=https://api.genetictree.ru/api
+ARG NEXT_PUBLIC_API_URL=https://api.genetictree.ru
 ARG NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=genetic_tree_bot
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=$NEXT_PUBLIC_TELEGRAM_BOT_USERNAME

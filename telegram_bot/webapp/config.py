@@ -22,5 +22,9 @@ class WebAppConfig:
     TTS_VOICE: str = os.getenv("TTS_VOICE", "nova")
     TTS_SPEED: float = float(os.getenv("TTS_SPEED", "1.0"))
 
+    # OpenAI Realtime API
+    OPENAI_REALTIME_MODEL: str = os.getenv("OPENAI_REALTIME_MODEL", "gpt-4o-realtime-preview")
+    OPENAI_REALTIME_VOICE: str = os.getenv("OPENAI_REALTIME_VOICE", "sage")
+
 
 webapp_config = WebAppConfig()

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { TreePine, Mail } from 'lucide-react'
+import { BUSINESS_INFO } from '@/lib/constants/business'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -71,7 +72,7 @@ export default function Footer() {
         <div className="pt-8 border-t border-border">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-muted-foreground text-sm">© {currentYear} GeneticTree. Все права защищены.</p>
-            <p className="text-muted-foreground text-sm">Создано с заботой о сохранении семейных воспоминаний</p>
+            <p className="text-muted-foreground text-sm">{BUSINESS_INFO.fullName} | ИНН: {BUSINESS_INFO.inn}</p>
           </div>
         </div>
       </div>

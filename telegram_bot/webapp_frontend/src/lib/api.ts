@@ -181,46 +181,6 @@ export async function uploadStoryMedia(
   });
 }
 
-// ── Transcribe ──
-
-export async function transcribeVoice(
-  audioBlob: Blob
-): Promise<{ text: string; success: boolean }> {
-  const formData = new FormData();
-  formData.append("file", audioBlob, "voice.webm");
-  return request("/transcribe", {
-    method: "POST",
-    body: formData,
-  });
-}
-
-// ── TTS ──
-
-export async function synthesizeSpeech(
-  text: string,
-  voice?: string
-): Promise<ArrayBuffer> {
-  const url = `${getBaseUrl()}/tts`;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (_token) {
-    headers["Authorization"] = `Bearer ${_token}`;
-  }
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ text, voice }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`TTS error: ${response.status}`);
-  }
-
-  return response.arrayBuffer();
-}
-
 // ── Stats ──
 
 export async function getStats(): Promise<Stats> {

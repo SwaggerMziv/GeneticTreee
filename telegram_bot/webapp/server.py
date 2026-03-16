@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from webapp.config import webapp_config
-from webapp.routers import interview, transcribe, stories, stats, settings, auth_router, tts
+from webapp.routers import interview, transcribe, stories, stats, settings, auth_router, tts, realtime
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ def create_webapp() -> FastAPI:
     app.include_router(stats.router, prefix="/webapp/api")
     app.include_router(settings.router, prefix="/webapp/api")
     app.include_router(tts.router, prefix="/webapp/api")
+    app.include_router(realtime.router, prefix="/webapp/api")
 
     # Статика (сбилденный Next.js)
     static_dir = Path(__file__).parent.parent / webapp_config.WEBAPP_STATIC_DIR

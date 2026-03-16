@@ -1,7 +1,7 @@
 "use client";
 
-import { ChatContainer } from "@/components/chat/ChatContainer";
+import { RealtimeInterview } from "@/components/realtime/RealtimeInterview";
 
 export default function InterviewPage() {
-  return <ChatContainer />;
+  return <RealtimeInterview />;
 }

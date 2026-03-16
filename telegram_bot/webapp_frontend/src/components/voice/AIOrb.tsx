@@ -1,9 +1,9 @@
 "use client";
 
 import { forwardRef } from "react";
-import { Mic, Square, Loader2, SkipForward } from "lucide-react";
+import { Mic, Loader2, Volume2 } from "lucide-react";
 
-type Phase = "idle" | "listening" | "processing" | "speaking";
+type Phase = "idle" | "connecting" | "listening" | "processing" | "speaking";
 
 interface AIOrbProps {
   phase: Phase;
@@ -13,12 +13,12 @@ interface AIOrbProps {
 
 /**
  * Animated, audio-reactive AI orb.
- * - idle: gentle breathing + pulsing ring hint
- * - listening: reactive to --audio-level (mic), red tint
+ * - idle: gentle breathing + pulsing ring hint → tap to connect
+ * - connecting: Loader2 spinner
+ * - listening: reactive to --audio-level (mic), pulsing Mic icon (VAD auto)
  * - processing: slow rotation + shimmer
- * - speaking: reactive to --audio-level (TTS), bright glow
+ * - speaking: reactive to --audio-level (TTS), tap to interrupt
  *
- * Tap = start/stop recording, or stop playback.
  * CSS custom property --audio-level is set externally via useAudioReactive.
  */
 export const AIOrb = forwardRef<HTMLDivElement, AIOrbProps>(
@@ -26,7 +26,7 @@ export const AIOrb = forwardRef<HTMLDivElement, AIOrbProps>(
     const phaseClass =
       phase === "idle"
         ? "orb-idle"
-        : phase === "processing"
+        : phase === "connecting" || phase === "processing"
           ? "orb-processing"
           : "orb-reactive";
 
@@ -44,10 +44,10 @@ export const AIOrb = forwardRef<HTMLDivElement, AIOrbProps>(
         }`}
         aria-label={
           phase === "listening"
-            ? "Остановить запись"
+            ? "Слушаю..."
             : phase === "speaking"
-              ? "Остановить воспроизведение"
-              : "Начать запись"
+              ? "Прервать"
+              : "Начать"
         }
       >
         {/* Pulsing ring hint — visible only in idle */}
@@ -88,12 +88,12 @@ export const AIOrb = forwardRef<HTMLDivElement, AIOrbProps>(
           />
 
           {/* Icon */}
-          {phase === "processing" ? (
+          {phase === "connecting" || phase === "processing" ? (
             <Loader2 className="relative z-10 h-10 w-10 animate-spin text-white/90" />
           ) : phase === "listening" ? (
-            <Square className="relative z-10 h-9 w-9 text-white/90" />
+            <Mic className="relative z-10 h-10 w-10 animate-pulse text-white/90" />
           ) : phase === "speaking" ? (
-            <SkipForward className="relative z-10 h-10 w-10 text-white/90" />
+            <Volume2 className="relative z-10 h-10 w-10 text-white/90" />
           ) : (
             <Mic className="relative z-10 h-10 w-10 text-white/90" />
           )}

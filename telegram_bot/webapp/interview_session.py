@@ -26,6 +26,8 @@ class InterviewSession:
     related_stories_context: list[dict] = field(default_factory=list)
     photos: list[str] = field(default_factory=list)  # base64 фото текущей сессии
     last_activity: float = field(default_factory=time.time)
+    # Realtime API session tracking
+    realtime_connected: bool = False
 
     def touch(self):
         """Обновить время последней активности."""

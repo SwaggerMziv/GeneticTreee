@@ -6,6 +6,7 @@ from src.storage.s3.schemas import UploadOutputSchema
 from src.subscription.dependencies import get_quota_service
 from src.subscription.quota_service import QuotaService
 import httpx
+import os
 
 router = APIRouter(prefix='/api/v1/storage', tags=['Storage'])
 
@@ -34,6 +35,11 @@ async def upload_file(
             used=quota.storage_used_mb,
         )
 
+    # Санитизация имени файла (защита от path traversal в filename)
+    if file.filename:
+        safe_name = os.path.basename(file.filename.replace("\\", "/"))
+        file.filename = safe_name
+
     key, url, content_type = await s3.upload(file)
 
     if file_size_mb > 0:
@@ -48,6 +54,9 @@ async def proxy_content(url: str):
     parsed = httpx.URL(url)
 
     if parsed.scheme != "https" or parsed.host not in ALLOWED_PROXY_HOSTS:
+        raise HTTPException(status_code=400, detail="Недопустимый адрес")
+    # Явно запрещаем нестандартные порты (минимизация SSRF-обходов)
+    if parsed.port is not None and parsed.port != 443:
         raise HTTPException(status_code=400, detail="Недопустимый адрес")
 
     try:

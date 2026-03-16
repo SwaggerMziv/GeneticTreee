@@ -27,6 +27,7 @@ from src.users.security import verify_hash_password
 from src.users.models import UserModel
 from src.users.schemas import UserOutputSchema
 from src.core.middleware import limiter
+from src.exceptions import BaseAppException
 
 router = APIRouter(prefix='/api/v1/auth', tags=['Auth'])
 
@@ -47,7 +48,7 @@ async def login(request: Request, payload: LoginSchema, user_service: UserServic
             user = await user_service.get_user_by_email(email=payload.email)
         else:
             raise HTTPException(status_code=400, detail='Неверные учетные данные')
-    except HTTPException:
+    except (HTTPException, BaseAppException):
         raise HTTPException(status_code=401, detail='Неверные учетные данные')
 
     if not user or not await verify_hash_password(payload.password, user.password):

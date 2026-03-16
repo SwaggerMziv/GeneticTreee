@@ -56,7 +56,13 @@ async def _handle_payment_succeeded(
     """Обработка успешного платежа"""
     yookassa_payment_id = payment_data.get("id")
     metadata = payment_data.get("metadata", {})
-    user_id = int(metadata.get("user_id", 0))
+    try:
+        user_id = int(metadata.get("user_id", 0))
+    except (TypeError, ValueError):
+        logger.warning(
+            f"Webhook payment.succeeded invalid user_id metadata: {yookassa_payment_id}"
+        )
+        return {"status": "error", "reason": "invalid user_id"}
     plan_name_str = metadata.get("plan_name", "")
     billing_period_str = metadata.get("billing_period", "monthly")
 

@@ -1,0 +1,70 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-backend:
+    name: Backend → server
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: root
+          password: ${{ secrets.SERVER_PASSWORD }}
+          command_timeout: 20m
+          script: |
+            set -e
+            cd /opt/genetic-tree && git pull origin main
+            cd backend && docker compose up -d --build
+            docker compose restart nginx
+            docker image prune -f
+            echo "Backend deployed!"
+
+  deploy-frontend:
+    name: Frontend → client
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.CLIENT_HOST }}
+          username: root
+          password: ${{ secrets.CLIENT_PASSWORD }}
+          command_timeout: 20m
+          script: |
+            set -e
+            cd /opt/genetic-tree && git pull origin main
+            cd frontend && docker compose up -d --build
+            docker compose restart nginx
+            docker image prune -f
+            echo "Frontend deployed!"
+
+  deploy-bot:
+    name: Bot → bot
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.BOT_HOST }}
+          username: root
+          password: ${{ secrets.BOT_PASSWORD }}
+          command_timeout: 25m
+          script: |
+            set -e
+            cd /opt/genetic-tree && git pull origin main
+            cd telegram_bot && docker compose up -d --build
+            docker image prune -f
+            echo "Bot deployed!"
