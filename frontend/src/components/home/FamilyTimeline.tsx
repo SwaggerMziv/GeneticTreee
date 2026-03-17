@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Camera, Calendar, MapPin, Quote, ArrowRight } from 'lucide-react'
 import FadeContent from '@/components/ui/FadeContent'
 
@@ -11,6 +12,7 @@ interface StoryPreview {
   location?: string
   title: string
   story: string
+  image: string
 }
 
 const storyPreviews: StoryPreview[] = [
@@ -22,6 +24,7 @@ const storyPreviews: StoryPreview[] = [
     location: 'Москва',
     title: 'День нашей свадьбы',
     story: 'Самый счастливый день в моей жизни. Мы поженились в небольшой церкви в центре Москвы. Платье шила сама, а букет собирали с мамой рано утром на рынке.',
+    image: '/images/stories/wedding.jpg',
   },
   {
     id: '2',
@@ -31,6 +34,7 @@ const storyPreviews: StoryPreview[] = [
     location: 'Санкт-Петербург',
     title: 'Первый день в школе',
     story: 'Помню, как мама собирала меня в первый класс. Новый портфель, белая рубашка и огромный букет цветов. Учительница встретила нас у входа.',
+    image: '/images/stories/school.jpg',
   },
   {
     id: '3',
@@ -40,6 +44,7 @@ const storyPreviews: StoryPreview[] = [
     location: 'Берлин',
     title: 'День Победы',
     story: 'Этот день я никогда не забуду. Мы стояли на площади и слушали, как объявили о капитуляции. Кто-то плакал, кто-то смеялся, все обнимались.',
+    image: '/images/stories/victory.jpg',
   },
 ]
 
@@ -77,8 +82,14 @@ export default function FamilyTimeline() {
             <FadeContent key={post.id} duration={1000} delay={index * 200} threshold={0.2}>
               <div className="relative rounded-3xl bg-card border border-border shadow-pastel overflow-hidden hover:border-azure/50 hover:shadow-candy transition-all group">
                 {/* Image Header */}
-                <div className="relative h-40 bg-gradient-to-br from-azure/20 to-azure-dark/20 flex items-center justify-center">
-                  <Camera className="w-12 h-12 text-azure/30" />
+                <div className="relative h-40 overflow-hidden">
+                  <Image
+                    src={post.image}
+                    alt={post.title}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
                 </div>
 
