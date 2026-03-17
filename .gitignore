@@ -40,6 +40,11 @@ Thumbs.db
 logs/
 node_modules
 
+# Test coverage
+.coverage
+htmlcov/
+coverage/
+
 # Next.js build
 .next/
 
