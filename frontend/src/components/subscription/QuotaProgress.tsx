@@ -48,6 +48,7 @@ export default function QuotaProgress({ quota, compact = false }: QuotaProgressP
           compact && 'h-1.5',
           isExhausted && '[&>div]:bg-red-500',
           isNearLimit && !isExhausted && '[&>div]:bg-amber-500',
+          !isNearLimit && !isExhausted && '[&>div]:bg-azure',
         )}
       />
     </div>

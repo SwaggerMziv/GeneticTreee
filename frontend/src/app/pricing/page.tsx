@@ -10,10 +10,10 @@ import { subscriptionApi } from '@/lib/api/subscription'
 import { toast } from 'sonner'
 
 export default function PricingPage() {
-  const [loading, setLoading] = useState(false)
+  const [loadingPlan, setLoadingPlan] = useState<PlanType | null>(null)
 
   async function handleCheckout(planName: PlanType, period: BillingPeriod) {
-    setLoading(true)
+    setLoadingPlan(planName)
     try {
       const returnUrl = `${window.location.origin}/subscription/success`
       const result = await subscriptionApi.checkout({
@@ -24,9 +24,9 @@ export default function PricingPage() {
       window.location.href = result.confirmation_url
     } catch {
       toast.error('Войдите в аккаунт для оформления подписки')
-    } finally {
-      setLoading(false)
+      setLoadingPlan(null)
     }
+    // Не сбрасываем при успехе — идёт редирект
   }
 
   return (
@@ -47,7 +47,7 @@ export default function PricingPage() {
           </p>
         </div>
 
-        <PricingCards onCheckout={handleCheckout} isLoading={loading} />
+        <PricingCards onCheckout={handleCheckout} loadingPlan={loadingPlan} />
       </div>
     </div>
   )

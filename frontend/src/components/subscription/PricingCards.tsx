@@ -1,15 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, X, Crown, Zap, Infinity } from 'lucide-react'
+import { Check, Crown, Zap, Star, Infinity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { subscriptionApi } from '@/lib/api/subscription'
 import { SubscriptionPlan, PlanType, BillingPeriod, UsageSummary } from '@/types'
-import { toast } from 'sonner'
 
 // Статические тарифы — показываются при недоступности API
 const STATIC_PLANS: SubscriptionPlan[] = [
@@ -40,8 +38,8 @@ const STATIC_PLANS: SubscriptionPlan[] = [
     name: 'pro',
     display_name: 'Pro',
     description: 'Для активного сбора семейной истории',
-    price_monthly_kop: 29900,
-    price_yearly_kop: 299000,
+    price_monthly_kop: 100,
+    price_yearly_kop: 1000,
     limits: {
       max_relatives: 100,
       max_ai_requests_month: 100,
@@ -62,8 +60,8 @@ const STATIC_PLANS: SubscriptionPlan[] = [
     name: 'premium',
     display_name: 'Premium',
     description: 'Максимум возможностей для всей семьи',
-    price_monthly_kop: 59900,
-    price_yearly_kop: 599000,
+    price_monthly_kop: 100,
+    price_yearly_kop: 1000,
     limits: {
       max_relatives: -1,
       max_ai_requests_month: -1,
@@ -85,32 +83,12 @@ interface PricingCardsProps {
   currentPlan?: PlanType
   usage?: UsageSummary | null
   onCheckout?: (planName: PlanType, period: BillingPeriod) => void
-  isLoading?: boolean
+  loadingPlan?: PlanType | null
 }
 
 function formatPrice(kop: number): string {
   return Math.round(kop / 100).toLocaleString('ru-RU')
 }
-
-function LimitValue({ value }: { value: number }) {
-  if (value === -1) return <Infinity className="w-4 h-4 inline text-azure" />
-  if (value === 0) return <X className="w-4 h-4 inline text-muted-foreground/50" />
-  return <span>{value}</span>
-}
-
-const FEATURE_LABELS: { key: string; label: string }[] = [
-  { key: 'max_relatives', label: 'Родственников' },
-  { key: 'max_ai_requests_month', label: 'AI-запросов/мес' },
-  { key: 'max_ai_smart_requests_month', label: 'AI Smart (GPT-4o)/мес' },
-  { key: 'max_tree_generations_month', label: 'Генерация дерева/мес' },
-  { key: 'max_book_generations_month', label: 'PDF-книги/мес' },
-  { key: 'max_telegram_invitations', label: 'Telegram-приглашений' },
-  { key: 'max_telegram_sessions_month', label: 'Telegram-интервью/мес' },
-  { key: 'max_storage_mb', label: 'Хранилище' },
-  { key: 'max_tts_month', label: 'TTS-озвучка/мес' },
-  { key: 'has_gedcom_export', label: 'GEDCOM-экспорт' },
-  { key: 'has_priority_support', label: 'Приоритетная поддержка' },
-]
 
 function formatStorageLimit(mb: number): string {
   if (mb === -1) return 'Безлимит'
@@ -118,7 +96,83 @@ function formatStorageLimit(mb: number): string {
   return `${mb} МБ`
 }
 
-export default function PricingCards({ currentPlan, usage, onCheckout, isLoading }: PricingCardsProps) {
+function LimitText({ value, isStorage }: { value: number; isStorage?: boolean }) {
+  if (value === -1) return (
+    <span className="flex items-center gap-0.5">
+      <Infinity className="w-3.5 h-3.5" />
+    </span>
+  )
+  if (isStorage) return <span>{formatStorageLimit(value)}</span>
+  return <span>{value}</span>
+}
+
+// Сгруппированные фичи — показываем только те, у которых значение > 0 или is boolean true
+interface FeatureGroup {
+  label: string
+  key: keyof typeof STATIC_PLANS[0]['limits']
+  isStorage?: boolean
+  isBoolean?: boolean
+}
+
+const FEATURE_GROUPS: FeatureGroup[] = [
+  { key: 'max_relatives', label: 'Родственников в дереве' },
+  { key: 'max_ai_requests_month', label: 'AI-запросов в месяц' },
+  { key: 'max_ai_smart_requests_month', label: 'AI Smart (GPT-4o)' },
+  { key: 'max_book_generations_month', label: 'PDF-книг в месяц' },
+  { key: 'max_telegram_invitations', label: 'Telegram-приглашений' },
+  { key: 'max_telegram_sessions_month', label: 'Telegram-интервью' },
+  { key: 'max_storage_mb', label: 'Хранилище', isStorage: true },
+  { key: 'max_tts_month', label: 'Озвучка историй' },
+  { key: 'max_tree_generations_month', label: 'Генерация дерева' },
+  { key: 'has_gedcom_export', label: 'Экспорт GEDCOM', isBoolean: true },
+  { key: 'has_priority_support', label: 'Приоритетная поддержка', isBoolean: true },
+]
+
+interface PlanConfig {
+  icon: typeof Crown
+  gradient: string
+  iconBg: string
+  iconColor: string
+  badge?: string
+  badgeClass?: string
+  buttonClass: string
+  cardClass: string
+  checkColor: string
+}
+
+const PLAN_CONFIG: Record<PlanType, PlanConfig> = {
+  free: {
+    icon: Zap,
+    gradient: '',
+    iconBg: 'bg-muted',
+    iconColor: 'text-muted-foreground',
+    buttonClass: 'border-border hover:bg-muted',
+    cardClass: 'border-border/60 bg-card',
+    checkColor: 'text-muted-foreground',
+  },
+  pro: {
+    icon: Crown,
+    gradient: 'from-azure/5 via-azure/10 to-azure-light/5',
+    iconBg: 'bg-azure/15',
+    iconColor: 'text-azure',
+    badge: 'Популярный',
+    badgeClass: 'bg-azure text-white shadow-candy',
+    buttonClass: 'bg-azure hover:bg-azure-dark text-white shadow-candy hover:shadow-md',
+    cardClass: 'border-azure/40 shadow-candy ring-1 ring-azure/20',
+    checkColor: 'text-azure',
+  },
+  premium: {
+    icon: Star,
+    gradient: 'from-amber-50/80 via-amber-50/40 to-orange-50/20 dark:from-amber-900/10 dark:via-amber-900/5 dark:to-transparent',
+    iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+    iconColor: 'text-amber-500',
+    buttonClass: 'bg-amber-500 hover:bg-amber-600 text-white shadow-warm hover:shadow-md',
+    cardClass: 'border-amber-200/70 dark:border-amber-800/40 shadow-warm',
+    checkColor: 'text-amber-500',
+  },
+}
+
+export default function PricingCards({ currentPlan, usage: _usage, onCheckout, loadingPlan }: PricingCardsProps) {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
   const [yearly, setYearly] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -132,158 +186,165 @@ export default function PricingCards({ currentPlan, usage, onCheckout, isLoading
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {[1, 2, 3].map(i => (
-          <Card key={i} className="animate-pulse h-96" />
+          <div key={i} className="rounded-3xl border border-border/40 bg-card h-[480px] animate-pulse" />
         ))}
       </div>
     )
-  }
-
-  const planIcons: Record<string, typeof Crown> = {
-    free: Zap,
-    pro: Crown,
-    premium: Crown,
   }
 
   return (
     <div className="space-y-6">
       {/* Переключатель месяц/год */}
       <div className="flex items-center justify-center gap-3">
-        <span className={cn('text-sm', !yearly && 'font-semibold text-foreground')}>Ежемесячно</span>
-        <Switch checked={yearly} onCheckedChange={setYearly} />
-        <span className={cn('text-sm', yearly && 'font-semibold text-foreground')}>
+        <span className={cn(
+          'text-sm transition-colors',
+          !yearly ? 'font-semibold text-foreground' : 'text-muted-foreground',
+        )}>
+          Ежемесячно
+        </span>
+        <Switch
+          checked={yearly}
+          onCheckedChange={setYearly}
+          className="data-[state=checked]:bg-azure"
+        />
+        <span className={cn(
+          'text-sm transition-colors flex items-center gap-2',
+          yearly ? 'font-semibold text-foreground' : 'text-muted-foreground',
+        )}>
           Ежегодно
-          <Badge variant="secondary" className="ml-2 text-xs bg-azure/10 text-azure">
-            -17%
+          <Badge className="text-xs bg-azure/10 text-azure border-azure/20 font-medium">
+            −17%
           </Badge>
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {plans.map((plan) => {
-          const Icon = planIcons[plan.name] || Zap
+          const config = PLAN_CONFIG[plan.name] ?? PLAN_CONFIG.free
+          const Icon = config.icon
           const isCurrent = currentPlan === plan.name
-          const isPro = plan.name === 'pro'
+          const isThisLoading = loadingPlan === plan.name
           const price = yearly ? plan.price_yearly_kop : plan.price_monthly_kop
           const periodLabel = yearly ? '/год' : '/мес'
+          const limits = plan.limits as unknown as Record<string, number | boolean>
+
+          // Фильтруем фичи: убираем булевые false и числовые 0
+          const visibleFeatures = FEATURE_GROUPS.filter(({ key, isBoolean }) => {
+            const val = limits[key]
+            if (isBoolean) return val === true
+            return (val as number) !== 0
+          })
 
           return (
-            <Card
+            <div
               key={plan.id}
               className={cn(
-                'relative flex flex-col',
-                isPro && 'border-azure shadow-candy ring-1 ring-azure/20',
+                'relative flex flex-col rounded-3xl border bg-gradient-to-b p-6 transition-all duration-200',
+                config.gradient,
+                config.cardClass,
+                plan.name === 'free' && 'opacity-90 hover:opacity-100',
+                plan.name !== 'free' && 'hover:-translate-y-0.5 hover:shadow-lg',
               )}
             >
-              {isPro && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-azure text-white">
-                  Популярный
+              {/* Популярный badge */}
+              {config.badge && (
+                <Badge className={cn(
+                  'absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-xs font-semibold',
+                  config.badgeClass,
+                )}>
+                  {config.badge}
                 </Badge>
               )}
 
-              <CardHeader className="text-center pb-2">
+              {/* Текущий план indicator */}
+              {isCurrent && (
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 text-xs bg-muted text-muted-foreground border border-border">
+                  Текущий план
+                </Badge>
+              )}
+
+              {/* Шапка */}
+              <div className="flex items-start gap-4 mb-5">
                 <div className={cn(
-                  'w-12 h-12 mx-auto rounded-xl flex items-center justify-center mb-3',
-                  plan.name === 'free' && 'bg-muted',
-                  plan.name === 'pro' && 'bg-azure/10',
-                  plan.name === 'premium' && 'bg-amber-100 dark:bg-amber-900/30',
+                  'w-11 h-11 rounded-2xl flex items-center justify-center shrink-0',
+                  config.iconBg,
                 )}>
-                  <Icon className={cn(
-                    'w-6 h-6',
-                    plan.name === 'free' && 'text-muted-foreground',
-                    plan.name === 'pro' && 'text-azure',
-                    plan.name === 'premium' && 'text-amber-500',
-                  )} />
+                  <Icon className={cn('w-5 h-5', config.iconColor)} />
                 </div>
-                <CardTitle className="text-xl">{plan.display_name}</CardTitle>
-                {plan.description && (
-                  <p className="text-sm text-muted-foreground">{plan.description}</p>
-                )}
-                <div className="mt-3">
-                  {price === 0 ? (
-                    <span className="text-3xl font-bold">Бесплатно</span>
-                  ) : (
-                    <>
-                      <span className="text-3xl font-bold">{formatPrice(price)} ₽</span>
-                      <span className="text-muted-foreground">{periodLabel}</span>
-                    </>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-base leading-tight">{plan.display_name}</h3>
+                  {plan.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{plan.description}</p>
                   )}
                 </div>
-              </CardHeader>
+              </div>
 
-              <CardContent className="flex-1">
-                <ul className="space-y-2.5 text-sm">
-                  {FEATURE_LABELS.map(({ key, label }) => {
-                    const limits = plan.limits as unknown as Record<string, number | boolean>
-                    const value = limits[key]
-
-                    if (typeof value === 'boolean') {
-                      return (
-                        <li key={key} className="flex items-center gap-2">
-                          {value ? (
-                            <Check className="w-4 h-4 text-azure shrink-0" />
-                          ) : (
-                            <X className="w-4 h-4 text-muted-foreground/40 shrink-0" />
-                          )}
-                          <span className={cn(!value && 'text-muted-foreground/60')}>{label}</span>
-                        </li>
-                      )
-                    }
-
-                    const numValue = value as number
-                    const isAvailable = numValue !== 0
-
-                    return (
-                      <li key={key} className={cn(
-                        'flex items-center justify-between',
-                        !isAvailable && 'text-muted-foreground/60',
-                      )}>
-                        <span className="flex items-center gap-2">
-                          {isAvailable ? (
-                            <Check className="w-4 h-4 text-azure shrink-0" />
-                          ) : (
-                            <X className="w-4 h-4 text-muted-foreground/40 shrink-0" />
-                          )}
-                          {label}
-                        </span>
-                        <span className="font-medium">
-                          {key === 'max_storage_mb' ? (
-                            formatStorageLimit(numValue)
-                          ) : (
-                            <LimitValue value={numValue} />
-                          )}
-                        </span>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </CardContent>
-
-              <CardFooter>
-                {isCurrent ? (
-                  <Button className="w-full" variant="outline" disabled>
-                    Текущий план
-                  </Button>
-                ) : plan.name === 'free' ? (
-                  <Button className="w-full" variant="outline" disabled>
-                    Бесплатно
-                  </Button>
+              {/* Цена */}
+              <div className="mb-5">
+                {price === 0 ? (
+                  <div className="text-2xl font-bold">Бесплатно</div>
                 ) : (
-                  <Button
-                    className={cn(
-                      'w-full',
-                      isPro && 'bg-azure hover:bg-azure-dark text-white',
-                      plan.name === 'premium' && 'bg-amber-500 hover:bg-amber-600 text-white',
-                    )}
-                    onClick={() => onCheckout?.(plan.name, yearly ? 'yearly' : 'monthly')}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? 'Подождите...' : `Выбрать ${plan.display_name}`}
-                  </Button>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold">{formatPrice(price)} ₽</span>
+                    <span className="text-sm text-muted-foreground">{periodLabel}</span>
+                  </div>
                 )}
-              </CardFooter>
-            </Card>
+              </div>
+
+              {/* Список фич */}
+              <ul className="flex-1 space-y-2 mb-6">
+                {visibleFeatures.map(({ key, label, isStorage, isBoolean }) => {
+                  const val = limits[key]
+                  return (
+                    <li key={key} className="flex items-center justify-between gap-2 text-sm">
+                      <span className="flex items-center gap-2 text-foreground/80">
+                        <Check className={cn('w-3.5 h-3.5 shrink-0', config.checkColor)} />
+                        {label}
+                      </span>
+                      {!isBoolean && (
+                        <span className="font-medium text-foreground shrink-0">
+                          <LimitText value={val as number} isStorage={isStorage} />
+                        </span>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+
+              {/* Кнопка */}
+              {isCurrent ? (
+                <button
+                  className="w-full rounded-xl border border-border/60 bg-muted/60 py-2 text-sm text-muted-foreground cursor-default"
+                  disabled
+                >
+                  Ваш текущий план
+                </button>
+              ) : plan.name === 'free' ? (
+                <button
+                  className="w-full rounded-xl border border-border/60 bg-muted/60 py-2 text-sm text-muted-foreground cursor-default"
+                  disabled
+                >
+                  Бесплатно
+                </button>
+              ) : (
+                <Button
+                  className={cn('w-full rounded-xl', config.buttonClass)}
+                  onClick={() => onCheckout?.(plan.name, yearly ? 'yearly' : 'monthly')}
+                  disabled={loadingPlan !== null && loadingPlan !== undefined}
+                >
+                  {isThisLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                      Подождите...
+                    </span>
+                  ) : (
+                    `Выбрать ${plan.display_name}`
+                  )}
+                </Button>
+              )}
+            </div>
           )
         })}
       </div>
