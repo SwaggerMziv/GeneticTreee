@@ -38,8 +38,8 @@ const STATIC_PLANS: SubscriptionPlan[] = [
     name: 'pro',
     display_name: 'Pro',
     description: 'Для активного сбора семейной истории',
-    price_monthly_kop: 100,
-    price_yearly_kop: 1000,
+    price_monthly_kop: 29900,
+    price_yearly_kop: 299000,
     limits: {
       max_relatives: 100,
       max_ai_requests_month: 100,
@@ -60,8 +60,8 @@ const STATIC_PLANS: SubscriptionPlan[] = [
     name: 'premium',
     display_name: 'Premium',
     description: 'Максимум возможностей для всей семьи',
-    price_monthly_kop: 100,
-    price_yearly_kop: 1000,
+    price_monthly_kop: 59900,
+    price_yearly_kop: 599000,
     limits: {
       max_relatives: -1,
       max_ai_requests_month: -1,
