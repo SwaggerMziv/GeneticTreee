@@ -70,7 +70,6 @@ class PaymentService:
                     },
                     "capture": True,
                     "description": description,
-                    "save_payment_method": True,
                     "metadata": {
                         "user_id": str(user_id),
                         "plan_name": plan_name.value,
