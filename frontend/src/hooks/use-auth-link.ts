@@ -9,17 +9,26 @@ import { authApi } from '@/lib/api/auth'
  * - `/auth` otherwise
  */
 export function useAuthLink(): string {
-  const [link, setLink] = useState('/auth')
+  // Синхронная инициализация по наличию токена, чтобы не мигать ссылкой /auth
+  const [link, setLink] = useState(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('access_token')) {
+      return '/dashboard'
+    }
+    return '/auth'
+  })
 
   useEffect(() => {
     const check = async () => {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        setLink('/auth')
+        return
+      }
       try {
-        const token = localStorage.getItem('access_token')
-        if (!token) return
         await authApi.meSub()
         setLink('/dashboard')
       } catch {
-        // not authenticated
+        setLink('/auth')
       }
     }
     check()

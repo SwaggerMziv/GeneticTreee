@@ -4,13 +4,33 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PricingCards from '@/components/subscription/PricingCards'
 import { PlanType, BillingPeriod } from '@/types'
+import { subscriptionApi } from '@/lib/api/subscription'
+import { isAuthenticated } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export default function Pricing() {
   const router = useRouter()
+  const [loadingPlan, setLoadingPlan] = useState<PlanType | null>(null)
 
-  function handleCheckout() {
-    // На лендинге просто направляем на авторизацию/подписку
-    router.push('/auth')
+  async function handleCheckout(planName: PlanType, period: BillingPeriod) {
+    if (!isAuthenticated()) {
+      router.push('/auth')
+      return
+    }
+
+    setLoadingPlan(planName)
+    try {
+      const returnUrl = `${window.location.origin}/subscription/success`
+      const result = await subscriptionApi.checkout({
+        plan_name: planName,
+        billing_period: period,
+        return_url: returnUrl,
+      })
+      window.location.href = result.confirmation_url
+    } catch {
+      toast.error('Не удалось создать платёж. Попробуйте через личный кабинет.')
+      setLoadingPlan(null)
+    }
   }
 
   return (
@@ -22,7 +42,7 @@ export default function Pricing() {
             Начните бесплатно. Обновите тариф, когда ваше семейное древо начнёт расти.
           </p>
         </div>
-        <PricingCards onCheckout={handleCheckout} />
+        <PricingCards onCheckout={handleCheckout} loadingPlan={loadingPlan} />
       </div>
     </section>
   )
