@@ -33,8 +33,8 @@ PLANS = [
         "name": PlanType.PRO,
         "display_name": "Pro",
         "description": "Для активного сбора семейной истории",
-        "price_monthly_kop": 29900,  # 299 ₽
-        "price_yearly_kop": 299000,  # 2990 ₽
+        "price_monthly_kop": 100,  # 1 ₽ (тест)
+        "price_yearly_kop": 100,  # 1 ₽ (тест)
         "max_relatives": 100,
         "max_ai_requests_month": 100,
         "max_ai_smart_requests_month": 10,
@@ -52,8 +52,8 @@ PLANS = [
         "name": PlanType.PREMIUM,
         "display_name": "Premium",
         "description": "Максимум возможностей для всей семьи",
-        "price_monthly_kop": 59900,  # 599 ₽
-        "price_yearly_kop": 599000,  # 5990 ₽
+        "price_monthly_kop": 100,  # 1 ₽ (тест)
+        "price_yearly_kop": 100,  # 1 ₽ (тест)
         "max_relatives": -1,  # безлимит
         "max_ai_requests_month": -1,
         "max_ai_smart_requests_month": 50,
