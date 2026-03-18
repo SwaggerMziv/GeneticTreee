@@ -94,7 +94,7 @@ export default function RegisterForm() {
           },
           {
             pattern: /^[a-zA-Z0-9_]+$/,
-            message: 'Только буквы, цифры и подчёркивание',
+            message: 'Только латинские буквы (a-z), цифры и подчёркивание',
           },
         ]}
       >

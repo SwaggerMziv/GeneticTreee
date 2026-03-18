@@ -50,15 +50,15 @@ export function validateUsername(username: string): {
   const errors: string[] = []
 
   if (username.length < 3) {
-    errors.push('Username must be at least 3 characters long')
+    errors.push('Имя пользователя должно быть не менее 3 символов')
   }
 
   if (username.length > 20) {
-    errors.push('Username must not exceed 20 characters')
+    errors.push('Имя пользователя должно быть не более 20 символов')
   }
 
   if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-    errors.push('Username can only contain letters, numbers, and underscores')
+    errors.push('Только латинские буквы (a-z), цифры и подчёркивание')
   }
 
   return {

@@ -230,43 +230,6 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* Empty state */}
-      {stats && stats.total_relatives === 0 && (
-        <Card className="border-dashed border-2">
-          <CardContent className="p-10 text-center">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-azure to-azure-dark flex items-center justify-center mb-6">
-              <TreePine className="w-8 h-8 text-white" />
-            </div>
-            <h3 className="font-serif text-2xl font-bold mb-3">Создайте свою семейную книгу</h3>
-            <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-              Всего 4 шага до вашей семейной книги с историями и воспоминаниями.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-3xl mx-auto mb-8">
-              {[
-                { step: '1', title: 'Создайте древо', desc: 'Добавьте родственников', icon: TreePine },
-                { step: '2', title: 'Пригласите', desc: 'Отправьте ссылки', icon: Send },
-                { step: '3', title: 'Соберите истории', desc: 'Бот проведёт интервью', icon: BookOpen },
-                { step: '4', title: 'Создайте книгу', desc: 'Получите PDF', icon: FileText },
-              ].map((item) => (
-                <div key={item.step} className="text-center p-4 rounded-xl bg-muted border border-border shadow-sm">
-                  <div className="w-8 h-8 rounded-full bg-azure text-white font-bold flex items-center justify-center mx-auto mb-3 text-sm">
-                    {item.step}
-                  </div>
-                  <item.icon className="w-5 h-5 text-azure mx-auto mb-2" />
-                  <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
-                  <p className="text-xs text-muted-foreground">{item.desc}</p>
-                </div>
-              ))}
-            </div>
-            <Link href="/tree">
-              <Button className="bg-gradient-to-r from-azure to-azure-dark text-white h-12 px-8">
-                <TreePine className="w-5 h-5 mr-2" />
-                Начать строить древо
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
