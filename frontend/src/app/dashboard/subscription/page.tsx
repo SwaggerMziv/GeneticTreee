@@ -106,7 +106,8 @@ export default function SubscriptionPage() {
   }
 
   const currentPlan = usage?.plan.name ?? 'free'
-  const hasPendingPayment = payments.some(p => p.status === 'pending')
+  const isPaidPlan = currentPlan !== 'free'
+  const hasPendingPayment = !isPaidPlan && payments.some(p => p.status === 'pending')
 
   // Квоты с реальным лимитом или безлимитные
   const visibleQuotas = usage?.quotas.filter(q => q.is_unlimited || q.limit > 0) ?? []

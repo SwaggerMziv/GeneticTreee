@@ -113,22 +113,37 @@ class PaymentService:
         user_id: int,
         subscription_service: "SubscriptionService",
     ) -> dict:
-        """Проверить статусы ВСЕХ pending-платежей пользователя через API ЮKassa"""
+        """Проверить статусы ВСЕХ pending-платежей пользователя через API ЮKassa.
+
+        Платежи старше 1 часа автоматически отменяются (ЮKassa ссылки истекают).
+        """
+        from datetime import datetime, timezone, timedelta
         from src.subscription.enums import PaymentStatus, BillingPeriod
 
-        # Находим ВСЕ платежи пользователя (до 20 последних)
         payments = await self.payment_repo.get_by_user(user_id, skip=0, limit=20)
         pending_payments = [p for p in payments if p.status == PaymentStatus.PENDING]
 
         if not pending_payments:
-            # Нет pending — возвращаем статус последнего платежа
             if payments:
                 return {"status": payments[0].status.value, "synced": False}
             return {"status": "no_payments", "synced": False}
 
-        # Проверяем КАЖДЫЙ pending-платёж по его yookassa_payment_id
+        now = datetime.now(timezone.utc)
+        stale_threshold = now - timedelta(hours=1)
         activated = False
+
         for pending in pending_payments:
+            # Автоотмена старых платежей (>1 часа) — не тратим запрос к ЮKassa
+            if pending.created_at and pending.created_at < stale_threshold:
+                await self.payment_repo.update(
+                    pending,
+                    status=PaymentStatus.CANCELLED,
+                    yookassa_status="expired",
+                )
+                logger.info(f"Sync: платёж {pending.yookassa_payment_id} → auto-cancelled (stale >1h)")
+                continue
+
+            # Свежий pending — проверяем реальный статус у ЮKassa
             try:
                 yoo_payment: PaymentResponse = YooPayment.find_one(pending.yookassa_payment_id)
             except Exception as e:
@@ -138,7 +153,6 @@ class PaymentService:
             real_status = yoo_payment.status
 
             if real_status == "succeeded" and not activated:
-                # Помечаем платёж как успешный
                 payment_method = yoo_payment.payment_method
                 payment_method_type = payment_method.type if payment_method else None
                 payment_method_id = payment_method.id if payment_method else None
@@ -148,7 +162,6 @@ class PaymentService:
                     payment_method_type=payment_method_type,
                 )
 
-                # Активируем подписку из extra_data этого конкретного платежа
                 plan_name_str = (pending.extra_data or {}).get("plan_name", "")
                 billing_period_str = (pending.extra_data or {}).get("billing_period", "monthly")
 
@@ -173,12 +186,10 @@ class PaymentService:
                 )
                 logger.info(f"Sync: платёж {pending.yookassa_payment_id} → cancelled")
 
-            # "pending"/"waiting_for_capture" — оставляем как есть
-
         if activated:
             return {"status": "succeeded", "synced": True}
 
-        # Если ни один не succeeded — проверяем остались ли pending
+        # Проверяем итоговый статус
         remaining = await self.payment_repo.get_by_user(user_id, skip=0, limit=1)
         if remaining:
             return {"status": remaining[0].status.value, "synced": True}
