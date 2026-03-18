@@ -91,6 +91,16 @@ async def get_payments(
     return await service.get_payment_history(user_id, skip, limit)
 
 
+@router.post("/sync-payment")
+async def sync_payment(
+    user_id: int = Depends(get_current_user_id),
+    payment_service: PaymentService = Depends(get_payment_service),
+    subscription_service: SubscriptionService = Depends(get_subscription_service),
+):
+    """Проверить статус последнего pending-платежа через API ЮKassa"""
+    return await payment_service.sync_pending_payment(user_id, subscription_service)
+
+
 @router.post("/webhooks/yookassa")
 async def yookassa_webhook(
     request: Request,

@@ -35,7 +35,7 @@ export default function UsageIndicator() {
           {!isPaid && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-azure text-azure">
               <ArrowUpCircle className="w-2.5 h-2.5 mr-0.5" />
-              PRO
+              Обновить
             </Badge>
           )}
         </div>

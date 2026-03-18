@@ -451,11 +451,13 @@ function YourFamilyStep({
 /* ─── Functional Step: Invite Family ─── */
 
 function InviteFamilyStep({
+  selfRelative,
   relatives,
   invitations,
   onGenerate,
   generatingId,
 }: {
+  selfRelative: FamilyRelative | null
   relatives: FamilyRelative[]
   invitations: Record<number, string>
   onGenerate: (relativeId: number) => void
@@ -466,81 +468,105 @@ function InviteFamilyStep({
     toast.success('Ссылка скопирована')
   }
 
-  if (relatives.length === 0) {
+  function InviteCard({ rel, label, highlight }: { rel: FamilyRelative; label?: string; highlight?: boolean }) {
+    const url = invitations[rel.id]
+    const isGenerating = generatingId === rel.id
+
     return (
-      <div className="text-center py-6 space-y-2">
-        <p className="text-muted-foreground text-sm">
-          Вы не добавили родственников на предыдущем шаге.
-        </p>
-        <p className="text-muted-foreground text-xs">
-          Вы можете пригласить их позже со страницы древа.
-        </p>
+      <div
+        className={cn(
+          'p-3 rounded-xl border space-y-2',
+          highlight
+            ? 'border-azure/40 bg-azure/5'
+            : 'border-border bg-muted/30',
+        )}
+      >
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">
+            {label || `${rel.first_name} ${rel.last_name || ''}`}
+          </span>
+          {url ? (
+            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+              <Check className="w-3.5 h-3.5" />
+              Готово
+            </div>
+          ) : null}
+        </div>
+
+        {url ? (
+          <div className="flex items-center gap-2">
+            <Input
+              readOnly
+              value={url}
+              className="text-xs h-8 bg-background"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0"
+              onClick={() => copyToClipboard(url)}
+            >
+              <Copy className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => onGenerate(rel.id)}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5 mr-2" />
+            )}
+            Сгенерировать ссылку
+          </Button>
+        )}
       </div>
     )
   }
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground text-center">
-        Отправьте ссылку родственнику — бот проведёт интервью и соберёт их воспоминания
-      </p>
+      {/* Ссылка для самого пользователя */}
+      {selfRelative && (
+        <>
+          <p className="text-sm text-muted-foreground text-center">
+            Получите свою ссылку — бот возьмёт у вас интервью о семье и воспоминаниях
+          </p>
+          <InviteCard
+            rel={selfRelative}
+            label={`${selfRelative.first_name} ${selfRelative.last_name || ''} (вы)`}
+            highlight
+          />
+        </>
+      )}
 
-      {relatives.map((rel) => {
-        const url = invitations[rel.id]
-        const isGenerating = generatingId === rel.id
+      {/* Ссылки для родственников */}
+      {relatives.length > 0 && (
+        <>
+          <p className="text-sm text-muted-foreground text-center">
+            Отправьте ссылку родственнику — бот проведёт интервью и соберёт их воспоминания
+          </p>
+          {relatives.map((rel) => (
+            <InviteCard key={rel.id} rel={rel} />
+          ))}
+        </>
+      )}
 
-        return (
-          <div
-            key={rel.id}
-            className="p-3 rounded-xl border border-border bg-muted/30 space-y-2"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">
-                {rel.first_name} {rel.last_name || ''}
-              </span>
-              {url ? (
-                <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                  <Check className="w-3.5 h-3.5" />
-                  Готово
-                </div>
-              ) : null}
-            </div>
-
-            {url ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  readOnly
-                  value={url}
-                  className="text-xs h-8 bg-background"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 shrink-0"
-                  onClick={() => copyToClipboard(url)}
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </Button>
-              </div>
-            ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => onGenerate(rel.id)}
-                disabled={isGenerating}
-              >
-                {isGenerating ? (
-                  <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5 mr-2" />
-                )}
-                Сгенерировать ссылку
-              </Button>
-            )}
-          </div>
-        )
-      })}
+      {!selfRelative && relatives.length === 0 && (
+        <div className="text-center py-6 space-y-2">
+          <p className="text-muted-foreground text-sm">
+            Вы не добавили родственников на предыдущем шаге.
+          </p>
+          <p className="text-muted-foreground text-xs">
+            Вы можете пригласить их позже со страницы древа.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -704,6 +730,7 @@ export default function OnboardingWizard() {
     toast.success('Добро пожаловать в GeneticTree!')
   }, [completeOnboarding, refreshStats])
 
+  const selfRelative = createdRelatives.find((r) => r.id === selfRelativeId) ?? null
   const familyRelatives = createdRelatives.filter((r) => r.id !== selfRelativeId)
 
   // Step definitions: 0-3 info, 4-6 functional
@@ -784,6 +811,7 @@ export default function OnboardingWizard() {
       description: 'Отправьте приглашения — бот соберёт воспоминания',
       content: (
         <InviteFamilyStep
+          selfRelative={selfRelative}
           relatives={familyRelatives}
           invitations={invitations}
           onGenerate={handleGenerateInvitation}

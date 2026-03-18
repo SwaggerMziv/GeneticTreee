@@ -108,6 +108,77 @@ class PaymentService:
             "amount_kop": amount_kop,
         }
 
+    async def sync_pending_payment(
+        self,
+        user_id: int,
+        subscription_service: "SubscriptionService",
+    ) -> dict:
+        """Проверить статус последнего pending-платежа через API ЮKassa и обработать"""
+        from src.subscription.enums import PaymentStatus, BillingPeriod
+
+        # Находим последний pending-платёж пользователя
+        payments = await self.payment_repo.get_by_user(user_id, skip=0, limit=5)
+        pending = next(
+            (p for p in payments if p.status == PaymentStatus.PENDING),
+            None,
+        )
+
+        if not pending:
+            # Нет pending — возвращаем статус последнего платежа
+            if payments:
+                return {"status": payments[0].status.value, "synced": False}
+            return {"status": "no_payments", "synced": False}
+
+        # Запрашиваем реальный статус у ЮKassa
+        try:
+            yoo_payment: PaymentResponse = YooPayment.find_one(pending.yookassa_payment_id)
+        except Exception as e:
+            logger.error(f"Ошибка запроса статуса ЮKassa: {e}")
+            return {"status": "pending", "synced": False}
+
+        real_status = yoo_payment.status  # "succeeded", "canceled", "pending", "waiting_for_capture"
+
+        if real_status == "succeeded":
+            # Помечаем платёж
+            payment_method = yoo_payment.payment_method
+            payment_method_type = payment_method.type if payment_method else None
+            payment_method_id = payment_method.id if payment_method else None
+
+            await subscription_service.mark_payment_succeeded(
+                yookassa_payment_id=pending.yookassa_payment_id,
+                payment_method_type=payment_method_type,
+            )
+
+            # Активируем подписку из metadata в extra_data
+            plan_name_str = (pending.extra_data or {}).get("plan_name", "")
+            billing_period_str = (pending.extra_data or {}).get("billing_period", "monthly")
+
+            if plan_name_str:
+                plan_name = PlanType(plan_name_str)
+                billing_period = BillingPeriod(billing_period_str)
+                await subscription_service.activate_subscription(
+                    user_id=user_id,
+                    plan_name=plan_name,
+                    billing_period=billing_period,
+                    yookassa_payment_method_id=payment_method_id,
+                )
+
+            logger.info(f"Sync: платёж {pending.yookassa_payment_id} → succeeded, подписка активирована")
+            return {"status": "succeeded", "synced": True}
+
+        elif real_status == "canceled":
+            await self.payment_repo.update(
+                pending,
+                status=PaymentStatus.CANCELLED,
+                yookassa_status="canceled",
+            )
+            logger.info(f"Sync: платёж {pending.yookassa_payment_id} → cancelled")
+            return {"status": "cancelled", "synced": True}
+
+        else:
+            # "pending" или "waiting_for_capture"
+            return {"status": "pending", "synced": False}
+
     async def create_recurring_payment(
         self,
         user_id: int,

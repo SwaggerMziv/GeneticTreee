@@ -50,6 +50,14 @@ export const subscriptionApi = {
     })
   },
 
+  // Синхронизировать статус платежа с ЮKassa
+  syncPayment: async (): Promise<{ status: string; synced: boolean }> => {
+    return apiRequest<{ status: string; synced: boolean }>({
+      method: 'POST',
+      url: '/api/v1/subscription/sync-payment',
+    })
+  },
+
   // История платежей
   getPayments: async (skip = 0, limit = 50): Promise<PaymentRecord[]> => {
     return apiRequest<PaymentRecord[]>({

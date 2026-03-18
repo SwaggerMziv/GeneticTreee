@@ -19,20 +19,20 @@ export default function SubscriptionResultPage() {
 
   const checkPaymentStatus = useCallback(async () => {
     try {
-      const payments = await subscriptionApi.getPayments(0, 1)
-      if (!payments || payments.length === 0) {
-        setStatus('cancelled')
-        return 'done'
-      }
+      // Вызываем sync — backend проверит статус напрямую у ЮKassa
+      const result = await subscriptionApi.syncPayment()
 
-      const latest = payments[0]
-
-      if (latest.status === 'succeeded') {
+      if (result.status === 'succeeded') {
         setStatus('succeeded')
         return 'done'
       }
 
-      if (latest.status === 'cancelled') {
+      if (result.status === 'cancelled') {
+        setStatus('cancelled')
+        return 'done'
+      }
+
+      if (result.status === 'no_payments') {
         setStatus('cancelled')
         return 'done'
       }
@@ -40,8 +40,26 @@ export default function SubscriptionResultPage() {
       // pending — продолжаем polling
       return 'pending'
     } catch {
-      setStatus('cancelled')
-      return 'done'
+      // Если sync недоступен — fallback на getPayments
+      try {
+        const payments = await subscriptionApi.getPayments(0, 1)
+        if (!payments || payments.length === 0) {
+          setStatus('cancelled')
+          return 'done'
+        }
+        if (payments[0].status === 'succeeded') {
+          setStatus('succeeded')
+          return 'done'
+        }
+        if (payments[0].status === 'cancelled') {
+          setStatus('cancelled')
+          return 'done'
+        }
+        return 'pending'
+      } catch {
+        setStatus('cancelled')
+        return 'done'
+      }
     }
   }, [])
 
