@@ -53,22 +53,53 @@ class SubscriptionService:
         billing_period: BillingPeriod,
         yookassa_payment_method_id: str | None = None,
     ) -> UserSubscriptionModel:
-        """Активировать или обновить подписку после успешной оплаты"""
+        """Активировать, продлить или сменить подписку после успешной оплаты.
+
+        Если пользователь покупает тот же план — продлеваем от текущего expires_at.
+        Если меняет план — создаём новую подписку от текущего момента.
+        """
         plan = await self.plan_repo.get_by_name(plan_name)
         if not plan:
             raise PlanNotFoundError(plan_name=plan_name.value)
 
-        # Деактивируем текущую подписку
+        now = datetime.now(timezone.utc)
         current = await self.subscription_repo.get_active_by_user(user_id)
+
+        # Продление того же плана: добавляем период к текущему expires_at
+        if (
+            current
+            and current.plan_id == plan.id
+            and current.status == SubscriptionStatus.ACTIVE
+        ):
+            # Базовая дата — текущее expires_at (или now если уже просрочено)
+            base_date = current.expires_at if current.expires_at and current.expires_at > now else now
+
+            if billing_period == BillingPeriod.YEARLY:
+                new_expires = base_date + relativedelta(years=1)
+            else:
+                new_expires = base_date + relativedelta(months=1)
+
+            subscription = await self.subscription_repo.update(
+                current,
+                expires_at=new_expires,
+                auto_renew=True,
+                yookassa_payment_method_id=yookassa_payment_method_id or current.yookassa_payment_method_id,
+            )
+
+            logger.info(
+                f"Подписка продлена: user={user_id}, plan={plan_name.value}, "
+                f"expires={new_expires.isoformat()} (было {current.expires_at})"
+            )
+            return subscription
+
+        # Смена плана или первая активация: деактивируем текущую, создаём новую
         if current:
             await self.subscription_repo.update(
                 current,
                 status=SubscriptionStatus.EXPIRED,
-                cancelled_at=datetime.now(timezone.utc),
+                cancelled_at=now,
             )
 
-        # Вычисляем дату истечения
-        now = datetime.now(timezone.utc)
         if billing_period == BillingPeriod.YEARLY:
             expires_at = now + relativedelta(years=1)
         else:
