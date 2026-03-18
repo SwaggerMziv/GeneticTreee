@@ -221,6 +221,7 @@ function TreePageInner() {
   const [dragStartOffset, setDragStartOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const hasUserPanned = useRef(false)
   const autoCentered = useRef(false)
+  const didDragRef = useRef(false)
 
   // Mobile card touch gesture state machine
   const LONG_PRESS_MS = 300
@@ -392,6 +393,9 @@ function TreePageInner() {
 
   // Calculate node positions using d3-tree (hierarchical layout) with generation-aware Y
   useEffect(() => {
+    // Skip heavy tree layout recalc while user is dragging a card
+    if (draggingNodeId !== null) return
+
     if (relatives.length === 0) {
       setNodePositions([])
       return
@@ -549,7 +553,7 @@ function TreePageInner() {
 
     const spaced = applyCollisionSpacing(positions, CARD_WIDTH)
     setNodePositions(spaced)
-  }, [relatives, relationships, filterGender, filterGeneration, filterAlive, filterHasStories, searchTerm, manualPositions, CARD_WIDTH, CARD_HEIGHT, HORIZONTAL_GAP, VERTICAL_GAP])
+  }, [relatives, relationships, filterGender, filterGeneration, filterAlive, filterHasStories, searchTerm, manualPositions, draggingNodeId, CARD_WIDTH, CARD_HEIGHT, HORIZONTAL_GAP, VERTICAL_GAP])
 
   // Mouse handlers for panning
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -817,6 +821,7 @@ function TreePageInner() {
     const move = (clientX: number, clientY: number) => {
       const world = clientToWorld(clientX, clientY)
       if (!world) return
+      didDragRef.current = true
       setManualPositions((prev) => ({
         ...prev,
         [draggingNodeId]: {
@@ -1331,7 +1336,7 @@ function TreePageInner() {
 
         {/* Filter Sidebar */}
         <div
-          className={`flex-shrink-0 border-r border-border bg-card/50 p-4 overflow-y-auto control-panel transition-all duration-300 ${
+          className={`flex-shrink-0 border-r border-border bg-card p-4 overflow-y-auto control-panel transition-all duration-300 ${
             isMobile ? 'absolute top-0 left-0 z-20 h-full shadow-xl' : ''
           } ${
             isSidebarOpen ? 'w-56 translate-x-0' : 'w-0 -translate-x-full px-0 border-none opacity-0'
@@ -1760,6 +1765,8 @@ function TreePageInner() {
               {/* Relative Cards */}
               {nodePositions.map((node) => {
                 const isDraggingThis = draggingNodeId === node.relative.id
+                // During drag, read position directly from manualPositions (layout useEffect is paused)
+                const dragPos = isDraggingThis ? manualPositions[node.relative.id] : null
                 return (
                   <div
                     key={node.relative.id}
@@ -1769,8 +1776,8 @@ function TreePageInner() {
                         : 'cursor-grab hover:shadow-lg hover:shadow-[#ED7855]/10'
                     }`}
                     style={{
-                      left: toCanvasX(node.x),
-                      top: toCanvasY(node.y),
+                      left: toCanvasX(dragPos ? dragPos.x : node.x),
+                      top: toCanvasY(dragPos ? dragPos.y : node.y),
                       width: CARD_WIDTH,
                       height: CARD_HEIGHT,
                       zIndex: isDraggingThis ? 50 : 10,
@@ -1781,6 +1788,7 @@ function TreePageInner() {
                     onMouseDown={(e) => {
                       e.stopPropagation()
                       e.preventDefault()
+                      didDragRef.current = false
                       beginNodeDrag(e.clientX, e.clientY, node.relative.id)
                     }}
                     onTouchStart={(e) => handleNodeTouchStart(e, node.relative.id)}
@@ -1790,7 +1798,9 @@ function TreePageInner() {
                     <RelativeCard
                       relative={node.relative}
                       isSelected={selectedRelative?.id === node.relative.id}
-                      onClick={isMobile ? undefined : () => setSelectedRelative(node.relative)}
+                      onClick={isMobile ? undefined : () => {
+                        if (!didDragRef.current) setSelectedRelative(node.relative)
+                      }}
                       size={isMobile ? "small" : "medium"}
                     />
                   </div>
@@ -1828,7 +1838,7 @@ function TreePageInner() {
           {/* Hint about dragging */}
           {nodePositions.length > 0 && (
             <div className="absolute bottom-14 sm:bottom-4 left-1/2 -translate-x-1/2 control-panel">
-              <div className="px-3 py-1.5 rounded-full bg-card/80 border border-border text-xs text-muted-foreground flex items-center gap-2">
+              <div className="px-3 py-1.5 rounded-full bg-card border border-border text-xs text-muted-foreground flex items-center gap-2">
                 <Move className="w-3 h-3" />
                 <span>{isMobile ? 'Удержите карточку для перетаскивания' : 'Перетащите карточки для изменения позиции'}</span>
               </div>
