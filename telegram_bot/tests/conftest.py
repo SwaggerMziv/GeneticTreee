@@ -60,7 +60,7 @@ def mock_backend_api():
     mock.upload_story_media.return_value = {"url": "https://mock.s3/photo.jpg"}
     mock.create_relative_from_bot.return_value = {"relative_id": 2, "message": "ok"}
     mock.check_quota.return_value = {
-        "allowed": True, "resource": "ai_messages", "used": 0, "limit": -1, "message": None,
+        "allowed": True, "resource": "telegram_sessions", "used": 0, "limit": -1, "message": None,
     }
     mock.save_interview_message_pair.return_value = True
 

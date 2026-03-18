@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CreditCard, Clock, CheckCircle2, AlertCircle, CalendarDays } from 'lucide-react'
+import { CreditCard, Clock, CheckCircle2, AlertCircle, CalendarDays, Info } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -74,7 +74,7 @@ export default function SubscriptionPage() {
   async function handleCheckout(planName: PlanType, period: BillingPeriod) {
     setCheckoutPlanName(planName)
     try {
-      const returnUrl = `${window.location.origin}/subscription/success`
+      const returnUrl = `${window.location.origin}/subscription/result`
       const result = await subscriptionApi.checkout({
         plan_name: planName,
         billing_period: period,
@@ -106,12 +106,13 @@ export default function SubscriptionPage() {
   }
 
   const currentPlan = usage?.plan.name ?? 'free'
+  const hasPendingPayment = payments.some(p => p.status === 'pending')
 
   // Квоты с реальным лимитом или безлимитные
   const visibleQuotas = usage?.quotas.filter(q => q.is_unlimited || q.limit > 0) ?? []
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="space-y-8 max-w-4xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold">Подписка</h1>
         <p className="text-muted-foreground mt-1 text-sm">Управление тарифом, квотами и платёжной историей</p>
@@ -189,6 +190,16 @@ export default function SubscriptionPage() {
               {new Date(usage.period_end).toLocaleDateString('ru-RU')}
             </p>
           )}
+        </div>
+      )}
+
+      {/* Подсказка о pending-платеже */}
+      {hasPendingPayment && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-900/10 px-4 py-3">
+          <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-700 dark:text-amber-400">
+            У вас есть незавершённый платёж. Выберите тариф ниже для повторной оплаты.
+          </p>
         </div>
       )}
 

@@ -54,7 +54,7 @@ class TestRealtimeWebSocket:
 
         mock_backend_api.check_quota.return_value = {
             "allowed": False,
-            "resource": "ai_messages",
+            "resource": "telegram_sessions",
             "message": "Лимит исчерпан",
         }
 

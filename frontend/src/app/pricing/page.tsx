@@ -15,7 +15,7 @@ export default function PricingPage() {
   async function handleCheckout(planName: PlanType, period: BillingPeriod) {
     setLoadingPlan(planName)
     try {
-      const returnUrl = `${window.location.origin}/subscription/success`
+      const returnUrl = `${window.location.origin}/subscription/result`
       const result = await subscriptionApi.checkout({
         plan_name: planName,
         billing_period: period,

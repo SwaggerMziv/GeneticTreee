@@ -405,7 +405,7 @@ async def websocket_interview(ws: WebSocket):
     _active_connections[relative_id] = ws
 
     # 3. Проверить квоту
-    quota = await backend_api.check_quota(telegram_user_id, "ai_messages")
+    quota = await backend_api.check_quota(telegram_user_id, "telegram_sessions")
     if not quota.get("allowed", True):
         await _send_json(ws, {
             "type": "error",
