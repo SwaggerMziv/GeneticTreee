@@ -10,33 +10,43 @@ import { cn } from '@/lib/utils'
 
 type PaymentStatus = 'loading' | 'succeeded' | 'cancelled' | 'pending'
 
+const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
+
 export default function SubscriptionResultPage() {
   const [status, setStatus] = useState<PaymentStatus>('loading')
   const [syncing, setSyncing] = useState(false)
 
-  async function checkStatus() {
+  // Один вызов sync. Если API недоступен (нет авторизации / другой браузер) → pending, не cancelled.
+  async function checkStatus(): Promise<PaymentStatus> {
     try {
       const result = await subscriptionApi.syncPayment()
 
-      if (result.status === 'succeeded') return 'succeeded' as const
-      if (result.status === 'cancelled') return 'cancelled' as const
-      if (result.status === 'no_payments') return 'cancelled' as const
-      return 'pending' as const
+      if (result.status === 'succeeded') return 'succeeded'
+      if (result.status === 'cancelled') return 'cancelled'
+      if (result.status === 'no_payments') return 'cancelled'
+      return 'pending'
     } catch {
-      try {
-        const payments = await subscriptionApi.getPayments(0, 1)
-        if (!payments?.length) return 'cancelled' as const
-        if (payments[0].status === 'succeeded') return 'succeeded' as const
-        if (payments[0].status === 'cancelled') return 'cancelled' as const
-        return 'pending' as const
-      } catch {
-        return 'cancelled' as const
-      }
+      // API недоступен (401 / другой браузер без авторизации) → показываем pending,
+      // потому что платёж мог пройти — просто мы не можем это проверить отсюда.
+      return 'pending'
     }
   }
 
   useEffect(() => {
-    checkStatus().then(setStatus)
+    async function init() {
+      const first = await checkStatus()
+
+      // Если pending — подождём 3 сек и попробуем ещё раз (ЮКасса может ещё обрабатывать)
+      if (first === 'pending') {
+        setStatus('pending')
+        await delay(3000)
+        const second = await checkStatus()
+        setStatus(second)
+      } else {
+        setStatus(first)
+      }
+    }
+    init()
   }, [])
 
   async function handleRetrySync() {
@@ -71,8 +81,8 @@ export default function SubscriptionResultPage() {
       icon: Clock,
       iconBg: 'bg-azure/10 dark:bg-azure/20',
       iconColor: 'text-azure',
-      title: 'Ожидание подтверждения',
-      description: 'Платёж обрабатывается платёжной системой. Статус подписки обновится автоматически.',
+      title: 'Оплата обрабатывается',
+      description: 'Платёж принят платёжной системой. Проверьте статус подписки в личном кабинете.',
     },
   }
 
