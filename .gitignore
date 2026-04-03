@@ -8,9 +8,6 @@ venv/
 env/
 ENV/
 
-# Project specific
-CLAUDE.md
-
 # Environment files
 .env
 .env.*
@@ -48,12 +45,7 @@ coverage/
 # Next.js build
 .next/
 
-# MCP config (local)
-.mcp.json
-
-# Root package files (not a root npm project)
-/package.json
-/package-lock.json
-
-# Claude settings
-.claude/settings.local.json
+# Build artifacts
+*.tsbuildinfo
+next-env.d.ts
+.pytest_cache/
